@@ -1,0 +1,281 @@
+.containerSplit {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 32px;
+  flex: 1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.005);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroupFull {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.input, .select {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text-main);
+  transition: all 0.2s ease;
+}
+
+.input:focus, .select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(138, 21, 27, 0.08);
+}
+
+/* Photo Upload Elements Box formatting configs */
+.photoUploadWrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.fileInputHidden {
+  display: none;
+}
+
+.fileLabelBtn {
+  background-color: #faf9f8;
+  border: 1px dashed var(--border-light);
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+}
+
+.fileLabelBtn:hover {
+  background-color: var(--accent-soft);
+  color: var(--accent-primary);
+}
+
+.inputThumbPreview {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--border-light);
+}
+
+.submitBtn {
+  background-color: var(--accent-primary);
+  color: #ffffff;
+  border: none;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 14px 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bannerSuccess {
+  background-color: #edf7ed;
+  border: 1px solid #c3e6cb;
+  color: #1e4620;
+  padding: 14px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+/* ==========================================================================
+   🎫 ID CREDENTIAL BADGE PREVIEW GENERATOR BLOCK STYLES 
+   ========================================================================== */
+.badgeWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 320px;
+  position: sticky;
+  top: 24px;
+}
+
+.badgeIdCard {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.badgeHeader {
+  background-color: var(--accent-primary);
+  padding: 16px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.badgeHeader h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.03em;
+}
+
+.badgeHeader p {
+  margin: 4px 0 0 0;
+  font-size: 10px;
+  opacity: 0.8;
+  letter-spacing: 0.05em;
+}
+
+.badgeBodyContent {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.badgeAvatarPhoto {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.badgeAvatarPlaceholder {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.badgeTextMeta h3 {
+  margin: 0 0 4px 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--text-main);
+}
+
+.badgeCenterTag {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background-color: var(--accent-soft);
+  padding: 4px 10px;
+  border-radius: 100px;
+  text-transform: uppercase;
+}
+
+.badgeQrBlock {
+  background: #faf9f8;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  margin-top: 4px;
+}
+
+.downloadLink {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-light);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.downloadLink:hover {
+  background-color: var(--accent-soft);
+  color: var(--accent-primary);
+  border-color: transparent;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 992px) {
+  .containerSplit {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .badgeWrapper {
+    width: 100%;
+    align-items: center;
+  }
+  .badgeIdCard {
+    width: 100%;
+    max-width: 360px;
+  }
+  .downloadLink {
+    width: 100%;
+    max-width: 360px;
+  }
+}

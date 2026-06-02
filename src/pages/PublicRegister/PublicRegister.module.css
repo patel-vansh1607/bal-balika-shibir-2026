@@ -1,0 +1,347 @@
+.publicWrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+}
+
+.publicHeader {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.publicHeader h1 {
+  font-family: var(--font-display, inherit);
+  color: #1a1a1a;
+  font-size: 32px;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+}
+
+.publicHeader p {
+  color: #666;
+  margin: 0;
+  font-size: 16px;
+}
+
+.containerSplit {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 32px;
+  flex: 1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.infoBanner {
+  background-color: #f0f7ff;
+  border: 1px solid #cce3ff;
+  color: #004085;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  display: flex;
+  gap: 12px;
+}
+
+.infoBanner p {
+  margin: 0;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroupFull {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.input, .select {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #1e293b;
+  transition: all 0.2s ease;
+}
+
+.input:focus, .select:focus {
+  outline: none;
+  border-color: #8a151b; /* Adaptive Theme Red Accent */
+  box-shadow: 0 0 0 3px rgba(138, 21, 27, 0.08);
+}
+
+.photoUploadWrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.fileInputHidden {
+  display: none;
+}
+
+.fileLabelBtn {
+  background-color: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+}
+
+.fileLabelBtn:hover {
+  background-color: rgba(138, 21, 27, 0.04);
+  color: #8a151b;
+  border-color: #8a151b;
+}
+
+.inputThumbPreview {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+}
+
+.submitBtn {
+  background-color: #8a151b;
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 14px 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(138, 21, 27, 0.15);
+  transition: all 0.2s ease;
+}
+
+.submitBtn:hover {
+  background-color: #721116;
+  transform: translateY(-1px);
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Badge Layout Structural View Elements */
+.badgeWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 340px;
+  position: sticky;
+  top: 40px;
+}
+
+.successBanner {
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+}
+
+.successBanner strong {
+  display: block;
+  font-size: 14px;
+}
+
+.successBanner p {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.badgeIdCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.badgeHeader {
+  background-color: #8a151b;
+  padding: 18px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.badgeHeader h4 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.badgeHeader p {
+  margin: 4px 0 0 0;
+  font-size: 10px;
+  opacity: 0.8;
+  letter-spacing: 0.08em;
+}
+
+.badgeBodyContent {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.badgeAvatarPhoto {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.badgeTextMeta {
+  text-align: center;
+}
+
+.badgeTextMeta h3 {
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.badgeCenterTag {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #8a151b;
+  background-color: rgba(138, 21, 27, 0.06);
+  padding: 4px 12px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.badgeQrBlock {
+  background: #f8fafc;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-top: 8px;
+}
+
+.downloadLink {
+  background-color: #0f172a;
+  color: #ffffff;
+  text-align: center;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+}
+
+.downloadLink:hover {
+  background-color: #1e293b;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 920px) {
+  .containerSplit {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .badgeWrapper {
+    width: 100%;
+  }
+  .badgeIdCard, .downloadLink {
+    max-width: 400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+/* Add these style rules directly into your existing PublicRegister.module.css file */
+
+.bannerError {
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #991b1b;
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.fileHint {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Explicit form elements reset for interactive disabled view states */
+.input:disabled, .select:disabled {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
