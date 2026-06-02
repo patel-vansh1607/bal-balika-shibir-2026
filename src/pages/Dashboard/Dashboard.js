@@ -4,6 +4,7 @@ import { supabase } from '../../supabaseClient';
 import AddAttendee from '../AddAttendee/AddAttendee'; 
 import OverviewMetrics from '../OverviewMetrics/OverviewMetrics'; 
 import CameraScanner from '../CameraScanner/CameraScanner'; 
+import RegisteredRoster from '../RegisteredRoster/RegisteredRoster';
 import styles from './Dashboard.module.css';
 
 import { 
@@ -13,7 +14,8 @@ import {
   FaUserShield,
   FaBars,
   FaTimes,
-  FaUserPlus
+  FaUserPlus,
+  FaUsers // Added icon for the live roster section link
 } from 'react-icons/fa';
 
 export default function Dashboard() {
@@ -107,6 +109,12 @@ export default function Dashboard() {
               <FaCamera className={styles.iconMargin} /> Camera QR Scanner
             </button>
             <button 
+              onClick={() => handleTabChange('roster')} 
+              className={`${styles.navLink} ${activeTab === 'roster' ? styles.navLinkActive : ''}`}
+            >
+              <FaUsers className={styles.iconMargin} /> Registered Roster
+            </button>
+            <button 
               onClick={() => handleTabChange('add-new')} 
               className={`${styles.navLink} ${activeTab === 'add-new' ? styles.navLinkActive : ''}`}
             >
@@ -142,6 +150,7 @@ export default function Dashboard() {
             <h2 className={styles.pageContextTitle}>
               {activeTab === 'overview' && 'Performance Overview'}
               {activeTab === 'scanner' && 'Entrance Verification'}
+              {activeTab === 'roster' && 'Registered Attendees Base'}
               {activeTab === 'add-new' && 'Register New Attendee'}
             </h2>
           </div>
@@ -162,7 +171,12 @@ export default function Dashboard() {
             <CameraScanner />
           )}
 
-          {/* TAB VIEW 3: REGISTER ATTENDEE MOUNT MODULE */}
+          {/* TAB VIEW 3: LIVE REGISTERED ATTENDEES LIST ROSTER */}
+          {activeTab === 'roster' && (
+            <RegisteredRoster />
+          )}
+
+          {/* TAB VIEW 4: REGISTER ATTENDEE MOUNT MODULE */}
           {activeTab === 'add-new' && (
             <AddAttendee />
           )}

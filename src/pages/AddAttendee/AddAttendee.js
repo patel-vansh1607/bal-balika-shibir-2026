@@ -28,35 +28,67 @@ export default function AddAttendee() {
     }
   };
 
-  // Uploads the child's profile photo to Supabase Storage
-  const uploadProfilePhoto = async (recordId, childName) => {
-    if (!photoFile) return null;
-    
-    const fileExt = photoFile.name.split('.').pop();
-    const fileName = `profile_${recordId}_${childName.replace(/\s+/g, '_').toLowerCase()}.${fileExt}`;
-    
-    const { error } = await supabase.storage
-      .from('attendee-profiles')
-      .upload(fileName, photoFile, { cacheControl: '3600', upsert: true });
-
-    if (error) throw error;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('attendee-profiles')
-      .getPublicUrl(fileName);
-
-    return publicUrl;
+  /**
+   * Reads the raw upload file, draws it onto an internal HTML5 canvas matrix,
+   * resizes it to a 300x300 center-cropped profile square, and compresses it to a lightweight JPEG blob.
+   */
+  const processAndCompressPhoto = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Set target grid dimensions for the portal roster circles
+          const targetWidth = 300;
+          const targetHeight = 300;
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          
+          // Calculate center crop ratios
+          let srcX = 0;
+          let srcY = 0;
+          let srcWidth = img.width;
+          let srcHeight = img.height;
+          
+          if (img.width > img.height) {
+            srcWidth = img.height;
+            srcX = (img.width - img.height) / 2;
+          } else {
+            srcHeight = img.width;
+            srcY = (img.height - img.width) / 2;
+          }
+          
+          // Render the squashed array frame onto canvas layout map
+          ctx.drawImage(img, srcX, srcY, srcWidth, srcHeight, 0, 0, targetWidth, targetHeight);
+          
+          // Export down to an optimized 85% high efficiency JPEG file payload blob
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Canvas compression trace returned null raw stream."));
+            }
+          }, 'image/jpeg', 0.85);
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
   };
 
-  // Compiles and uploads the client-side SVG asset map
   const uploadQRToSupabase = async (recordId, childName) => {
     try {
       const svgElement = qrRef.current.querySelector('svg');
+      if (!svgElement) return null;
+      
       const svgString = new XMLSerializer().serializeToString(svgElement);
       const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-      
-      const fileExt = 'svg';
-      const fileName = `qr_${recordId}_${childName.replace(/\s+/g, '_').toLowerCase()}.${fileExt}`;
+      const fileName = `qr_${recordId}.svg`;
       
       const { error } = await supabase.storage
         .from('shibir-qr-codes')
@@ -64,87 +96,110 @@ export default function AddAttendee() {
 
       if (error) throw error;
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data } = supabase.storage
         .from('shibir-qr-codes')
         .getPublicUrl(fileName);
 
-      return publicUrl;
+      return data.publicUrl;
     } catch (err) {
-      console.error("Storage distribution drop error:", err.message);
+      console.error("QR upload error:", err.message);
       return null;
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!photoFile) {
+      alert("Please upload a profile photo before submitting.");
+      return;
+    }
+
     setLoading(true);
     setSuccess(false);
     setDownloadUrl('');
     setFinalAttendeeData(null);
 
-    // 1. Initial insert row mapping to grab the unique ID string
-    const { data: insertData, error: insertError } = await supabase
-      .from('attendees')
-      .insert([
-        { 
-          name: fullName.trim(), 
-          age: parseInt(age), 
-          center: center, 
-          parent_contact: parentContact.trim(),
-          status: 'Pending'
-        }
-      ])
-      .select()
-      .single();
+    try {
+      // Step 1: Compress the raw image payload into a lightweight JPEG (~150KB max)
+      const compressedPhotoBlob = await processAndCompressPhoto(photoFile);
 
-    if (insertError) {
-      alert(`Database rejected entity payload: ${insertError.message}`);
-      setLoading(false);
-      return;
-    }
+      // Step 2: Insert text data first to instantly get a reliable database Row ID
+      const { data: insertData, error: insertError } = await supabase
+        .from('attendees')
+        .insert([
+          { 
+            name: fullName.trim(), 
+            age: parseInt(age), 
+            center: center, 
+            parent_contact: parentContact.trim(),
+            status: 'Pending'
+          }
+        ])
+        .select()
+        .single();
 
-    if (insertData) {
-      try {
-        // 2. Upload Profile Image Asset
-        const profileUrl = await uploadProfilePhoto(insertData.id, insertData.name);
-        
-        // 3. Mount text configurations onto code state mapping
-        const shibirToken = `SHIBIR2026_ID_${insertData.id}`;
-        setGeneratedQRValue(shibirToken);
+      if (insertError) throw insertError;
 
-        // 4. Fire async vector calculation hook
-        setTimeout(async () => {
-          const qrPublicUrl = await uploadQRToSupabase(insertData.id, insertData.name);
-          
-          // 5. Finalize table properties updates back onto structural row
-          await supabase
-            .from('attendees')
-            .update({ 
-              qr_code_url: qrPublicUrl,
-              photo_url: profileUrl 
-            })
-            .eq('id', insertData.id);
+      if (insertData) {
+        const attendeeId = insertData.id;
+        const photoFileName = `${attendeeId}.jpg`;
 
-          setDownloadUrl(qrPublicUrl);
-          setFinalAttendeeData({
-            name: insertData.name,
-            center: insertData.center,
-            photoUrl: profileUrl
+        // Step 3: Upload the lightweight photo named exactly after the row ID
+        const { error: uploadError } = await supabase.storage
+          .from('attendee-profiles')
+          .upload(photoFileName, compressedPhotoBlob, { 
+            cacheControl: '0', 
+            upsert: true,
+            contentType: 'image/jpeg'
           });
 
-          setSuccess(true);
-          setLoading(false);
-          setFullName('');
-          setAge('');
-          setParentContact('');
-          setPhotoFile(null);
-          setPhotoPreview('');
-        }, 600);
+        if (uploadError) throw uploadError;
 
-      } catch (uploadErr) {
-        alert(`Media engine failed asset delivery hooks: ${uploadErr.message}`);
-        setLoading(false);
+        // Step 4: Extract public Cdn asset reference link
+        const { data: pathData } = supabase.storage
+          .from('attendee-profiles')
+          .getPublicUrl(photoFileName);
+
+        const absolutePhotoUrl = pathData.publicUrl;
+        const shibirToken = `SHIBIR2026_ID_${attendeeId}`;
+        setGeneratedQRValue(shibirToken);
+
+        // Step 5: Patch both URLs back to the row entry in one final non-blocking call
+        setTimeout(async () => {
+          try {
+            const qrPublicUrl = await uploadQRToSupabase(attendeeId, insertData.name);
+            
+            await supabase
+              .from('attendees')
+              .update({ 
+                photo_url: absolutePhotoUrl,
+                qr_code_url: qrPublicUrl 
+              })
+              .eq('id', attendeeId);
+
+            setDownloadUrl(qrPublicUrl);
+            setFinalAttendeeData({
+              name: insertData.name,
+              center: insertData.center,
+              photoUrl: absolutePhotoUrl
+            });
+
+            setSuccess(true);
+            setFullName('');
+            setAge('');
+            setParentContact('');
+            setPhotoFile(null);
+            setPhotoPreview('');
+          } catch (patchErr) {
+            console.error("Error updates trace failed:", patchErr.message);
+          } finally {
+            setLoading(false);
+          }
+        }, 300);
       }
+    } catch (err) {
+      alert(`Asset submission stream rejected: ${err.message}`);
+      setLoading(false);
     }
   };
 
@@ -153,7 +208,7 @@ export default function AddAttendee() {
       <div className={styles.card}>
         {success && (
           <div className={styles.bannerSuccess}>
-            <p style={{ margin: '0 0 4px 0', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <p style={{ margin: 0, fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <FaCheckCircle /> Card Successfully Generated!
             </p>
           </div>
@@ -236,13 +291,11 @@ export default function AddAttendee() {
           </button>
         </form>
 
-        {/* Hidden vector generator reference buffer container */}
         <div style={{ display: 'none' }} ref={qrRef}>
           {generatedQRValue && <QRCodeSVG value={generatedQRValue} size={256} level="H" includeMargin={true} />}
         </div>
       </div>
 
-      {/* Printable Badge Preview Panel Side UI Card Layout view box element */}
       {success && finalAttendeeData && (
         <div className={styles.badgeWrapper}>
           <div className={styles.badgeIdCard}>
@@ -252,11 +305,7 @@ export default function AddAttendee() {
             </div>
             
             <div className={styles.badgeBodyContent}>
-              {finalAttendeeData.photoUrl ? (
-                <img src={finalAttendeeData.photoUrl} alt="Attendee" className={styles.badgeAvatarPhoto} />
-              ) : (
-                <div className={styles.badgeAvatarPlaceholder}><FaCamera /></div>
-              )}
+              <img src={finalAttendeeData.photoUrl} alt="Attendee" className={styles.badgeAvatarPhoto} />
               
               <div className={styles.badgeTextMeta}>
                 <h3>{finalAttendeeData.name}</h3>
