@@ -17,16 +17,17 @@ export default function CameraScanner() {
   const [scanResult, setScanResult] = useState(null); 
   const [operator, setOperator] = useState(null);
   const scannerInstance = useRef(null);
+  const isProcessingScan = useRef(false);
 
   // 1. Fetch active operator details & sync initial gate logs from backend on mount
   useEffect(() => {
     async function initScannerSession() {
-      // Get the currently authenticated operator session
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Build clear operator identities using metadata or clean email splits
         setOperator({
           email: user.email,
-          name: user.email.split('@')[0]
+          name: user.user_metadata?.full_name || user.email.split('@')[0]
         });
       }
 
@@ -43,7 +44,7 @@ export default function CameraScanner() {
           time: new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
           type: log.status,
           text: log.message,
-          processedBy: log.operator_email
+          processedBy: log.operator_name || log.operator_email?.split('@')[0] || 'system'
         }));
         setScannerLog(formattedLogs);
       }
@@ -67,6 +68,7 @@ export default function CameraScanner() {
   const handleStartCamera = () => {
     setIsEnabled(true);
     setScanResult(null);
+    isProcessingScan.current = false;
 
     setTimeout(() => {
       try {
@@ -92,97 +94,113 @@ export default function CameraScanner() {
   };
 
   const onScanSuccess = async (decodedText) => {
+    if (isProcessingScan.current) return;
+    isProcessingScan.current = true;
+
     clearScannerInstance();
     setIsEnabled(false);
 
-    // Dynamic Sanitization: Safely handle both deep links and raw code tokens
     let scannedId = decodedText.trim();
     if (scannedId.includes('data=')) {
       scannedId = scannedId.split('data=').pop().split('&')[0];
     }
-    scannedId = decodeURIComponent(scannedId);
+    scannedId = decodeURIComponent(scannedId).toUpperCase().trim();
 
-    // Enforce upper-case matching since alpha-codes (MTRC) are capitalized in DB
-    scannedId = scannedId.toUpperCase();
+    if (!scannedId) {
+      isProcessingScan.current = false;
+      return;
+    }
 
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const operatorEmail = operator?.email || 'unknown@shibir.org';
+    const operatorName = operator?.name || 'system';
 
-    // 2. Query public.attendees strictly using the alphanumeric text ID
-    const { data: attendee, error: fetchError } = await supabase
-      .from('attendees') 
-      .select('*')
-      .eq('id', scannedId)
-      .maybeSingle(); // Handles matching gracefully without crashing on string formats
+    try {
+      // Query the attendee profile row
+      const { data: attendee, error: fetchError } = await supabase
+        .from('attendees') 
+        .select('*')
+        .eq('id', scannedId)
+        .maybeSingle();
 
-    let localLogPayload = {
-      id: crypto.randomUUID(),
-      time: timestamp,
-      processedBy: operatorEmail
-    };
+      let localLogPayload = {
+        id: crypto.randomUUID(),
+        time: timestamp,
+        processedBy: operatorName
+      };
 
-    // CASE A: Alphanumeric ID format not found in public.attendees records
-    if (fetchError || !attendee) {
-      const errorMsg = `Failed gate verification entry match for token input: "${scannedId}"`;
-      
+      // CASE A: Alphanumeric ID format not found in public.attendees records
+      if (fetchError || !attendee) {
+        const errorMsg = `Denied Entry: Token "${scannedId}" is unknown to the registry system.`;
+        
+        await supabase.from('gate_logs').insert([{
+          scanned_id: scannedId,
+          status: 'error',
+          message: errorMsg,
+          operator_email: operatorEmail,
+          operator_name: operatorName,
+          attendee_name: 'Unknown Badge'
+        }]);
+
+        localLogPayload.type = 'error';
+        localLogPayload.text = errorMsg;
+        
+        setScanResult({ status: 'error', message: `Badge Unknown. Token "${scannedId}" unrecognized.` });
+        setScannerLog(prev => [localLogPayload, ...prev]);
+        return;
+      }
+
+      // CASE B: Attendee is found but has already checked in
+      if (attendee.status === 'Checked In') {
+        const warningMsg = `Duplicate Flag: ${attendee.name} scanned again at gate.`;
+
+        await supabase.from('gate_logs').insert([{
+          scanned_id: scannedId,
+          status: 'warning',
+          message: warningMsg,
+          operator_email: operatorEmail,
+          operator_name: operatorName,
+          attendee_name: attendee.name
+        }]);
+
+        localLogPayload.type = 'warning';
+        localLogPayload.text = warningMsg;
+
+        setScanResult({ status: 'warning', message: 'Duplicate Scan Warning!', attendee });
+        setScannerLog(prev => [localLogPayload, ...prev]);
+        return;
+      }
+
+      // CASE C: Successful valid check-in
+      const successMsg = `Approved Admission: Verified check-in completed for ${attendee.name} (${attendee.center})`;
+
+      // Mutate attendee status record to Checked In using text primary key
+      await supabase
+        .from('attendees')
+        .update({ status: 'Checked In' })
+        .eq('id', attendee.id);
+
+      // Save transaction data directly to database audit trail logs
       await supabase.from('gate_logs').insert([{
         scanned_id: scannedId,
-        status: 'error',
-        message: errorMsg,
-        operator_email: operatorEmail
-      }]);
-
-      localLogPayload.type = 'error';
-      localLogPayload.text = `Badge Unknown. ID ${scannedId} missing from public.attendees list.`;
-      
-      setScanResult({ status: 'error', message: `Badge Unknown. ID ${scannedId} does not match any entry.` });
-      setScannerLog(prev => [localLogPayload, ...prev]);
-      return;
-    }
-
-    // CASE B: Attendee is found but has already checked in
-    if (attendee.status === 'Checked In') {
-      const warningMsg = `Duplicate entry warning flag triggered for ${attendee.name}`;
-
-      await supabase.from('gate_logs').insert([{
-        scanned_id: scannedId,
-        status: 'warning',
-        message: warningMsg,
+        status: 'success',
+        message: successMsg,
         operator_email: operatorEmail,
+        operator_name: operatorName,
         attendee_name: attendee.name
       }]);
 
-      localLogPayload.type = 'warning';
-      localLogPayload.text = `Duplicate flag triggered for ${attendee.name} (${attendee.center})`;
+      localLogPayload.type = 'success';
+      localLogPayload.text = successMsg;
 
-      setScanResult({ status: 'warning', message: 'Duplicate Scan Warning!', attendee });
+      setScanResult({ status: 'success', message: 'Gate Admission Approved!', attendee });
       setScannerLog(prev => [localLogPayload, ...prev]);
-      return;
+
+    } catch (err) {
+      console.error("Critical error inside camera stream capture block:", err);
+    } finally {
+      isProcessingScan.current = false;
     }
-
-    // CASE C: Successful valid check-in
-    const successMsg = `Successful check-in confirmation completed for attendee: ${attendee.name}`;
-
-    // Mutate attendee status record to Checked In using text primary key
-    await supabase
-      .from('attendees')
-      .update({ status: 'Checked In' })
-      .eq('id', attendee.id);
-
-    // Save transaction to backend logs
-    await supabase.from('gate_logs').insert([{
-      scanned_id: scannedId,
-      status: 'success',
-      message: successMsg,
-      operator_email: operatorEmail,
-      attendee_name: attendee.name
-    }]);
-
-    localLogPayload.type = 'success';
-    localLogPayload.text = `Verified Check-In for ${attendee.name}`;
-
-    setScanResult({ status: 'success', message: 'Gate Admission Approved!', attendee });
-    setScannerLog(prev => [localLogPayload, ...prev]);
   };
 
   const onScanFailure = () => {
@@ -206,7 +224,7 @@ export default function CameraScanner() {
             </div>
             <h3 className={styles.cardTitle}>Gate Control Scanner</h3>
             <p className={styles.cardSubtitle}>
-              Ready to initialize fast hardware video tracking frame arrays to automatically parse and check in Bal Balika Shibir delegate badges.
+              Active Operator Session: <strong style={{ color: '#8a151b', textTransform: 'capitalize' }}>{operator?.name || 'Loading...'}</strong>
             </p>
             <button onClick={handleStartCamera} className={styles.activateDeviceBtn}>
               Initialize Camera Device
@@ -286,7 +304,7 @@ export default function CameraScanner() {
               <div key={log.id} className={`${styles.logRowEntry} ${styles[`log_${log.type}`]}`}>
                 <div className={styles.logMetaWrapper}>
                   <span className={styles.logTimeToken}>{log.time}</span>
-                  <span className={styles.operatorBadge}>By: {log.processedBy ? log.processedBy.split('@')[0] : 'system'}</span>
+                  <span className={styles.operatorBadge}>By: {log.processedBy}</span>
                 </div>
                 <span className={styles.logMessageText}>{log.text}</span>
               </div>
