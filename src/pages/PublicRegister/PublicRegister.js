@@ -7,6 +7,7 @@ import styles from './PublicRegister.module.css';
 export default function PublicRegister() {
   const [fullName, setFullName] = useState('');
   const [age, setAge] = useState('');
+  const [gender, setGender] = useState('Balak'); // 'Balak' = Male, 'Balika' = Female
   const [center, setCenter] = useState('Nairobi, Kenya');
   const [parentContact, setParentContact] = useState('');
   const [photoFile, setPhotoFile] = useState(null);
@@ -60,6 +61,11 @@ export default function PublicRegister() {
     const parsedAge = parseInt(age);
     if (isNaN(parsedAge) || parsedAge < 3 || parsedAge > 18) {
       setFormError('Invalid Age. Shibir registration is strictly limited to children aged between 3 and 18.');
+      return false;
+    }
+
+    if (!gender) {
+      setFormError('Please select a gender designation category.');
       return false;
     }
 
@@ -145,6 +151,7 @@ export default function PublicRegister() {
         { 
           name: cleanName, 
           age: parsedAge, 
+          gender: gender, 
           center: center, 
           parent_contact: cleanContact,
           status: 'Pending'
@@ -163,11 +170,9 @@ export default function PublicRegister() {
       try {
         const profileUrl = await uploadProfilePhoto(insertData.id, insertData.name);
         
-        // Match explicit custom MTRC alphanumeric key shape directly from the row identity
         const shibirToken = String(insertData.id).toUpperCase().trim();
         setGeneratedQRValue(shibirToken);
 
-        // Allow DOM node matrix context frame window to synchronize updated state values
         setTimeout(async () => {
           const qrPublicUrl = await uploadQRToSupabase(insertData.id, insertData.name);
           
@@ -183,6 +188,7 @@ export default function PublicRegister() {
           setFinalAttendeeData({
             name: insertData.name,
             center: insertData.center,
+            gender: insertData.gender,
             photoUrl: profileUrl
           });
 
@@ -192,6 +198,7 @@ export default function PublicRegister() {
           // Flash clean states to prevent redundant execution clicks
           setFullName('');
           setAge('');
+          setGender('Balak');
           setParentContact('');
           setPhotoFile(null);
           setPhotoPreview('');
@@ -229,7 +236,7 @@ export default function PublicRegister() {
             <div className={styles.formGrid}>
               
               <div className={styles.formGroupFull}>
-                <label className={styles.label}>Balak's / Balika's Full Name</label>
+                <label className={styles.label}>Full Name</label>
                 <input 
                   type="text" required className={styles.input}
                   placeholder="First name, middle name, and surname"
@@ -246,6 +253,20 @@ export default function PublicRegister() {
                 />
               </div>
 
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Category Classification</label>
+                <select 
+                  className={styles.select} 
+                  value={gender} 
+                  onChange={(e) => setGender(e.target.value)} 
+                  disabled={loading}
+                >
+                  <option value="Balak">Balak (Male)</option>
+                  <option value="Balika">Balika (Female)</option>
+                </select>
+              </div>
+
+              {/* CENTER SELECTION - CHANGED TO styles.formGroup */}
               <div className={styles.formGroup}>
                 <label className={styles.label}> Center </label>
                 <select className={styles.select} value={center} onChange={(e) => setCenter(e.target.value)} disabled={loading}>
@@ -272,7 +293,8 @@ export default function PublicRegister() {
                 </select>
               </div>
 
-              <div className={styles.formGroupFull}>
+              {/* WHATSAPP CONTACT - CHANGED TO styles.formGroup */}
+              <div className={styles.formGroup}>
                 <label className={styles.label}>Parent / Guardian WhatsApp Contact</label>
                 <input 
                   type="tel" required className={styles.input}
@@ -282,7 +304,7 @@ export default function PublicRegister() {
               </div>
 
               <div className={styles.formGroupFull}>
-                <label className={styles.label}>Balak's / Balika's Profile Picture (Clear Passport Style Shot)</label>
+                <label className={styles.label}>Profile Picture (Clear Passport Style Shot)</label>
                 <div className={styles.photoUploadWrapper}>
                   <input 
                     type="file" accept="image/jpeg,image/png,image/webp" id="public-photo"
@@ -303,7 +325,6 @@ export default function PublicRegister() {
             </button>
           </form>
 
-          {/* Hidden layout element for encoding structural barcode matrices */}
           <div style={{ display: 'none' }} ref={qrRef}>
             {generatedQRValue && <QRCodeSVG value={generatedQRValue} size={256} level="H" includeMargin={true} />}
           </div>
@@ -331,7 +352,12 @@ export default function PublicRegister() {
                 
                 <div className={styles.badgeTextMeta}>
                   <h3>{finalAttendeeData.name}</h3>
-                  <span className={styles.badgeCenterTag}>{finalAttendeeData.center}</span>
+                  <div className={styles.badgeRowTags}>
+                    <span className={styles.badgeCenterTag}>{finalAttendeeData.center}</span>
+                    <span className={`${styles.badgeGenderTag} ${finalAttendeeData.gender === 'Balak' ? styles.tagBalak : styles.tagBalika}`}>
+                      {finalAttendeeData.gender}
+                    </span>
+                  </div>
                 </div>
 
                 <div className={styles.badgeQrBlock}>
