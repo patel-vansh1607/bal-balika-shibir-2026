@@ -123,7 +123,7 @@ export default function AddAttendee() {
       // Step 1: Compress the raw image payload into a lightweight JPEG (~150KB max)
       const compressedPhotoBlob = await processAndCompressPhoto(photoFile);
 
-      // Step 2: Insert text data first to instantly get a reliable database Row ID
+      // Step 2: Insert text data first to instantly get a reliable database Row ID (Matches integer id schema)
       const { data: insertData, error: insertError } = await supabase
         .from('attendees')
         .insert([
@@ -179,6 +179,7 @@ export default function AddAttendee() {
 
             setDownloadUrl(qrPublicUrl);
             setFinalAttendeeData({
+              id: attendeeId,
               name: insertData.name,
               center: insertData.center,
               photoUrl: absolutePhotoUrl
@@ -310,6 +311,7 @@ export default function AddAttendee() {
               <div className={styles.badgeTextMeta}>
                 <h3>{finalAttendeeData.name}</h3>
                 <span className={styles.badgeCenterTag}>{finalAttendeeData.center}</span>
+                <span className={styles.badgeNumberToken}>ID Token: #{finalAttendeeData.id}</span>
               </div>
 
               <div className={styles.badgeQrBlock}>
