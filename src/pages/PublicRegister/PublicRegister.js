@@ -15,15 +15,12 @@ import {
 import styles from './PublicRegister.module.css';
 
 export default function PublicRegister() {
-  // Name Split States
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
-  
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('Balak'); 
   
-  // Custom Searchable Dropdown UI States
   const [selectedRegion, setSelectedRegion] = useState('');
   const [regionSearchQuery, setRegionSearchQuery] = useState('');
   const [isRegionDropdownOpen, setIsRegionDropdownOpen] = useState(false);
@@ -33,22 +30,20 @@ export default function PublicRegister() {
   const [isCenterDropdownOpen, setIsCenterDropdownOpen] = useState(false);
   
   const [parentContact, setParentContact] = useState('');
+  const [parentEmail, setParentEmail] = useState(''); 
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
   
-  // Validation and UI states
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [formError, setFormError] = useState('');
   const [generatedQRValue, setGeneratedQRValue] = useState('');
   const [finalAttendeeData, setFinalAttendeeData] = useState(null);
   
-  // DOM Refs for handling clicks outside dropdown layouts safely
   const regionRef = useRef(null);
   const centerRef = useRef(null);
   const qrRef = useRef(null);
 
-  // 1. Comprehensive Regional Mapping Matrix for requested countries with target custom Alpha-2 formats
   const regionDataset = {
     'Kenya (+254)': { 
       code: '+254', 
@@ -87,7 +82,6 @@ export default function PublicRegister() {
     }
   };
 
-  // Close dropdowns if user clicks anywhere else on the document screen
   useEffect(() => {
     function handleClickOutside(event) {
       if (regionRef.current && !regionRef.current.contains(event.target)) {
@@ -101,7 +95,6 @@ export default function PublicRegister() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter computation pipelines based on interactive typing states
   const filteredCountries = Object.keys(regionDataset).filter((country) =>
     country.toLowerCase().includes(regionSearchQuery.toLowerCase())
   );
@@ -111,12 +104,10 @@ export default function PublicRegister() {
     center.toLowerCase().includes(centerSearchQuery.toLowerCase())
   );
 
-  // Selection handlers
   const handleSelectCountry = (countryName) => {
     setSelectedRegion(countryName);
     setRegionSearchQuery(countryName);
     setIsRegionDropdownOpen(false);
-    
     setSelectedCenter('');
     setCenterSearchQuery('');
 
@@ -133,7 +124,6 @@ export default function PublicRegister() {
     setIsCenterDropdownOpen(false);
   };
 
-  // Photo Validation (Max 2.5MB and valid image type)
   const handlePhotoChange = (e) => {
     setFormError('');
     const file = e.target.files[0];
@@ -157,18 +147,18 @@ export default function PublicRegister() {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
-  // Form Sanitization & Validation Engine
   const validateForm = () => {
     const cleanFirst = firstName.trim();
     const cleanMiddle = middleName.trim();
     const cleanLast = lastName.trim();
     const cleanContact = parentContact.trim();
+    const cleanEmail = parentEmail.trim();
 
-    if (cleanFirst.length < 2) {
+    if (!cleanFirst || cleanFirst.length < 2) {
       setFormError("Please enter a valid First Name (at least 2 characters).");
       return false;
     }
-    if (cleanLast.length < 2) {
+    if (!cleanLast || cleanLast.length < 2) {
       setFormError("Please enter a valid Last Name (at least 2 characters).");
       return false;
     }
@@ -184,13 +174,13 @@ export default function PublicRegister() {
       return false;
     }
 
-    if (!selectedRegion || !regionDataset[selectedRegion]) {
-      setFormError('Please select a valid country option from the searchable menu lists.');
+    if (!selectedRegion) {
+      setFormError('Please select your Country option.');
       return false;
     }
 
-    if (!selectedCenter || !regionDataset[selectedRegion].centers.includes(selectedCenter)) {
-      setFormError('Please select a valid center option mapped to your chosen country.');
+    if (!selectedCenter) {
+      setFormError('Please select your Center Hub configuration location.');
       return false;
     }
 
@@ -198,6 +188,12 @@ export default function PublicRegister() {
     const strippedContact = cleanContact.replace(/[\s\-()]/g, ''); 
     if (!phoneRegex.test(strippedContact)) {
       setFormError("Invalid phone structure. Please follow international code guidelines (e.g. +254700111222).");
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      setFormError("Please enter a valid email address for communications.");
       return false;
     }
 
@@ -210,7 +206,7 @@ export default function PublicRegister() {
       ? `${cleanFirst} ${cleanMiddle} ${cleanLast}` 
       : `${cleanFirst} ${cleanLast}`;
 
-    return { constructedFullName, parsedAge, strippedContact };
+    return { constructedFullName, parsedAge, strippedContact, cleanEmail };
   };
 
   const uploadProfilePhoto = async (recordId, childName) => {
@@ -269,7 +265,7 @@ export default function PublicRegister() {
     setSuccess(false);
     setFinalAttendeeData(null);
 
-    const { constructedFullName, parsedAge, strippedContact } = validatedFields;
+    const { constructedFullName, parsedAge, strippedContact, cleanEmail } = validatedFields;
 
     const { count, error: countError } = await supabase
       .from('attendees')
@@ -297,6 +293,7 @@ export default function PublicRegister() {
           region: selectedRegion, 
           center: selectedCenter, 
           parent_contact: strippedContact,
+          parent_email: cleanEmail, 
           member_id: customShibirMemberId,
           status: 'Pending'
         }
@@ -316,12 +313,24 @@ export default function PublicRegister() {
         setGeneratedQRValue(customShibirMemberId);
 
         setTimeout(async () => {
-          await uploadQRToSupabase(insertData.id, customShibirMemberId, insertData.name);
+          const qrUrl = await uploadQRToSupabase(insertData.id, customShibirMemberId, insertData.name);
           
           await supabase
             .from('attendees')
             .update({ photo_url: profileUrl })
             .eq('id', insertData.id);
+
+          // Invoke client function edge pipeline to execute secure Resend dispatch code
+          await supabase.functions.invoke('send-registration-email', {
+            body: {
+              email: cleanEmail,
+              name: insertData.name,
+              memberId: customShibirMemberId,
+              region: selectedRegion,
+              center: selectedCenter,
+              qrUrl: qrUrl
+            }
+          });
 
           setFinalAttendeeData({
             memberId: customShibirMemberId,
@@ -333,7 +342,6 @@ export default function PublicRegister() {
           setSuccess(true);
           setLoading(false);
 
-          // Clear form fields
           setFirstName('');
           setMiddleName('');
           setLastName('');
@@ -344,6 +352,7 @@ export default function PublicRegister() {
           setSelectedCenter('');
           setCenterSearchQuery('');
           setParentContact('');
+          setParentEmail(''); 
           setPhotoFile(null);
           setPhotoPreview('');
         }, 600);
@@ -355,7 +364,6 @@ export default function PublicRegister() {
     }
   };
 
-  // Handler to clear success screen and return back to the blank form context
   const handleResetFormView = () => {
     setSuccess(false);
     setFinalAttendeeData(null);
@@ -373,18 +381,17 @@ export default function PublicRegister() {
         <div className={styles.card}>
           
           {success && finalAttendeeData ? (
-            /* --- FULL SCREEN DEDICATED SUCCESS MESSAGE PANEL --- */
             <div className={styles.fullSuccessContainer} style={{ textAlign: 'center', padding: '40px 20px' }}>
               <div style={{ color: '#34a853', marginBottom: '20px' }}>
                 <FaCheckCircle size={64} />
               </div>
               
-              <h2 style={{ fontSize: '28px', color: '#137333', marginBottom: '12px', fontWeight: '700' }}>
-                Registration Successfull!
+              <h2 style={{ fontSize: '26px', color: '#137333', marginBottom: '14px', fontWeight: '700' }}>
+                Thanks for your submission!
               </h2>
               
               <p style={{ fontSize: '16px', color: '#5f6368', lineHeight: '1.6', maxWidth: '500px', margin: '0 auto 24px auto' }}>
-                The entry details for <strong>{finalAttendeeData.name}</strong> have been received. Your shibir ID number is:
+                You will get a confirmation in your email shortly. Entry details for <strong>{finalAttendeeData.name}</strong> have been processed with Shibir ID Number:
               </p>
 
               <div style={{ background: '#f1f3f4', padding: '14px 24px', borderRadius: '8px', display: 'inline-block', fontSize: '20px', fontWeight: '700', letterSpacing: '1px', color: '#202124', marginBottom: '16px', border: '1px solid #dadce0' }}>
@@ -392,7 +399,7 @@ export default function PublicRegister() {
               </div>
 
               <p style={{ fontSize: '14px', color: '#70757a', margin: '0 0 40px 0' }}>
-                Region: {finalAttendeeData.center}, {finalAttendeeData.region.split(' ')[0]}
+                Region Location Assignment: {finalAttendeeData.center}, {finalAttendeeData.region.split(' ')[0]}
               </p>
 
               <hr style={{ border: '0', height: '1px', background: '#dadce0', margin: '0 auto 32px auto', maxWidth: '400px' }} />
@@ -407,11 +414,10 @@ export default function PublicRegister() {
               </button>
             </div>
           ) : (
-            /* --- STANDARD REGISTRATION FORM PANEL --- */
             <>
               <div className={styles.infoBanner}>
                 <FaInfoCircle style={{ flexShrink: 0, marginTop: '2px' }} />
-                <p>Please complete this form accurately. Fields will update depending on inputs.</p>
+                <p>All fields are required. Please check that details are correct before sending.</p>
               </div>
 
               {formError && (
@@ -424,13 +430,12 @@ export default function PublicRegister() {
               <form onSubmit={handleSubmit} noValidate>
                 <div className={styles.formGrid}>
                   
-                  {/* ROW 1: Name Inputs */}
                   <div className={styles.rowFieldContainer}>
                     <div className={styles.formGroup}>
-                      <label className={styles.label}>First Name</label>
+                      <label className={styles.label}>First Name *</label>
                       <input 
                         type="text" required className={styles.input}
-                        placeholder="First Name"
+                        placeholder="e.g. Vansh"
                         value={firstName} onChange={(e) => setFirstName(e.target.value)} disabled={loading}
                       />
                     </div>
@@ -439,25 +444,24 @@ export default function PublicRegister() {
                       <label className={styles.label}>Middle Name</label>
                       <input 
                         type="text" className={styles.input}
-                        placeholder="Middle Name (Optional)"
+                        placeholder="e.g. Vimalkumar"
                         value={middleName} onChange={(e) => setMiddleName(e.target.value)} disabled={loading}
                       />
                     </div>
 
                     <div className={styles.formGroup}>
-                      <label className={styles.label}>Last Name</label>
+                      <label className={styles.label}>Last Name *</label>
                       <input 
                         type="text" required className={styles.input}
-                        placeholder="Surname"
+                        placeholder="e.g. Patel"
                         value={lastName} onChange={(e) => setLastName(e.target.value)} disabled={loading}
                       />
                     </div>
                   </div>
 
-                  {/* ROW 2: Demographics */}
                   <div className={styles.rowFieldContainer}>
                     <div className={styles.formGroup}>
-                      <label className={styles.label}>Age</label>
+                      <label className={styles.label}>Age *</label>
                       <input 
                         type="number" required min="3" max="18" className={styles.input}
                         placeholder="e.g. 11"
@@ -466,9 +470,9 @@ export default function PublicRegister() {
                     </div>
 
                     <div className={styles.formGroup}>
-                      <label className={styles.label}>Mandal</label>
+                      <label className={styles.label}>Mandal *</label>
                       <select 
-                        className={styles.select} 
+                        className={styles.select} required
                         value={gender} 
                         onChange={(e) => setGender(e.target.value)} 
                         disabled={loading}
@@ -481,18 +485,15 @@ export default function PublicRegister() {
                     </div>
                   </div>
 
-                  {/* ROW 3: Custom Searchable Dropdowns */}
                   <div className={styles.rowFieldContainer}>
-                    
-                    {/* Searchable Country Menu */}
                     <div className={styles.formGroup} ref={regionRef}>
-                      <label className={styles.label}>Country</label>
+                      <label className={styles.label}>Country *</label>
                       <div className={styles.searchDropdownContainer}>
                         <div 
-                          className={`${styles.customSelectTrigger} ${loading ? styles.triggerDisabled : ''}`}
+                          className={`${styles.customSelectTrigger} ${loading ? styles.triggerDisabled : ''} ${!selectedRegion ? styles.requiredHighlight : ''}`}
                           onClick={() => !loading && setIsRegionDropdownOpen(!isRegionDropdownOpen)}
                         >
-                          <span>{selectedRegion || "Select Country..."}</span>
+                          <span>{selectedRegion || "Select Country... *"}</span>
                           <FaChevronDown className={styles.arrowIcon} />
                         </div>
 
@@ -530,15 +531,14 @@ export default function PublicRegister() {
                       </div>
                     </div>
 
-                    {/* Searchable Center Hub Menu */}
                     <div className={styles.formGroup} ref={centerRef}>
-                      <label className={styles.label}>Center Hub</label>
+                      <label className={styles.label}>Center Hub *</label>
                       <div className={styles.searchDropdownContainer}>
                         <div 
-                          className={`${styles.customSelectTrigger} ${(!selectedRegion || loading) ? styles.triggerDisabled : ''}`}
+                          className={`${styles.customSelectTrigger} ${(!selectedRegion || loading) ? styles.triggerDisabled : ''} ${!selectedCenter ? styles.requiredHighlight : ''}`}
                           onClick={() => selectedRegion && !loading && setIsCenterDropdownOpen(!isCenterDropdownOpen)}
                         >
-                          <span>{selectedCenter || (selectedRegion ? "Select Center Location..." : "-- Choose Country First --")}</span>
+                          <span>{selectedCenter || (selectedRegion ? "Select Center Location... *" : "-- Choose Country First --")}</span>
                           <FaChevronDown className={styles.arrowIcon} />
                         </div>
 
@@ -575,13 +575,11 @@ export default function PublicRegister() {
                         )}
                       </div>
                     </div>
-
                   </div>
 
-                  {/* ROW 4: Synced Contact Field */}
                   <div className={styles.rowFieldContainer}>
-                    <div className={styles.formGroupFull}>
-                      <label className={styles.label}>Parent's WhatsApp Contact</label>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Parent's WhatsApp Contact *</label>
                       <input 
                         type="tel" required className={styles.input}
                         placeholder="e.g. +254700111222"
@@ -590,21 +588,31 @@ export default function PublicRegister() {
                         disabled={loading}
                       />
                     </div>
+                    
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Parent's Email Address *</label>
+                      <input 
+                        type="email" required className={styles.input}
+                        placeholder="e.g. vansh.patel@gmail.com"
+                        value={parentEmail} 
+                        onChange={(e) => setParentEmail(e.target.value)} 
+                        disabled={loading}
+                      />
+                    </div>
                   </div>
 
-                  {/* ROW 5: Asset Picture File Control */}
                   <div className={styles.formGroupFull}>
-                    <label className={styles.label}>Profile Picture (Clear Passport Style Shot)</label>
+                    <label className={styles.label}>Profile Picture (Clear Passport Style Shot) *</label>
                     <div className={styles.photoUploadWrapper}>
                       <input 
-                        type="file" accept="image/jpeg,image/png,image/webp" id="public-photo"
+                        type="file" required accept="image/jpeg,image/png,image/webp" id="public-photo"
                         className={styles.fileInputHidden} onChange={handlePhotoChange} disabled={loading}
                       />
-                      <label htmlFor="public-photo" className={styles.fileLabelBtn}>
-                        <FaCamera /> Select Portrait Image
+                      <label htmlFor="public-photo" className={`${styles.fileLabelBtn} ${!photoFile ? styles.requiredHighlight : ''}`}>
+                        <FaCamera /> Select Portrait Image *
                       </label>
                       {photoPreview && <img src={photoPreview} alt="Preview" className={styles.inputThumbPreview} />}
-                      <span className={styles.fileHint}>Max size 2.5MB (JPG, PNG)</span>
+                      <span className={styles.fileHint}>Required: Size must be under 2.5MB (JPG, PNG, WEBP)</span>
                     </div>
                   </div>
 
@@ -617,7 +625,6 @@ export default function PublicRegister() {
             </>
           )}
 
-          {/* Hidden barcode generator element needed by the Supabase upload pipeline */}
           <div style={{ display: 'none' }} ref={qrRef}>
             {generatedQRValue && <QRCodeSVG value={generatedQRValue} size={256} level="H" includeMargin={true} />}
           </div>

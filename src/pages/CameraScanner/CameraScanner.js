@@ -13,14 +13,13 @@ import { supabase } from '../../supabaseClient';
 import styles from './CameraScanner.module.css';
 
 export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC-' }) {
-  const [isEnabled, setIsEnabled] = useState(false);
   const [scannerLog, setScannerLog] = useState([]);
   const [scanResult, setScanResult] = useState(null); 
   const [operator, setOperator] = useState(null);
   const scannerInstance = useRef(null);
   const isProcessingScan = useRef(false);
 
-  // 1. Fetch active operator details & sync initial gate logs from backend on mount
+  // 1. Fetch operator session, sync logs, and BOOT CAMERA IMMEDIATELY
   useEffect(() => {
     async function initScannerSession() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -51,6 +50,8 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     }
 
     initScannerSession();
+    startCameraEngineDirectly(); // 🔥 Auto-boot lens instantly on component mount
+
     return () => clearScannerInstance();
   }, []);
 
@@ -65,32 +66,33 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     }
   };
 
-  const handleStartCamera = () => {
-    setIsEnabled(true);
-    setScanResult(null);
+  const startCameraEngineDirectly = () => {
     isProcessingScan.current = false;
 
+    // Small delay ensures the target DOM element container `#qr-reader-container` is fully painted
     setTimeout(() => {
       try {
         const config = {
           fps: 15,
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1.0,
-          formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
+          formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+          videoConstraints: {
+            facingMode: { exact: "environment" } // Force back camera
+          }
         };
 
         const scanner = new Html5QrcodeScanner("qr-reader-container", config, false);
         scanner.render(onScanSuccess, onScanFailure);
         scannerInstance.current = scanner;
       } catch (error) {
-        console.error("Camera device layout mounting crash:", error);
+        console.error("Direct camera initialization crash:", error);
         setScanResult({
           status: 'error',
-          message: 'Could not access local video stream hardware.'
+          message: 'Could not directly access rear video stream hardware.'
         });
-        setIsEnabled(false);
       }
-    }, 150);
+    }, 200);
   };
 
   const onScanSuccess = async (decodedText) => {
@@ -98,7 +100,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     isProcessingScan.current = true;
 
     clearScannerInstance();
-    setIsEnabled(false);
 
     let scannedId = decodedText.trim();
     if (scannedId.includes('data=')) {
@@ -122,7 +123,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     };
 
     // --- CRITICAL SCOPE CROSS-CHECK ENFORCEMENT ---
-    // If user is locked to a specific country hub, ensure scanned code begins with that specific layout signature
     if (regionScope !== 'All' && !scannedId.startsWith(prefixScope.toUpperCase())) {
       const crossBorderErrorMsg = `Access Denied: Scanned ID "${scannedId}" belongs to another regional center branch.`;
       
@@ -149,14 +149,12 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     }
 
     try {
-      // Query the attendee profile using the descriptive member_id token string field
       const { data: attendee, error: fetchError } = await supabase
         .from('attendees') 
         .select('*')
         .eq('member_id', scannedId)
         .maybeSingle();
 
-      // CASE A: Alphanumeric custom code not found anywhere in public.attendees registry
       if (fetchError || !attendee) {
         const errorMsg = `Denied Entry: Token "${scannedId}" is completely unknown to the database.`;
         
@@ -177,7 +175,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
         return;
       }
 
-      // CASE B: Attendee is found but has already verified check-in status rules
       if (attendee.status === 'Checked In') {
         const warningMsg = `Duplicate Flag: ${attendee.name} scanned again at verification check.`;
 
@@ -198,16 +195,13 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
         return;
       }
 
-      // CASE C: Successful valid check-in
       const successMsg = `Approved Admission: Verified check-in completed for ${attendee.name} (${attendee.center})`;
 
-      // Mutate attendee status record to Checked In matching by member_id string field safely
       await supabase
         .from('attendees')
         .update({ status: 'Checked In' })
         .eq('member_id', attendee.member_id);
 
-      // Save transaction data directly to database audit trail logs
       await supabase.from('gate_logs').insert([{
         scanned_id: scannedId,
         status: 'success',
@@ -231,12 +225,12 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
   };
 
   const onScanFailure = () => {
-    // Silent frame capture drop
+    // Silent frame drop
   };
 
   const handleCloseResult = () => {
     setScanResult(null);
-    handleStartCamera(); 
+    startCameraEngineDirectly(); // 🔥 Instantly re-opens the live stream when clearing a result card
   };
 
   return (
@@ -244,40 +238,20 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       
       {/* Primary Video Capture Card Frame */}
       <div className={styles.mainCaptureCard}>
-        {!isEnabled && !scanResult && (
-          <div className={styles.dormantPlaceholder}>
-            <div className={styles.radarPulseWrapper}>
-              <FaCamera className={styles.scanIconCenter} />
-            </div>
-            <h3 className={styles.cardTitle}>Gate Control Scanner</h3>
-            
-            {/* Realtime Active Boundary Notice Box */}
-            <div className={styles.activeFenceBadge}>
-              <FaShieldAlt /> Restricted Scope: <strong>{regionScope === 'All' ? 'All Africa' : regionScope} ({prefixScope})</strong>
-            </div>
-
-            <p className={styles.cardSubtitle}>
-              Active Operator Session: <strong style={{ color: '#8a151b', textTransform: 'capitalize' }}>{operator?.name || 'Loading...'}</strong>
-            </p>
-            <button onClick={handleStartCamera} className={styles.activateDeviceBtn}>
-              Initialize Camera Device
-            </button>
-          </div>
-        )}
-
-        {/* Live Active Stream Container */}
-        {isEnabled && (
+        
+        {/* Live Active Stream Container - Always rendered unless a result card is active */}
+        {!scanResult && (
           <div className={styles.cameraWrapperActive}>
             <div className={styles.streamScopeBanner}>
               Scanning exclusively for <strong>{prefixScope}</strong> identity passes...
             </div>
+            
+            {/* The html5-qrcode engine injects the live canvas directly here on mount */}
             <div id="qr-reader-container" className={styles.videoStreamBox}></div>
-            <button 
-              onClick={() => { clearScannerInstance(); setIsEnabled(false); }} 
-              className={styles.killPipelineBtn}
-            >
-              <FaTimes style={{ marginRight: '6px' }} /> Cancel Session
-            </button>
+
+            <div className={styles.activeFenceBadge} style={{ marginTop: '12px', justifyContent: 'center' }}>
+              <FaShieldAlt /> Region: <strong>{regionScope === 'All' ? 'All Africa' : regionScope}</strong>
+            </div>
           </div>
         )}
 
