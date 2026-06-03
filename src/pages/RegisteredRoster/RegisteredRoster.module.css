@@ -383,3 +383,76 @@
   justify-content: space-between;
   margin-bottom: 4px;
 }
+/* Metrics Header Styles */
+.statsContainer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.statBox {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+}
+.statLabel { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; }
+.statValue { display: block; font-size: 24px; font-weight: 800; color: #1e293b; margin-top: 5px; }
+
+/* Existing Spinner Animation */
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.rosterContainer { padding: 20px; font-family: sans-serif; }
+
+.statsGrid { display: grid; margin-bottom: 20px; }
+
+.statCard { background: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+
+.statLabel { color: #64748b; font-weight: 600; }
+
+.statValue { font-weight: 700; color: #1e293b; }
+
+.contentCard { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 16px; }
+
+.toolbarRow { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+
+.searchWrapper { position: relative; flex-grow: 1; }
+
+.inputField { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; }
+
+.filterGroup { display: flex; gap: 8px; align-items: center; }
+
+.selectDropdown { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; }
+
+.primaryActionBtn { padding: 8px 16px; background: #8a151b; color: #fff; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+
+.tableContainer { overflow-x: auto; }
+
+.dataTable { width: 100%; border-collapse: collapse; }
+
+.dataTable th, .dataTable td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+
+.avatarImage { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+
+.avatarFallback { width: 40px; height: 40px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+.badgeGenderTag { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+
+.tagBalak { background: #ebf8ff; color: #2b6cb0; }
+
+.tagBalika { background: #fff5f5; color: #c53030; }
+
+.spin { animation: spin 1s linear infinite; }
+
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.modalOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+
+.modalCard { background: #fff; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%; position: relative; }
+
+.modalCloseBtn { position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; }
+
+.qrContainer { display: flex; justify-content: center; margin: 20px 0; }
+
+.viewPassBtn { background: #f7fafc; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 4px; cursor: pointer; }

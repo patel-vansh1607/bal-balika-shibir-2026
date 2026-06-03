@@ -5,9 +5,13 @@ import { FaUserPlus, FaDownload, FaSpinner, FaCheckCircle, FaCamera, FaInfoCircl
 import styles from './PublicRegister.module.css';
 
 export default function PublicRegister() {
-  const [fullName, setFullName] = useState('');
+  // Name Split States
+  const [firstName, setFirstName] = useState('');
+  const [middleName, setMiddleName] = useState('');
+  const [lastName, setLastName] = useState('');
+  
   const [age, setAge] = useState('');
-  const [gender, setGender] = useState('Balak');
+  const [gender, setGender] = useState('Balak'); // This represents Mandal
   const [center, setCenter] = useState('Nairobi, Kenya');
   const [parentContact, setParentContact] = useState('');
   const [photoFile, setPhotoFile] = useState(null);
@@ -50,11 +54,18 @@ export default function PublicRegister() {
 
   // Form Sanitization & Validation
   const validateForm = () => {
-    const cleanName = fullName.trim();
+    const cleanFirst = firstName.trim();
+    const cleanMiddle = middleName.trim();
+    const cleanLast = lastName.trim();
     const cleanContact = parentContact.trim();
 
-    if (cleanName.length < 3) {
-      setFormError("Please enter the Balak's / Balika's full name (at least 3 characters).");
+    if (cleanFirst.length < 2) {
+      setFormError("Please enter a valid First Name (at least 2 characters).");
+      return false;
+    }
+
+    if (cleanLast.length < 2) {
+      setFormError("Please enter a valid Last Name (at least 2 characters).");
       return false;
     }
 
@@ -65,14 +76,14 @@ export default function PublicRegister() {
     }
 
     if (!gender) {
-      setFormError('Please select a gender designation category.');
+      setFormError('Please select a mandal designation category.');
       return false;
     }
 
     const phoneRegex = /^\+?[1-9]\d{1,14}$/; 
     const strippedContact = cleanContact.replace(/[\s\-()]/g, ''); 
     if (!phoneRegex.test(strippedContact)) {
-      setFormError('Please enter a valid phone number including country code (e.g., +254700000000).');
+      setFormError("Please enter a valid Parent's WhatsApp number including country code (e.g., +254700000000).");
       return false;
     }
 
@@ -81,7 +92,12 @@ export default function PublicRegister() {
       return false;
     }
 
-    return { cleanName, parsedAge, cleanContact };
+    // Construct full structural name string safely
+    const constructedFullName = cleanMiddle 
+      ? `${cleanFirst} ${cleanMiddle} ${cleanLast}` 
+      : `${cleanFirst} ${cleanLast}`;
+
+    return { constructedFullName, parsedAge, cleanContact };
   };
 
   const uploadProfilePhoto = async (recordId, childName) => {
@@ -142,14 +158,14 @@ export default function PublicRegister() {
     setDownloadUrl('');
     setFinalAttendeeData(null);
 
-    const { cleanName, parsedAge, cleanContact } = validatedFields;
+    const { constructedFullName, parsedAge, cleanContact } = validatedFields;
 
-    // Database payload commit - Includes the dynamic gender field insertion 
+    // Database payload commit
     const { data: insertData, error: insertError } = await supabase
       .from('attendees')
       .insert([
         { 
-          name: cleanName, 
+          name: constructedFullName, 
           age: parsedAge, 
           gender: gender, 
           center: center, 
@@ -196,7 +212,9 @@ export default function PublicRegister() {
           setLoading(false);
           
           // Flash clean states to prevent redundant execution clicks
-          setFullName('');
+          setFirstName('');
+          setMiddleName('');
+          setLastName('');
           setAge('');
           setGender('Balak');
           setParentContact('');
@@ -235,19 +253,39 @@ export default function PublicRegister() {
           <form onSubmit={handleSubmit} noValidate>
             <div className={styles.formGrid}>
               
-              {/* Row 1: Full Width Name Field */}
-              <div className={styles.formGroupFull}>
-                <label className={styles.label}>Full Name</label>
-                <input 
-                  type="text" required className={styles.input}
-                  placeholder="First name, middle name, and surname"
-                  value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={loading}
-                />
-              </div>
-
-              {/* Row 2: Inline Horizontal Field Group Engine */}
+              {/* ROW 1: Names (3 Columns on Desktop) */}
               <div>
                 <div className={styles.formGroup}>
+                  <label className={styles.label}>First Name</label>
+                  <input 
+                    type="text" required className={styles.input}
+                    placeholder="First Name"
+                    value={firstName} onChange={(e) => setFirstName(e.target.value)} disabled={loading}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Middle Name</label>
+                  <input 
+                    type="text" className={styles.input}
+                    placeholder="Middle Name (Optional)"
+                    value={middleName} onChange={(e) => setMiddleName(e.target.value)} disabled={loading}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Last Name</label>
+                  <input 
+                    type="text" required className={styles.input}
+                    placeholder="Surname / Last Name"
+                    value={lastName} onChange={(e) => setLastName(e.target.value)} disabled={loading}
+                  />
+                </div>
+              </div>
+
+              {/* ROW 2: Demographics & Contact (4 Columns on Desktop) */}
+              <div>
+                <div className={styles.formGroup} style={{ flex: '0 0 15%' }}>
                   <label className={styles.label}>Age</label>
                   <input 
                     type="number" required min="3" max="18" className={styles.input}
@@ -256,7 +294,7 @@ export default function PublicRegister() {
                   />
                 </div>
 
-                <div className={styles.formGroup}>
+                <div className={styles.formGroup} style={{ flex: '0 0 20%' }}>
                   <label className={styles.label}>Mandal</label>
                   <select 
                     className={styles.select} 
@@ -264,12 +302,14 @@ export default function PublicRegister() {
                     onChange={(e) => setGender(e.target.value)} 
                     disabled={loading}
                   >
-                    <option value="Balak">Balak </option>
-                    <option value="Balika">Balika </option>
+                    <option value="Balak">Balak</option>
+                    <option value="Balika">Balika</option>
+                    <option value="Shishu">Shishu</option>
+                    <option value="Shishika">Shishika</option>
                   </select>
                 </div>
 
-                <div className={styles.formGroup}>
+                <div className={styles.formGroup} style={{ flex: '1' }}>
                   <label className={styles.label}>Center</label>
                   <select className={styles.select} value={center} onChange={(e) => setCenter(e.target.value)} disabled={loading}>
                     <optgroup label="Kenya">
@@ -295,8 +335,8 @@ export default function PublicRegister() {
                   </select>
                 </div>
 
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>WhatsApp Contact</label>
+                <div className={styles.formGroup} style={{ flex: '1' }}>
+                  <label className={styles.label}>Parent's WhatsApp Number</label>
                   <input 
                     type="tel" required className={styles.input}
                     placeholder="e.g. +254 700 000 000"
@@ -305,7 +345,7 @@ export default function PublicRegister() {
                 </div>
               </div>
 
-              {/* Row 3: Full Width Photo Profile Section */}
+              {/* ROW 3: Full Width Photo Profile Section */}
               <div className={styles.formGroupFull}>
                 <label className={styles.label}>Profile Picture (Clear Passport Style Shot)</label>
                 <div className={styles.photoUploadWrapper}>
@@ -357,7 +397,9 @@ export default function PublicRegister() {
                   <h3>{finalAttendeeData.name}</h3>
                   <div className={styles.badgeRowTags}>
                     <span className={styles.badgeCenterTag}>{finalAttendeeData.center}</span>
-                    <span className={`${styles.badgeGenderTag} ${finalAttendeeData.gender === 'Balak' ? styles.tagBalak : styles.tagBalika}`}>
+                    <span className={`${styles.badgeGenderTag} ${
+                      ['Balak', 'Shishu'].includes(finalAttendeeData.gender) ? styles.tagBalak : styles.tagBalika
+                    }`}>
                       {finalAttendeeData.gender}
                     </span>
                   </div>

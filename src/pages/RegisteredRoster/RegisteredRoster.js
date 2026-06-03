@@ -142,15 +142,39 @@ export default function RegisteredRoster() {
     <div className={styles.rosterContainer}>
       
       {/* Top Banner Context Box for Master Directory view configurations */}
-      <section className={styles.statsGrid} style={{ gridTemplateColumns: '1fr' }}>
+      {/* Top Banner Context Box for Master Directory view configurations */}
+      <section className={styles.statsGrid} style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' }}>
+        
+        {/* Total Count */}
         <div className={styles.statCard} style={{ textAlign: 'left', padding: '20px 24px' }}>
           <div className={styles.statLabel} style={{ fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Master Storage Registry System
+            Total Registered
           </div>
-          <p className={styles.statValue} style={{ fontSize: '28px', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {filteredAttendees.length} <span style={{ fontSize: '15px', fontWeight: '500', color: '#64748b' }}>Active Filtered Rows Matching</span>
+          <p className={styles.statValue} style={{ fontSize: '28px', margin: '4px 0 0 0' }}>
+            {filteredAttendees.length}
           </p>
         </div>
+
+        {/* Balak Count */}
+        <div className={styles.statCard} style={{ textAlign: 'left', padding: '20px 24px' }}>
+          <div className={styles.statLabel} style={{ fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Balak Count
+          </div>
+          <p className={styles.statValue} style={{ fontSize: '28px', margin: '4px 0 0 0', color: '#2b6cb0' }}>
+            {filteredAttendees.filter(a => a.gender === 'Balak').length}
+          </p>
+        </div>
+
+        {/* Balika Count */}
+        <div className={styles.statCard} style={{ textAlign: 'left', padding: '20px 24px' }}>
+          <div className={styles.statLabel} style={{ fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Balika Count
+          </div>
+          <p className={styles.statValue} style={{ fontSize: '28px', margin: '4px 0 0 0', color: '#c53030' }}>
+            {filteredAttendees.filter(a => a.gender === 'Balika').length}
+          </p>
+        </div>
+
       </section>
 
       {/* Toolbox Manipulation Action Bar Grid Area */}

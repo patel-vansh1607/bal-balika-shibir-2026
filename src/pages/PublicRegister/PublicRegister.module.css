@@ -1,3 +1,6 @@
+/* ==========================================================================
+   1. GLOBAL LAYOUT STRUCTURE
+   ========================================================================== */
 .publicWrapper {
   max-width: 1400px; /* Expanded layout container width to hold horizontal flows safely */
   margin: 0 auto;
@@ -40,6 +43,9 @@
   overflow: hidden;
 }
 
+/* ==========================================================================
+   2. BANNERS & NOTIFICATIONS
+   ========================================================================== */
 .infoBanner {
   background-color: #f0f7ff;
   border: 1px solid #cce3ff;
@@ -57,7 +63,24 @@
   margin: 0;
 }
 
-/* ================= DESKTOP HORIZONTAL FIELD ENGINE ================= */
+.bannerError {
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #991b1b;
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* ==========================================================================
+   3. ADAPTIVE FORM SYSTEM
+   ========================================================================== */
 .formGrid {
   display: flex;
   flex-direction: column;
@@ -65,7 +88,14 @@
   margin-bottom: 24px;
 }
 
-/* Forces standard fields into a proportional, adaptive inline row segment layout */
+/* Parent flex container that automatically aligns its children into a clean horizontal row on desktop */
+.formGrid > :not(.formGroupFull) {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
 .formGroup {
   flex: 1;
   min-width: 0; 
@@ -74,15 +104,6 @@
   gap: 6px;
 }
 
-/* The parent flex wrapper layout containing the horizontal element chain */
-.formGrid > :not(.formGroupFull) {
-  display: flex;
-  flex-direction: row;
-  gap: 16px;
-  width: 100%;
-}
-
-/* Override rules for global full-bleed inputs like Names/Images */
 .formGroupFull {
   width: 100%;
   display: flex;
@@ -97,7 +118,8 @@
   white-space: nowrap; /* Keeps labels cleanly tracked over inputs */
 }
 
-.input, .select {
+.input, 
+.select {
   width: 100%;
   box-sizing: border-box;
   background-color: #ffffff;
@@ -109,12 +131,24 @@
   transition: all 0.2s ease;
 }
 
-.input:focus, .select:focus {
+.input:focus, 
+.select:focus {
   outline: none;
   border-color: #8a151b;
   box-shadow: 0 0 0 3px rgba(138, 21, 27, 0.08);
 }
 
+.input:disabled, 
+.select:disabled {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+
+/* ==========================================================================
+   4. FILE & PHOTO UPLOAD ENGINE
+   ========================================================================== */
 .photoUploadWrapper {
   display: flex;
   align-items: center;
@@ -155,6 +189,14 @@
   border: 1px solid #e2e8f0;
 }
 
+.fileHint {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* ==========================================================================
+   5. BUTTON CORES
+   ========================================================================== */
 .submitBtn {
   background-color: #8a151b;
   color: #ffffff;
@@ -184,7 +226,9 @@
   transform: none;
 }
 
-/* Badge Layout Structural View Elements */
+/* ==========================================================================
+   6. DYNAMIC BADGE & DELEGATE PASS DESIGN
+   ========================================================================== */
 .badgeWrapper {
   display: flex;
   flex-direction: column;
@@ -271,6 +315,13 @@
   color: #0f172a;
 }
 
+.badgeRowTags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
 .badgeCenterTag {
   font-size: 11.5px;
   font-weight: 700;
@@ -280,6 +331,28 @@
   border-radius: 100px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+.badgeGenderTag {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+.tagBalak {
+  background: #ebf8ff;
+  color: #2b6cb0;
+  border: 1px solid #bee3f8;
+}
+
+.tagBalika {
+  background: #fff5f5;
+  color: #c53030;
+  border: 1px solid #fed7d7;
 }
 
 .badgeQrBlock {
@@ -310,6 +383,9 @@
   background-color: #1e293b;
 }
 
+/* ==========================================================================
+   7. ANIMATIONS CORE
+   ========================================================================== */
 .spin {
   animation: spin 1s linear infinite;
 }
@@ -319,63 +395,9 @@
   to { transform: rotate(360deg); }
 }
 
-.bannerError {
-  background-color: #fef2f2;
-  border: 1px solid #fee2e2;
-  color: #991b1b;
-  padding: 14px 16px;
-  border-radius: 8px;
-  margin-bottom: 24px;
-  font-size: 13.5px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.fileHint {
-  font-size: 11px;
-  color: #64748b;
-}
-
-.input:disabled, .select:disabled {
-  background-color: #f1f5f9;
-  color: #94a3b8;
-  cursor: not-allowed;
-  border-color: #e2e8f0;
-}
-
-.badgeRowTags {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.badgeGenderTag {
-  display: inline-block;
-  padding: 4px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  border-radius: 4px;
-  letter-spacing: 0.3px;
-}
-
-.tagBalak {
-  background: #ebf8ff;
-  color: #2b6cb0;
-  border: 1px solid #bee3f8;
-}
-
-.tagBalika {
-  background: #fff5f5;
-  color: #c53030;
-  border: 1px solid #fed7d7;
-}
-
-/* ================= RESPONSIVE MOBILE OVERRIDES ================= */
+/* ==========================================================================
+   8. RESPONSIVE MOBILE OVERRIDES
+   ========================================================================== */
 @media (max-width: 920px) {
   .containerSplit {
     flex-direction: column;
@@ -390,9 +412,11 @@
   
   .badgeWrapper {
     width: 100%;
+    position: static; /* Clear sticky execution framework for simple page scrolling stack */
   }
   
-  .badgeIdCard, .downloadLink {
+  .badgeIdCard, 
+  .downloadLink {
     max-width: 400px;
     margin: 0 auto;
     width: 100%;
