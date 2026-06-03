@@ -1,0 +1,298 @@
+.scannerWorkspaceGrid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .scannerWorkspaceGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Container Structure Panels */
+.mainCaptureCard, .auditLogPanelCard {
+  background: rgba(30, 27, 24, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.dormantPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 380px;
+  padding: 20px;
+}
+
+/* Radar Pulse Core Graphics */
+.radarPulseWrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  background: rgba(138, 21, 27, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.radarPulseWrapper::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #8a151b;
+  border-radius: 50%;
+  animation: radarWave 2s linear infinite;
+}
+
+.scanIconCenter {
+  font-size: 32px;
+  color: #8a151b;
+}
+
+@keyframes radarWave {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.cardTitle {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #ffffff;
+}
+
+.cardSubtitle {
+  font-size: 14px;
+  color: #a0aec0;
+  max-width: 440px;
+  line-height: 1.6;
+  margin: 0 0 24px 0;
+}
+
+/* Component Buttons Rules */
+.activateDeviceBtn, .resumePipelineBtn {
+  background: #8a151b;
+  color: #ffffff;
+  border: none;
+  padding: 12px 28px;
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 14px rgba(138, 21, 27, 0.3);
+}
+
+.activateDeviceBtn:hover {
+  background: #a31920;
+  transform: translateY(-1px);
+}
+
+.killPipelineBtn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 14px;
+  font-weight: 500;
+}
+
+.killPipelineBtn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+}
+
+/* html5-qrcode Video Overrides to blend seamlessly with UI design */
+.cameraWrapperActive {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.videoStreamBox {
+  width: 100% !important;
+  max-width: 450px;
+  border: none !important;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000000;
+}
+
+.videoStreamBox :global(button) {
+  background: #8a151b !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  margin: 10px 0 !important;
+}
+
+.videoStreamBox :global(video) {
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+/* Verification Result Feedback States layout engines */
+.resultBannerCard {
+  border-radius: 12px;
+  padding: 20px;
+  margin: 10px 0;
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.resultHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.statusContextIcon {
+  font-size: 36px;
+}
+
+.resultHeader h4 {
+  font-size: 20px;
+  margin: 0;
+  font-weight: 700;
+}
+
+.resultHeader p {
+  font-size: 12px;
+  margin: 2px 0 0 0;
+  opacity: 0.8;
+}
+
+/* State Background Modifier Color Variants */
+.success { background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; }
+.success .metaValueText { color: #ffffff; }
+.warning { background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #f59e0b; }
+.warning .metaValueText { color: #ffffff; }
+.error { background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; }
+
+/* Structural metadata list block rendering inside evaluation cards */
+.profileBadgeDataSegment {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.metaRowField, .metaGridHalf {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.metaGridHalf {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.metaLabel {
+  display: block;
+  font-size: 11px;
+  color: #a0aec0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.metaValueText {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.metaIdHash {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.resumePipelineBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Right Column: Logging Audit Feed Engine Panels */
+.auditHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+}
+
+.auditHeader h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.logStreamTrackFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.emptyFeedPlaceholder {
+  font-size: 13px;
+  color: #718096;
+  text-align: center;
+  padding: 40px 10px;
+}
+
+.logRowEntry {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #718096;
+}
+
+.logTimeToken {
+  font-family: monospace;
+  color: #a0aec0;
+  flex-shrink: 0;
+}
+
+.logMessageText {
+  color: #e2e8f0;
+}
+
+/* Dynamic color badges pinned directly inside session arrays tracking log rows */
+.log_success { border-left-color: #10b981; background: rgba(16, 185, 129, 0.05); }
+.log_warning { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.05); }
+.log_error { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.05); }

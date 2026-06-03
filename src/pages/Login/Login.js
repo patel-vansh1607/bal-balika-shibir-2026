@@ -30,19 +30,6 @@ export default function Login() {
     }
   };
 
-  const handleGuestAccess = (e) => {
-    e.preventDefault(); 
-    e.stopPropagation();
-    
-    // Explicitly fallback to absolute native routing if browser history blocks internal state
-    try {
-      navigate('/dashboard');
-    } catch (err) {
-      console.warn("SPA Router context missing on prod environment, dropping back to window.location");
-      window.location.href = '/dashboard';
-    }
-  };
-
   return (
     <div className={styles.wrapper}>
       <div className={styles.card}>
@@ -82,19 +69,6 @@ export default function Login() {
 
           <button type="submit" className={styles.submitBtn} disabled={loading}>
             {loading ? 'Verifying...' : 'Verify Credentials'}
-          </button>
-          
-          <div className={styles.dividerZone}>
-            <span>or</span>
-          </div>
-
-          <button 
-            type="button" 
-            onClick={handleGuestAccess}
-            className={styles.guestBtn}
-            disabled={loading}
-          >
-            Just Visiting
           </button>
         </form>
       </div>
