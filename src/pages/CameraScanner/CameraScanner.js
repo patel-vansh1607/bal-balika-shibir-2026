@@ -181,6 +181,13 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     if (!container) return;
 
     try {
+      // ⚡ FAST PASS PERMISSION HANDSHAKE:
+      // Force native prompt via browser API before loading the library instance.
+      // This prevents the library from getting stuck or showing fallback UI buttons.
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      }
+
       const scanner = new Html5Qrcode("qr-reader-container", {
         formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
         verbose: false
@@ -196,13 +203,10 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
         }
       };
 
-      // 🔥 EXPLICIT REAR CAMERA DETECTION BLOCK FOR PHONES:
-      // We query the hardware directly to find the real back camera label.
       let cameraConfig = { facingMode: "environment" };
       try {
         const devices = await Html5Qrcode.getCameras();
         if (devices && devices.length > 0) {
-          // Look for keywords indicating a rear camera lens asset
           const rearCamera = devices.find(device => 
             device.label.toLowerCase().includes('back') || 
             device.label.toLowerCase().includes('rear') ||
@@ -211,7 +215,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
           if (rearCamera) {
             cameraConfig = { deviceId: { exact: rearCamera.id } };
           } else {
-            // If labels are blank (common on fresh permissions prompt), take the last camera in the line
             cameraConfig = { deviceId: { exact: devices[devices.length - 1].id } };
           }
         }
@@ -234,7 +237,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
         videoElement.style.width = '100%';
         videoElement.style.height = '100%';
 
-        // Prevent the play() interrupt warning from triggering UI state flips
         const originalPlay = videoElement.play;
         videoElement.play = function() {
           const promise = originalPlay.apply(this, arguments);
@@ -329,6 +331,16 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
             </div>
             
             <div id="qr-reader-container" className={styles.videoStreamBox} style={{ overflow: 'hidden', position: 'relative', width: '100%', minHeight: '320px', background: '#000' }}></div>
+
+            {/* ⚡ FAILSAFE INLINE CSS TO BURY THE LIBRARY'S FILE PICKER FALLBACK UI */}
+            <style>{`
+              #qr-reader-container button, 
+              #qr-reader-container img, 
+              #qr-reader-container input, 
+              #qr-reader-container a { 
+                display: none !important; 
+              }
+            `}</style>
 
             <div className={styles.activeFenceBadge} style={{ marginTop: '12px', justifyContent: 'center' }}>
               <FaShieldAlt /> Region: <strong>{regionScope === 'All' ? 'All Africa' : regionScope}</strong>
