@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { 
-  FaCamera, 
   FaCheckCircle, 
   FaExclamationTriangle, 
   FaTimes, 
   FaUserCheck, 
   FaHistory,
   FaShieldAlt
-} from 'react-icons/fa';
+} from 'react-icons/fa'; // 🔥 Removed FaCamera to fix line 4 warning
 import { supabase } from '../../supabaseClient'; 
 import styles from './CameraScanner.module.css';
 
@@ -16,47 +15,11 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
   const [scannerLog, setScannerLog] = useState([]);
   const [scanResult, setScanResult] = useState(null); 
   const [operator, setOperator] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false); // 🔥 Added state for UI loading spinner
+  const [isProcessing, setIsProcessing] = useState(false); 
   const scannerInstance = useRef(null);
   const isProcessingScan = useRef(false);
 
-  // 1. Fetch operator session, sync logs, and BOOT CAMERA IMMEDIATELY
-  useEffect(() => {
-    async function initScannerSession() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setOperator({
-          email: user.email,
-          name: user.user_metadata?.full_name || user.email.split('@')[0]
-        });
-      }
-
-      // Fetch the last 20 real gate log entries from the database
-      const { data: logs, error } = await supabase
-        .from('gate_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (!error && logs) {
-        const formattedLogs = logs.map(log => ({
-          id: log.id,
-          time: new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          type: log.status,
-          text: log.message,
-          processedBy: log.operator_name || log.operator_email?.split('@')[0] || 'system'
-        }));
-        setScannerLog(formattedLogs);
-      }
-    }
-
-    initScannerSession();
-    startCameraEngineDirectly(); // 🔥 Auto-boot lens instantly on component mount
-
-    return () => clearScannerInstance();
-  }, []);
-
-  const clearScannerInstance = () => {
+  const clearScannerInstance = useCallback(() => {
     if (scannerInstance.current) {
       try {
         scannerInstance.current.clear();
@@ -65,41 +28,13 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
         console.error("Failed to safely unmount html5-qrcode engine pipeline:", err);
       }
     }
-  };
+  }, []);
 
-  const startCameraEngineDirectly = () => {
-    isProcessingScan.current = false;
-    setIsProcessing(false); // Reset visual loading block
-
-    // Small delay ensures the target DOM element container `#qr-reader-container` is fully painted
-    setTimeout(() => {
-      try {
-        const config = {
-          fps: 20, 
-          qrbox: { width: 250, height: 250 },
-          formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
-          videoConstraints: {
-            facingMode: "environment" 
-          }
-        };
-
-        const scanner = new Html5QrcodeScanner("qr-reader-container", config, false);
-        scanner.render(onScanSuccess, onScanFailure);
-        scannerInstance.current = scanner;
-      } catch (error) {
-        console.error("Direct camera initialization crash:", error);
-        setScanResult({
-          status: 'error',
-          message: 'Could not directly access rear video stream hardware.'
-        });
-      }
-    }, 100); 
-  };
-
-  const onScanSuccess = async (decodedText) => {
+  // --- BUSINESS LOGIC PROCESSING BLOCK ---
+  const onScanSuccess = useCallback(async (decodedText) => {
     if (isProcessingScan.current) return;
     isProcessingScan.current = true;
-    setIsProcessing(true); // 🔥 Turn on the beautiful loading spinner UI element instantly
+    setIsProcessing(true); 
 
     clearScannerInstance();
 
@@ -125,7 +60,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       processedBy: operatorName
     };
 
-    // --- CRITICAL SCOPE CROSS-CHECK ENFORCEMENT ---
     if (regionScope !== 'All' && !scannedId.startsWith(prefixScope.toUpperCase())) {
       const crossBorderErrorMsg = `Access Denied: Scanned ID "${scannedId}" belongs to another regional center branch.`;
       
@@ -148,7 +82,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       });
       setScannerLog(prev => [localLogPayload, ...prev]);
       isProcessingScan.current = false;
-      setIsProcessing(false); // Turn off loader on result display
+      setIsProcessing(false); 
       return;
     }
 
@@ -225,13 +159,78 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       console.error("Critical error inside camera stream capture block:", err);
     } finally {
       isProcessingScan.current = false;
-      setIsProcessing(false); // 🔥 Database handshake is done, turn off loading view cleanly
+      setIsProcessing(false); 
     }
-  };
+  }, [clearScannerInstance, operator, prefixScope, regionScope]);
 
   const onScanFailure = () => {
     // Silent frame drop
   };
+
+  // --- CAMERA ENGINE INITIALIZATION FUNCTION ---
+  // Wrapped in useCallback to prevent changing references on component re-renders
+  const startCameraEngineDirectly = useCallback(() => {
+    isProcessingScan.current = false;
+    setIsProcessing(false); 
+
+    setTimeout(() => {
+      try {
+        const config = {
+          fps: 20, 
+          qrbox: { width: 250, height: 250 },
+          formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+          videoConstraints: {
+            facingMode: "environment" 
+          }
+        };
+
+        const scanner = new Html5QrcodeScanner("qr-reader-container", config, false);
+        scanner.render(onScanSuccess, onScanFailure);
+        scannerInstance.current = scanner;
+      } catch (error) {
+        console.error("Direct camera initialization crash:", error);
+        setScanResult({
+          status: 'error',
+          message: 'Could not directly access rear video stream hardware.'
+        });
+      }
+    }, 100); 
+  }, [onScanSuccess]);
+
+  // 1. Fetch operator session, sync logs, and BOOT CAMERA IMMEDIATELY
+  useEffect(() => {
+    async function initScannerSession() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setOperator({
+          email: user.email,
+          name: user.user_metadata?.full_name || user.email.split('@')[0]
+        });
+      }
+
+      const { data: logs, error } = await supabase
+        .from('gate_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (!error && logs) {
+        const formattedLogs = logs.map(log => ({
+          id: log.id,
+          time: new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          type: log.status,
+          text: log.message,
+          processedBy: log.operator_name || log.operator_email?.split('@')[0] || 'system'
+        }));
+        setScannerLog(formattedLogs);
+      }
+    }
+
+    initScannerSession();
+    startCameraEngineDirectly(); // 🔥 Now safe to call inside useEffect because of useCallback reference lock!
+
+    return () => clearScannerInstance();
+  }, [startCameraEngineDirectly, clearScannerInstance]); // Added functions into the dependency array to fix line 57 error
 
   const handleCloseResult = () => {
     setScanResult(null);
@@ -240,19 +239,15 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
 
   return (
     <div className={styles.scannerWorkspaceGrid}>
-      
-      {/* Primary Video Capture Card Frame */}
       <div className={styles.mainCaptureCard}>
         
-        {/* State A: Show the beautiful loading state while fetching database response */}
         {isProcessing && !scanResult && (
           <div className={styles.cameraWrapperActive} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
-            {/* Inline spinning styling directly applied so it loads instantly */}
             <div style={{
               width: '50px',
               height: '50px',
               border: '4px solid #f4ece6',
-              borderTop: '4px solid #8a151b', // Styled with your custom BAPS Maroon theme color variable
+              borderTop: '4px solid #8a151b', 
               borderRadius: '50%',
               animation: 'spin 1s linear infinite',
               marginBottom: '16px'
@@ -268,7 +263,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
           </div>
         )}
 
-        {/* State B: Live Active Stream Container - Rendered when not loading and no result is showing */}
         {!scanResult && !isProcessing && (
           <div className={styles.cameraWrapperActive}>
             <div className={styles.streamScopeBanner}>
@@ -283,7 +277,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
           </div>
         )}
 
-        {/* State C: Dynamic Scanning Verification Display Panel Result Feedback Cards */}
         {scanResult && !isProcessing && (
           <div className={`${styles.resultBannerCard} ${styles[scanResult.status]}`}>
             <div className={styles.resultHeader}>
@@ -326,7 +319,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
         )}
       </div>
 
-      {/* Secondary Live Activity Session Logs Side Panel Audit Feed */}
       <div className={styles.auditLogPanelCard}>
         <div className={styles.auditHeader}>
           <FaHistory style={{ color: '#8a151b' }} />
