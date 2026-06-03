@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient';
+import React, { useState } from 'react';
 import { 
   FaSearch, 
   FaSync, 
@@ -9,81 +8,55 @@ import {
   FaTimes,
   FaUserFriends,
   FaFileExport,
-  FaDownload
+  FaDownload,
+  FaSpinner
 } from 'react-icons/fa';
 import styles from './RegisteredRoster.module.css'; 
 
-export default function RegisteredRoster() {
-  const [attendees, setAttendees] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function RegisteredRoster({ attendees = [], dataFetching = false, regionScope = 'All' }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCenter, setSelectedCenter] = useState('All');
-  const [selectedGender, setSelectedGender] = useState('All'); // 'All' | 'Balak' | 'Balika'
+  const [selectedGender, setSelectedGender] = useState('All'); // 'All' | 'Balak' | 'Balika' | 'Shishu' | 'Shishika'
   
-  // Track image load errors by individual attendee ID
   const [imageErrors, setImageErrors] = useState({});
-  
-  // Modal tracking state for the active targeted attendee pass
   const [activeQrModalUser, setActiveQrModalUser] = useState(null);
 
-  // Fetch live rows from Supabase master database
-  const fetchAttendees = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('attendees')
-        .select('*')
-        .order('name', { ascending: true }); // Ordered alphabetically for master directory tracking
-
-      if (error) throw error;
-      
-      console.log('--- SUPABASE MASTER ROSTER FETCH SUCCESS ---');
-      setAttendees(data || []);
-      setImageErrors({});
-    } catch (error) {
-      console.error('Error loading roster database:', error.message);
-      alert('Could not synchronize master roster data stream.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAttendees();
-  }, []);
-
-  // Extract unique centers dynamically for pristine dropdown selection filtering
+  // Derive unique center hubs dynamically based *only* on the current region's dataset
   const centersList = ['All', ...new Set(attendees.map(a => a.center).filter(Boolean))];
 
-  // Primary filtering query matching logic loop
+  // Apply localized sub-filters (Search bar, Mandal select, Center branch select)
   const filteredAttendees = attendees.filter(attendee => {
     const nameSafe = attendee.name ? attendee.name.toLowerCase() : '';
     const contactSafe = attendee.parent_contact ? attendee.parent_contact : '';
+    const customIdSafe = attendee.member_id ? attendee.member_id.toLowerCase() : '';
     
-    const matchesSearch = nameSafe.includes(searchTerm.toLowerCase()) || contactSafe.includes(searchTerm);
+    const matchesSearch = 
+      nameSafe.includes(searchTerm.toLowerCase()) || 
+      contactSafe.includes(searchTerm) ||
+      customIdSafe.includes(searchTerm.toLowerCase());
+      
     const matchesCenter = selectedCenter === 'All' || attendee.center === selectedCenter;
     const matchesGender = selectedGender === 'All' || attendee.gender === selectedGender;
     
     return matchesSearch && matchesCenter && matchesGender;
   });
 
-  // Client side engine to generate and push CSV data arrays on request
   const exportToCSV = () => {
     if (filteredAttendees.length === 0) {
       alert("No matched dataset found to extract.");
       return;
     }
 
-    const headers = ["ID", "Full Name", "Classification", "Age", "Center Branch", "Parent Contact", "Photo Link"];
+    const headers = ["Member ID", "Full Name", "Mandal", "Age", "Center Branch", "Parent Contact", "Photo Link"];
     const csvRows = [
-      headers.join(','), // Setup top row label heads
+      headers.join(','),
       ...filteredAttendees.map(row => [
-        `"${row.id}"`,
+        `"${row.member_id || row.id}"`, // Prefers custom country ID token string over backend index
         `"${row.name.replace(/"/g, '""')}"`,
         `"${row.gender || 'Balak'}"`,
         `"${row.age}"`,
         `"${row.center}"`,
-        `"${row.parent_contact}"`,
+        `"${row.parent_contact || ''}"`,
         `"${row.photo_url || ''}"`
       ].join(','))
     ];
@@ -92,29 +65,29 @@ export default function RegisteredRoster() {
     const encodedUri = encodeURI(csvContent);
     const downloadAnchor = document.createElement("a");
     downloadAnchor.setAttribute("href", encodedUri);
-    downloadAnchor.setAttribute("download", `Master_Roster_Directory_${selectedGender}_${selectedCenter}.csv`);
+    downloadAnchor.setAttribute("download", `Roster_${regionScope.replace(/\s+/g, '_')}_${selectedGender}.csv`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     document.body.removeChild(downloadAnchor);
   };
 
-  // Trigger download of the active user's QR pass from external API stream
-  const downloadQRImg = async (userId, userName) => {
+  const downloadQRImg = async (memberId, userName) => {
     try {
-      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(userId)}&color=8a151b`;
+      // Encode using the verified country format string value for scanning accuracy
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(memberId)}&color=8a151b`;
       const response = await fetch(qrApiUrl);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `QR_Pass_${userName.replace(/\s+/g, '_')}.png`;
+      link.download = `Pass_${memberId}_${userName.replace(/\s+/g, '_')}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch (err) {
-      alert("Failed to initiate QR asset media fetch downpour.");
+      alert("Failed to initiate QR asset media fetch download.");
     }
   };
 
@@ -138,53 +111,59 @@ export default function RegisteredRoster() {
     setImageErrors(prev => ({ ...prev, [id]: true }));
   };
 
+  const getGenderTagClass = (genderCategory) => {
+    switch(genderCategory) {
+      case 'Balak': return styles.tagBalak;
+      case 'Balika': return styles.tagBalika;
+      case 'Shishu': return styles.tagShishu;
+      case 'Shishika': return styles.tagShishika;
+      default: return styles.tagBalak;
+    }
+  };
+
   return (
     <div className={styles.rosterContainer}>
       
-      {/* Top Banner Context Box for Master Directory view configurations */}
-      {/* Top Banner Context Box for Master Directory view configurations */}
-      <section className={styles.statsGrid} style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' }}>
-        
-        {/* Total Count */}
-        <div className={styles.statCard} style={{ textAlign: 'left', padding: '20px 24px' }}>
-          <div className={styles.statLabel} style={{ fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Total Registered
-          </div>
-          <p className={styles.statValue} style={{ fontSize: '28px', margin: '4px 0 0 0' }}>
-            {filteredAttendees.length}
-          </p>
+      {/* Dynamic Statistics Metrics Hub */}
+      <section className={styles.statsGrid}>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel}>Matched in Scope</div>
+          <p className={styles.statValue}>{filteredAttendees.length}</p>
         </div>
-
-        {/* Balak Count */}
-        <div className={styles.statCard} style={{ textAlign: 'left', padding: '20px 24px' }}>
-          <div className={styles.statLabel} style={{ fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Balak Count
-          </div>
-          <p className={styles.statValue} style={{ fontSize: '28px', margin: '4px 0 0 0', color: '#2b6cb0' }}>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel} style={{ color: '#2b6cb0' }}>Balak</div>
+          <p className={styles.statValue} style={{ color: '#2b6cb0' }}>
             {filteredAttendees.filter(a => a.gender === 'Balak').length}
           </p>
         </div>
-
-        {/* Balika Count */}
-        <div className={styles.statCard} style={{ textAlign: 'left', padding: '20px 24px' }}>
-          <div className={styles.statLabel} style={{ fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Balika Count
-          </div>
-          <p className={styles.statValue} style={{ fontSize: '28px', margin: '4px 0 0 0', color: '#c53030' }}>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel} style={{ color: '#c53030' }}>Balika</div>
+          <p className={styles.statValue} style={{ color: '#c53030' }}>
             {filteredAttendees.filter(a => a.gender === 'Balika').length}
           </p>
         </div>
-
+        <div className={styles.statCard}>
+          <div className={styles.statLabel} style={{ color: '#319795' }}>Shishu</div>
+          <p className={styles.statValue} style={{ color: '#319795' }}>
+            {filteredAttendees.filter(a => a.gender === 'Shishu').length}
+          </p>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel} style={{ color: '#b7791f' }}>Shishika</div>
+          <p className={styles.statValue} style={{ color: '#b7791f' }}>
+            {filteredAttendees.filter(a => a.gender === 'Shishika').length}
+          </p>
+        </div>
       </section>
 
-      {/* Toolbox Manipulation Action Bar Grid Area */}
-      <div className={styles.contentCard} style={{ marginBottom: '20px', padding: '16px' }}>
+      {/* Control Actions & Filtering Hub Row */}
+      <div className={styles.contentCard} style={{ marginBottom: '24px', padding: '20px' }}>
         <div className={styles.toolbarRow}>
           
           <div className={styles.searchWrapper}>
             <input
               type="text"
-              placeholder="Filter list by name or phone numbers..."
+              placeholder="Search by name, ID or contacts..."
               className={styles.inputField}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -193,9 +172,8 @@ export default function RegisteredRoster() {
           </div>
 
           <div className={styles.filterGroup}>
-            {/* Center Selector */}
             <div className={styles.filterSelectContainer}>
-              <FaMapMarkerAlt style={{ color: '#8a151b' }} />
+              <FaMapMarkerAlt style={{ color: 'var(--accent-primary)' }} />
               <select 
                 value={selectedCenter} 
                 onChange={(e) => setSelectedCenter(e.target.value)}
@@ -209,60 +187,60 @@ export default function RegisteredRoster() {
               </select>
             </div>
 
-            {/* Balak / Balika Direct Separation Switch Dropdown */}
             <div className={styles.filterSelectContainer}>
-              <FaUserFriends style={{ color: '#8a151b' }} />
+              <FaUserFriends style={{ color: 'var(--accent-primary)' }} />
               <select 
                 value={selectedGender} 
                 onChange={(e) => setSelectedGender(e.target.value)}
                 className={styles.selectDropdown}
               >
-                <option value="All">All Classifications</option>
-                <option value="Balak">Balak (Boys Roster)</option>
-                <option value="Balika">Balika (Girls Roster)</option>
+                <option value="All">All Mandals</option>
+                <option value="Balak">Balak</option>
+                <option value="Balika">Balika</option>
+                <option value="Shishu">Shishu</option>
+                <option value="Shishika">Shishika</option>
               </select>
             </div>
 
-            <button onClick={exportToCSV} className={styles.primaryActionBtn} style={{ backgroundColor: '#107c41', borderColor: '#107c41', color: '#fff' }}>
-              <FaFileExport /> Export Spreadsheet
-            </button>
-
-            <button onClick={fetchAttendees} className={styles.primaryActionBtn}>
-              <FaSync className={loading ? styles.spin : ''} />
+            <button onClick={exportToCSV} className={styles.exportBtn}>
+              <FaFileExport /> Export CSV
             </button>
           </div>
 
         </div>
       </div>
 
-      {/* Main Table Grid Row Interface View */}
+      {/* Master Data Table Container */}
       <div className={styles.contentCard}>
-        {loading ? (
+        {dataFetching ? (
           <div className={styles.tableMessageBlock}>
-            <p>Calling operational table buffers...</p>
+            <FaSpinner className={`${styles.spin} ${styles.loaderSpinner}`} />
+            <p style={{ marginTop: '12px' }}>Updating regional partition data view...</p>
           </div>
         ) : filteredAttendees.length === 0 ? (
           <div className={styles.tableMessageBlock}>
-            <p>No matching directory definitions structured in this database layer selection view.</p>
+            <p>No delegates found matching <strong>{regionScope === 'All' ? 'All African Regions' : regionScope}</strong> selection grid.</p>
           </div>
         ) : (
           <div className={styles.tableContainer}>
             <table className={styles.dataTable}>
               <thead>
                 <tr>
-                  <th>Identity Avatar</th>
+                  <th>Picture</th>
+                  <th>Member ID</th>
                   <th>Full Name</th>
-                  <th>Classification Category</th>
-                  <th>Age Allocation</th>
-                  <th>Center Branch</th>
-                  <th>Parent WhatsApp Destination</th>
-                  <th style={{ textAlign: 'center' }}>Gateway Token Pass</th>
+                  <th>Mandal</th>
+                  <th>Age</th>
+                  <th>Center</th>
+                  <th>Parent Contact</th>
+                  <th style={{ textAlign: 'center' }}>Identity Pass</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredAttendees.map((attendee) => {
                   const resolvedAvatarUrl = getAvatarUrl(attendee.photo_url);
                   const hasImageError = imageErrors[attendee.id];
+                  const systemIdCode = attendee.member_id || `MTRC-${attendee.id}`;
 
                   return (
                     <tr key={attendee.id}>
@@ -283,9 +261,12 @@ export default function RegisteredRoster() {
                           )}
                         </div>
                       </td>
+                      <td className={styles.monospaceText} style={{ fontWeight: '700', color: 'var(--accent-primary)' }}>
+                        {systemIdCode}
+                      </td>
                       <td className={styles.boldText}>{attendee.name}</td>
                       <td>
-                        <span className={`${styles.badgeGenderTag} ${attendee.gender === 'Balak' ? styles.tagBalak : styles.tagBalika}`}>
+                        <span className={`${styles.badgeGenderTag} ${getGenderTagClass(attendee.gender)}`}>
                           {attendee.gender || 'Balak'}
                         </span>
                       </td>
@@ -296,16 +277,20 @@ export default function RegisteredRoster() {
                         </span>
                       </td>
                       <td className={styles.monospaceText}>
-                        <span className={styles.inlineIconFlex}>
-                          <FaPhoneAlt className={styles.mutedIcon} /> {attendee.parent_contact}
-                        </span>
+                        {attendee.parent_contact ? (
+                          <span className={styles.inlineIconFlex}>
+                            <FaPhoneAlt className={styles.mutedIcon} /> {attendee.parent_contact}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>N/A</span>
+                        )}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <button
                           onClick={() => setActiveQrModalUser(attendee)}
                           className={styles.viewPassBtn}
                         >
-                          <FaQrcode style={{ fontSize: '13px' }} /> View Identity Card
+                          <FaQrcode style={{ fontSize: '13px' }} /> View Pass
                         </button>
                       </td>
                     </tr>
@@ -317,7 +302,7 @@ export default function RegisteredRoster() {
         )}
       </div>
 
-      {/* ================= MODAL OVERLAY ================= */}
+      {/* Verification Entry Modal Sheet Overlay */}
       {activeQrModalUser && (
         <div className={styles.modalOverlay} onClick={() => setActiveQrModalUser(null)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -325,19 +310,19 @@ export default function RegisteredRoster() {
               <FaTimes />
             </button>
 
-            <h3 className={styles.modalTitle}>Attendee Entry Pass</h3>
-            <p className={styles.modalSubtitle}>Master Directory Gateway Record</p>
+            <h3 className={styles.modalTitle}>QR Code</h3>
+            <p className={styles.modalSubtitle}>BAL-BALIKA SHIBIR 2026</p>
 
             <div className={styles.qrContainer}>
               <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(activeQrModalUser.id)}&color=8a151b`} 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(activeQrModalUser.member_id || activeQrModalUser.id)}&color=8a151b`} 
                 alt="Verification Token Map"
                 className={styles.qrImage}
               />
             </div>
 
             <div className={styles.modalInfoBox}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
                 {getAvatarUrl(activeQrModalUser.photo_url) && !imageErrors[activeQrModalUser.id] ? (
                   <img 
                     src={getAvatarUrl(activeQrModalUser.photo_url)} 
@@ -353,31 +338,29 @@ export default function RegisteredRoster() {
                 )}
                 <div style={{ textAlign: 'left' }}>
                   <div className={styles.modalAttendeeName}>{activeQrModalUser.name}</div>
-                  <div style={{ fontSize: '12px', color: '#6e655f', fontWeight: '500' }}>
-                    Category Designation: <strong style={{ color: activeQrModalUser.gender === 'Balika' ? '#c53030' : '#2b6cb0' }}>{activeQrModalUser.gender || 'Balak'}</strong>
+                  <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', fontWeight: '500' }}>
+                    Mandal: <span className={`${styles.badgeGenderTag} ${getGenderTagClass(activeQrModalUser.gender)}`} style={{ marginLeft: '4px' }}>{activeQrModalUser.gender || 'Balak'}</span>
                   </div>
                 </div>
               </div>
               
-              <div className={styles.modalDataRow} style={{ borderTop: '1px dashed #e6dfda', paddingTop: '8px' }}>
-                <span>Center Region:</span>
-                <span style={{ color: '#2d2926', fontWeight: '600' }}>{activeQrModalUser.center}</span>
+              <div className={styles.modalDataRow} style={{ borderTop: '1px dashed var(--border-light)', paddingTop: '10px' }}>
+                <span>Center:</span>
+                <span style={{ color: 'var(--text-main)', fontWeight: '600' }}>{activeQrModalUser.center}</span>
               </div>
               <div className={styles.modalDataRow}>
-                <span>System Tracking ID:</span>
-                <span style={{ fontFamily: 'monospace', color: '#8a151b', fontWeight: '600' }}>
-                  #{String(activeQrModalUser.id).toUpperCase()}
+                <span>ID Number:</span>
+                <span style={{ fontFamily: 'monospace', color: 'var(--accent-primary)', fontWeight: '700' }}>
+                  {(activeQrModalUser.member_id || activeQrModalUser.id).toUpperCase()}
                 </span>
               </div>
             </div>
 
-            {/* Direct targeted QR image deployment handle download button */}
             <button 
-              onClick={() => downloadQRImg(activeQrModalUser.id, activeQrModalUser.name)}
-              className={styles.primaryActionBtn}
-              style={{ width: '100%', marginTop: '12px', justifyContent: 'center', gap: '8px' }}
+              onClick={() => downloadQRImg(activeQrModalUser.member_id || activeQrModalUser.id, activeQrModalUser.name)}
+              className={styles.modalDownloadBtn}
             >
-              <FaDownload /> Download Ticket QR Code
+              <FaDownload /> Download QR Code
             </button>
 
           </div>

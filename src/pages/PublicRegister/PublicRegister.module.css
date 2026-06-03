@@ -88,17 +88,32 @@
   margin-bottom: 24px;
 }
 
-/* Parent flex container that automatically aligns its children into a clean horizontal row on desktop */
-.formGrid > :not(.formGroupFull) {
+/* Base style for the row wrapper layers */
+.rowFieldContainer {
   display: flex;
   flex-direction: row;
-  gap: 16px;
   width: 100%;
+  gap: 16px; /* Restores and enforces the consistent horizontal gap space everywhere */
+  align-items: flex-start;
+  box-sizing: border-box;
+}
+
+/* Ensure each individual input container inside a row splits layout space evenly */
+.rowFieldContainer > .formGroup,
+.rowFieldContainer > div {
+  flex: 1;
+  min-width: 0;
+}
+
+/* CRITICAL DROPDOWN GAP CORRECTION: 
+   If your component drops an extra div wrapper, this forces the gap to render physically */
+.rowFieldContainer:has(.searchDropdownContainer) {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 16px !important;
 }
 
 .formGroup {
-  flex: 1;
-  min-width: 0; 
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -404,10 +419,12 @@
     align-items: stretch;
   }
   
-  /* Snaps inputs out of the horizontal flex layout back into vertical stacks on mobile */
-  .formGrid > :not(.formGroupFull) {
-    flex-direction: column;
-    gap: 20px;
+  /* Stacks elements row parameters cleanly on smaller phone viewports */
+  .rowFieldContainer,
+  .rowFieldContainer:has(.searchDropdownContainer) {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
   }
   
   .badgeWrapper {
@@ -420,5 +437,158 @@
     max-width: 400px;
     margin: 0 auto;
     width: 100%;
+  }
+}
+
+/* ==========================================================================
+   CUSTOM SEARCHABLE DROPDOWN AND COMBOBOX MODULES
+   ========================================================================== */
+
+/* Dropdown Container Context */
+.searchDropdownContainer {
+  position: relative;
+  width: 100%;
+}
+
+/* Custom Interactive Box Trigger */
+.customSelectTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #1f2937;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+  box-sizing: border-box; /* Secures absolute element dimensions */
+}
+
+.customSelectTrigger:hover:not(.triggerDisabled) {
+  border-color: #9ca3af;
+}
+
+.customSelectTrigger:focus {
+  outline: none;
+  border-color: #8a151b; /* Matches your core primary brand color scheme */
+  box-shadow: 0 0 0 3px rgba(138, 21, 27, 0.08);
+}
+
+/* Disabled State Overlay */
+.triggerDisabled {
+  background-color: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Interactive Dropdown Arrow Icons */
+.arrowIcon {
+  font-size: 0.8rem;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+}
+
+/* Floating Overlay Panel Menu */
+.dropdownOverlayMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.15s ease-out;
+}
+
+/* Sticky Input Search Area inside Menu Container */
+.dropdownSearchHeader {
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background-color: #f9fafb;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 10;
+}
+
+.searchIconInline {
+  color: #9ca3af;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.dropdownSearchInput {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.25rem 0;
+  font-size: 0.9rem;
+  color: #1f2937;
+  outline: none;
+}
+
+.dropdownSearchInput::placeholder {
+  color: #9ca3af;
+}
+
+/* Scrollable Options Menu Lists */
+.dropdownListOptions {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Individual list item entry items */
+.dropdownOptionItem {
+  padding: 0.65rem 1rem;
+  font-size: 0.925rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.dropdownOptionItem:hover {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* Selected option row styling highlight */
+.itemSelected {
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+/* Empty State / Query Fallback Styling */
+.noResultsFoundItem {
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+  text-align: center;
+  background-color: #ffffff;
+}
+
+/* Micro Interactions Keyframe entry animations */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login/Login';
 import Dashboard from './pages/Dashboard/Dashboard';
 import PublicRegister from './pages/PublicRegister/PublicRegister';
+import SelectRegion from './pages/SelectRegion/SelectRegion';
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         {/* Dashboard page layout */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/register" element={<PublicRegister />} />
+        <Route path="/select-region" element={<SelectRegion />} />
       </Routes>
     </Router>
   );

@@ -1,0 +1,189 @@
+.regionWrapper {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-main);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.regionCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 560px;
+  padding: 40px 32px;
+  box-shadow: 0 10px 30px rgba(138, 21, 27, 0.03);
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   PARTITION HEADER CONTEXT
+   ========================================================================== */
+.regionHeader {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.iconGlobeWrapper {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px auto;
+  border: 1px solid var(--border-light);
+}
+
+.globalIcon {
+  font-size: 26px;
+  color: var(--accent-primary);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.subtitle {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 8px 0 0 0;
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   SELECTION SECTOR STACK BUTTONS
+   ========================================================================== */
+.regionGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.partitionBtn {
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.partitionBtn:hover {
+  background-color: #ffffff;
+  border-color: var(--accent-primary);
+  box-shadow: 0 6px 16px rgba(138, 21, 27, 0.05);
+  transform: translateY(-1.5px);
+}
+
+.btnContentLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.markerCircle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.partitionBtn:hover .markerCircle {
+  background-color: var(--accent-soft);
+  border-color: var(--accent-primary);
+}
+
+.markerIcon {
+  font-size: 15px;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.partitionBtn:hover .markerIcon {
+  color: var(--accent-primary);
+}
+
+.textMetadata {
+  display: flex;
+  flex-direction: column;
+}
+
+.regionName {
+  font-family: var(--font-sans);
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.regionDesc {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.arrowIcon {
+  font-size: 12px;
+  color: var(--border-light);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.partitionBtn:hover .arrowIcon {
+  color: var(--accent-primary);
+  transform: translateX(3px);
+}
+
+/* ==========================================================================
+   SYSTEM SIGN OUT FOOTER
+   ========================================================================== */
+.footerActionRow {
+  border-top: 1px dashed var(--border-light);
+  padding-top: 20px;
+}
+
+.logoutBtn {
+  background: transparent;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.logoutBtn:hover {
+  background-color: var(--accent-soft);
+}

@@ -6,12 +6,13 @@ import {
   FaExclamationTriangle, 
   FaTimes, 
   FaUserCheck, 
-  FaHistory 
+  FaHistory,
+  FaShieldAlt
 } from 'react-icons/fa';
 import { supabase } from '../../supabaseClient'; 
 import styles from './CameraScanner.module.css';
 
-export default function CameraScanner() {
+export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC-' }) {
   const [isEnabled, setIsEnabled] = useState(false);
   const [scannerLog, setScannerLog] = useState([]);
   const [scanResult, setScanResult] = useState(null); 
@@ -24,7 +25,6 @@ export default function CameraScanner() {
     async function initScannerSession() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Build clear operator identities using metadata or clean email splits
         setOperator({
           email: user.email,
           name: user.user_metadata?.full_name || user.email.split('@')[0]
@@ -115,23 +115,50 @@ export default function CameraScanner() {
     const operatorEmail = operator?.email || 'unknown@shibir.org';
     const operatorName = operator?.name || 'system';
 
+    let localLogPayload = {
+      id: crypto.randomUUID(),
+      time: timestamp,
+      processedBy: operatorName
+    };
+
+    // --- CRITICAL SCOPE CROSS-CHECK ENFORCEMENT ---
+    // If user is locked to a specific country hub, ensure scanned code begins with that specific layout signature
+    if (regionScope !== 'All' && !scannedId.startsWith(prefixScope.toUpperCase())) {
+      const crossBorderErrorMsg = `Access Denied: Scanned ID "${scannedId}" belongs to another regional center branch.`;
+      
+      await supabase.from('gate_logs').insert([{
+        scanned_id: scannedId,
+        status: 'error',
+        message: crossBorderErrorMsg,
+        operator_email: operatorEmail,
+        operator_name: operatorName,
+        attendee_name: 'Cross-Region Member'
+      }]);
+
+      localLogPayload.type = 'error';
+      localLogPayload.text = crossBorderErrorMsg;
+      
+      setScanResult({ 
+        status: 'error', 
+        message: 'Cross-Partition Domain Violation!', 
+        customDetail: `This scanner is restricted strictly to ${regionScope} (${prefixScope}) codes. Entry rejected.` 
+      });
+      setScannerLog(prev => [localLogPayload, ...prev]);
+      isProcessingScan.current = false;
+      return;
+    }
+
     try {
-      // Query the attendee profile row
+      // Query the attendee profile using the descriptive member_id token string field
       const { data: attendee, error: fetchError } = await supabase
         .from('attendees') 
         .select('*')
-        .eq('id', scannedId)
+        .eq('member_id', scannedId)
         .maybeSingle();
 
-      let localLogPayload = {
-        id: crypto.randomUUID(),
-        time: timestamp,
-        processedBy: operatorName
-      };
-
-      // CASE A: Alphanumeric ID format not found in public.attendees records
+      // CASE A: Alphanumeric custom code not found anywhere in public.attendees registry
       if (fetchError || !attendee) {
-        const errorMsg = `Denied Entry: Token "${scannedId}" is unknown to the registry system.`;
+        const errorMsg = `Denied Entry: Token "${scannedId}" is completely unknown to the database.`;
         
         await supabase.from('gate_logs').insert([{
           scanned_id: scannedId,
@@ -145,14 +172,14 @@ export default function CameraScanner() {
         localLogPayload.type = 'error';
         localLogPayload.text = errorMsg;
         
-        setScanResult({ status: 'error', message: `Badge Unknown. Token "${scannedId}" unrecognized.` });
+        setScanResult({ status: 'error', message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
         setScannerLog(prev => [localLogPayload, ...prev]);
         return;
       }
 
-      // CASE B: Attendee is found but has already checked in
+      // CASE B: Attendee is found but has already verified check-in status rules
       if (attendee.status === 'Checked In') {
-        const warningMsg = `Duplicate Flag: ${attendee.name} scanned again at gate.`;
+        const warningMsg = `Duplicate Flag: ${attendee.name} scanned again at verification check.`;
 
         await supabase.from('gate_logs').insert([{
           scanned_id: scannedId,
@@ -174,11 +201,11 @@ export default function CameraScanner() {
       // CASE C: Successful valid check-in
       const successMsg = `Approved Admission: Verified check-in completed for ${attendee.name} (${attendee.center})`;
 
-      // Mutate attendee status record to Checked In using text primary key
+      // Mutate attendee status record to Checked In matching by member_id string field safely
       await supabase
         .from('attendees')
         .update({ status: 'Checked In' })
-        .eq('id', attendee.id);
+        .eq('member_id', attendee.member_id);
 
       // Save transaction data directly to database audit trail logs
       await supabase.from('gate_logs').insert([{
@@ -223,6 +250,12 @@ export default function CameraScanner() {
               <FaCamera className={styles.scanIconCenter} />
             </div>
             <h3 className={styles.cardTitle}>Gate Control Scanner</h3>
+            
+            {/* Realtime Active Boundary Notice Box */}
+            <div className={styles.activeFenceBadge}>
+              <FaShieldAlt /> Restricted Scope: <strong>{regionScope === 'All' ? 'All Africa' : regionScope} ({prefixScope})</strong>
+            </div>
+
             <p className={styles.cardSubtitle}>
               Active Operator Session: <strong style={{ color: '#8a151b', textTransform: 'capitalize' }}>{operator?.name || 'Loading...'}</strong>
             </p>
@@ -235,6 +268,9 @@ export default function CameraScanner() {
         {/* Live Active Stream Container */}
         {isEnabled && (
           <div className={styles.cameraWrapperActive}>
+            <div className={styles.streamScopeBanner}>
+              Scanning exclusively for <strong>{prefixScope}</strong> identity passes...
+            </div>
             <div id="qr-reader-container" className={styles.videoStreamBox}></div>
             <button 
               onClick={() => { clearScannerInstance(); setIsEnabled(false); }} 
@@ -254,14 +290,14 @@ export default function CameraScanner() {
               {scanResult.status === 'error' && <FaTimes className={styles.statusContextIcon} />}
               <div>
                 <h4>{scanResult.message}</h4>
-                <p>Security Clearance Evaluation Complete</p>
+                <p>{scanResult.customDetail || 'Security Clearance Evaluation Complete'}</p>
               </div>
             </div>
 
             {scanResult.attendee && (
               <div className={styles.profileBadgeDataSegment}>
                 <div className={styles.metaRowField}>
-                  <span className={styles.metaLabel}>Full Legal Name</span>
+                  <span className={styles.metaLabel}>Full Name</span>
                   <span className={styles.metaValueText}>{scanResult.attendee.name}</span>
                 </div>
                 <div className={styles.metaGridHalf}>
@@ -275,8 +311,8 @@ export default function CameraScanner() {
                   </div>
                 </div>
                 <div className={styles.metaRowField} style={{ borderBottom: 'none', paddingBottom: '0' }}>
-                  <span className={styles.metaLabel}>System Identity ID Reference</span>
-                  <span className={styles.metaIdHash}>#{scanResult.attendee.id}</span>
+                  <span className={styles.metaLabel}>System Member ID Reference</span>
+                  <span className={styles.metaIdHash}>{scanResult.attendee.member_id}</span>
                 </div>
               </div>
             )}
