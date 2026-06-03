@@ -26,7 +26,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
         try {
           await html5QrcodeInstance.current.stop();
         } catch (err) {
-          console.warn("Muted background error during stream close:", err);
+          // Suppress stop errors from race conditions
         }
       }
       html5QrcodeInstance.current = null;
@@ -39,7 +39,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     isProcessingScan.current = true;
     setIsProcessing(true); 
 
-    // Kill the lens stream instantly to stop duplicate scanning and free up device hardware
     await stopCameraEngine();
 
     let scannedId = decodedText.trim();
@@ -176,15 +175,12 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     isProcessingScan.current = false;
     setIsProcessing(false); 
 
-    // Hard cleanup of any leftover system locks before re-binding to elements
     await stopCameraEngine();
 
-    // Verify container element is drawn completely on mobile screens
     const container = document.getElementById("qr-reader-container");
     if (!container) return;
 
     try {
-      // Using Html5Qrcode instead of Html5QrcodeScanner bypasses fragile auto-generated UI layouts
       const scanner = new Html5Qrcode("qr-reader-container", {
         formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
         verbose: false
@@ -193,21 +189,43 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       html5QrcodeInstance.current = scanner;
 
       const config = {
-        fps: 24, // Optimized frame sampling rate for swift tracking on mobile
+        fps: 24, 
         qrbox: (width, height) => {
-          const size = Math.min(width, height) * 0.70;
+          const size = Math.min(width, height) * 0.75;
           return { width: size, height: size };
         }
       };
 
+      // 🔥 EXPLICIT REAR CAMERA DETECTION BLOCK FOR PHONES:
+      // We query the hardware directly to find the real back camera label.
+      let cameraConfig = { facingMode: "environment" };
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length > 0) {
+          // Look for keywords indicating a rear camera lens asset
+          const rearCamera = devices.find(device => 
+            device.label.toLowerCase().includes('back') || 
+            device.label.toLowerCase().includes('rear') ||
+            device.label.toLowerCase().includes('environment')
+          );
+          if (rearCamera) {
+            cameraConfig = { deviceId: { exact: rearCamera.id } };
+          } else {
+            // If labels are blank (common on fresh permissions prompt), take the last camera in the line
+            cameraConfig = { deviceId: { exact: devices[devices.length - 1].id } };
+          }
+        }
+      } catch (e) {
+        console.warn("Hardware enumeration fallback:", e);
+      }
+
       await scanner.start(
-        { facingMode: "environment" }, // Instructs the phone OS to select the primary rear lens instantly
+        cameraConfig, 
         config,
         onScanSuccess,
         onScanFailure
       );
 
-      // Force mobile iOS Safari and Android Chrome to render video element inline without full-screening
       const videoElement = container.querySelector('video');
       if (videoElement) {
         videoElement.setAttribute('playsinline', 'true');
@@ -215,14 +233,24 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
         videoElement.style.objectFit = 'cover';
         videoElement.style.width = '100%';
         videoElement.style.height = '100%';
+
+        // Prevent the play() interrupt warning from triggering UI state flips
+        const originalPlay = videoElement.play;
+        videoElement.play = function() {
+          const promise = originalPlay.apply(this, arguments);
+          if (promise !== undefined) {
+            promise.catch(() => {});
+          }
+          return promise;
+        };
       }
 
     } catch (error) {
       console.error("Mobile Camera Hardware Handshake Refused:", error);
       setScanResult({
         status: 'error',
-        message: 'Camera Permission Denied or Lens Blocked.',
-        customDetail: 'Please make sure you allow camera permissions for this site, and use HTTPS connection.'
+        message: 'Camera Initialization Failed.',
+        customDetail: 'Please ensure camera access is allowed in your mobile browser settings and that no other tab is using it.'
       });
     }
   }, [onScanSuccess, stopCameraEngine]);
@@ -300,7 +328,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
               Scanning exclusively for <strong>{prefixScope}</strong> identity passes...
             </div>
             
-            {/* Dedicated HTML target node container wrapper box */}
             <div id="qr-reader-container" className={styles.videoStreamBox} style={{ overflow: 'hidden', position: 'relative', width: '100%', minHeight: '320px', background: '#000' }}></div>
 
             <div className={styles.activeFenceBadge} style={{ marginTop: '12px', justifyContent: 'center' }}>
