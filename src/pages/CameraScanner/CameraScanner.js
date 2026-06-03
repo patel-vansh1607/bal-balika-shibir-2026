@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
-import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { 
   FaCheckCircle, 
   FaExclamationTriangle, 
@@ -7,7 +7,7 @@ import {
   FaUserCheck, 
   FaHistory,
   FaShieldAlt
-} from 'react-icons/fa'; // 🔥 Removed FaCamera to fix line 4 warning
+} from 'react-icons/fa';
 import { supabase } from '../../supabaseClient'; 
 import styles from './CameraScanner.module.css';
 
@@ -16,17 +16,20 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
   const [scanResult, setScanResult] = useState(null); 
   const [operator, setOperator] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false); 
-  const scannerInstance = useRef(null);
+  const html5QrcodeInstance = useRef(null);
   const isProcessingScan = useRef(false);
 
-  const clearScannerInstance = useCallback(() => {
-    if (scannerInstance.current) {
-      try {
-        scannerInstance.current.clear();
-        scannerInstance.current = null;
-      } catch (err) {
-        console.error("Failed to safely unmount html5-qrcode engine pipeline:", err);
+  // Safely stop and kill the native device video hardware tracks
+  const stopCameraEngine = useCallback(async () => {
+    if (html5QrcodeInstance.current) {
+      if (html5QrcodeInstance.current.isScanning) {
+        try {
+          await html5QrcodeInstance.current.stop();
+        } catch (err) {
+          console.warn("Muted background error during stream close:", err);
+        }
       }
+      html5QrcodeInstance.current = null;
     }
   }, []);
 
@@ -36,7 +39,8 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     isProcessingScan.current = true;
     setIsProcessing(true); 
 
-    clearScannerInstance();
+    // Kill the lens stream instantly to stop duplicate scanning and free up device hardware
+    await stopCameraEngine();
 
     let scannedId = decodedText.trim();
     if (scannedId.includes('data=')) {
@@ -161,43 +165,68 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       isProcessingScan.current = false;
       setIsProcessing(false); 
     }
-  }, [clearScannerInstance, operator, prefixScope, regionScope]);
+  }, [stopCameraEngine, operator, prefixScope, regionScope]);
 
   const onScanFailure = () => {
-    // Silent frame drop
+    // Silent drop for un-decoded background frames
   };
 
-  // --- CAMERA ENGINE INITIALIZATION FUNCTION ---
-  // Wrapped in useCallback to prevent changing references on component re-renders
-  const startCameraEngineDirectly = useCallback(() => {
+  // --- MOBILITY OPTIMIZED ENGINE INITIALIZER ---
+  const startCameraEngineDirectly = useCallback(async () => {
     isProcessingScan.current = false;
     setIsProcessing(false); 
 
-    setTimeout(() => {
-      try {
-        const config = {
-          fps: 20, 
-          qrbox: { width: 250, height: 250 },
-          formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
-          videoConstraints: {
-            facingMode: "environment" 
-          }
-        };
+    // Hard cleanup of any leftover system locks before re-binding to elements
+    await stopCameraEngine();
 
-        const scanner = new Html5QrcodeScanner("qr-reader-container", config, false);
-        scanner.render(onScanSuccess, onScanFailure);
-        scannerInstance.current = scanner;
-      } catch (error) {
-        console.error("Direct camera initialization crash:", error);
-        setScanResult({
-          status: 'error',
-          message: 'Could not directly access rear video stream hardware.'
-        });
+    // Verify container element is drawn completely on mobile screens
+    const container = document.getElementById("qr-reader-container");
+    if (!container) return;
+
+    try {
+      // Using Html5Qrcode instead of Html5QrcodeScanner bypasses fragile auto-generated UI layouts
+      const scanner = new Html5Qrcode("qr-reader-container", {
+        formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+        verbose: false
+      });
+      
+      html5QrcodeInstance.current = scanner;
+
+      const config = {
+        fps: 24, // Optimized frame sampling rate for swift tracking on mobile
+        qrbox: (width, height) => {
+          const size = Math.min(width, height) * 0.70;
+          return { width: size, height: size };
+        }
+      };
+
+      await scanner.start(
+        { facingMode: "environment" }, // Instructs the phone OS to select the primary rear lens instantly
+        config,
+        onScanSuccess,
+        onScanFailure
+      );
+
+      // Force mobile iOS Safari and Android Chrome to render video element inline without full-screening
+      const videoElement = container.querySelector('video');
+      if (videoElement) {
+        videoElement.setAttribute('playsinline', 'true');
+        videoElement.setAttribute('webkit-playsinline', 'true');
+        videoElement.style.objectFit = 'cover';
+        videoElement.style.width = '100%';
+        videoElement.style.height = '100%';
       }
-    }, 100); 
-  }, [onScanSuccess]);
 
-  // 1. Fetch operator session, sync logs, and BOOT CAMERA IMMEDIATELY
+    } catch (error) {
+      console.error("Mobile Camera Hardware Handshake Refused:", error);
+      setScanResult({
+        status: 'error',
+        message: 'Camera Permission Denied or Lens Blocked.',
+        customDetail: 'Please make sure you allow camera permissions for this site, and use HTTPS connection.'
+      });
+    }
+  }, [onScanSuccess, stopCameraEngine]);
+
   useEffect(() => {
     async function initScannerSession() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -227,10 +256,12 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     }
 
     initScannerSession();
-    startCameraEngineDirectly(); // 🔥 Now safe to call inside useEffect because of useCallback reference lock!
+    startCameraEngineDirectly();
 
-    return () => clearScannerInstance();
-  }, [startCameraEngineDirectly, clearScannerInstance]); // Added functions into the dependency array to fix line 57 error
+    return () => {
+      stopCameraEngine();
+    };
+  }, [startCameraEngineDirectly, stopCameraEngine]); 
 
   const handleCloseResult = () => {
     setScanResult(null);
@@ -242,7 +273,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       <div className={styles.mainCaptureCard}>
         
         {isProcessing && !scanResult && (
-          <div className={styles.cameraWrapperActive} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+          <div className={styles.cameraWrapperActive} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '320px' }}>
             <div style={{
               width: '50px',
               height: '50px',
@@ -269,7 +300,8 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
               Scanning exclusively for <strong>{prefixScope}</strong> identity passes...
             </div>
             
-            <div id="qr-reader-container" className={styles.videoStreamBox}></div>
+            {/* Dedicated HTML target node container wrapper box */}
+            <div id="qr-reader-container" className={styles.videoStreamBox} style={{ overflow: 'hidden', position: 'relative', width: '100%', minHeight: '320px', background: '#000' }}></div>
 
             <div className={styles.activeFenceBadge} style={{ marginTop: '12px', justifyContent: 'center' }}>
               <FaShieldAlt /> Region: <strong>{regionScope === 'All' ? 'All Africa' : regionScope}</strong>
