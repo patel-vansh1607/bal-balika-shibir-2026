@@ -43,11 +43,11 @@ export default function Login() {
       <div className={styles.card}>
         <div className={styles.headerGroup}>
           {/* Brand Identity Logo Asset */}
-          <img 
+          {/* <img 
             src="https://yfcxeklcqqiuecrodchn.supabase.co/storage/v1/object/public/devotee-photos/assets/aksharderi_logo.webp" 
             alt="Akshar Deri Logo" 
             className={styles.brandLogo}
-          />
+          /> */}
           <h2 className={styles.title}>Bal Balika Shibir</h2>
           <p className={styles.subtitle}>Management & Gate Control Portal</p>
         </div>
