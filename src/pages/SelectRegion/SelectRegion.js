@@ -97,7 +97,7 @@ export default function SelectRegion() {
           <div className={styles.iconGlobeWrapper}>
             <FaGlobeAfrica className={styles.globalIcon} />
           </div>
-          <h2 className={styles.title}> Partition Gateway</h2>
+          <h2 className={styles.title}> Choose Your Region</h2>
           <p className={styles.subtitle}>
             Choose your preferred region you would like to view and manage within the dashboard.<br></br> You can switch regions at any time from the dashboard view. 
           </p>
