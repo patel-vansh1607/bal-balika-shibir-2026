@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   FaSearch, 
-  FaSync, 
   FaPhoneAlt, 
   FaMapMarkerAlt,
   FaQrcode,
