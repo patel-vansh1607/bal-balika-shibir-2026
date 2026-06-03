@@ -31,23 +31,22 @@ export default function Login() {
   };
 
   const handleGuestAccess = (e) => {
-    e.preventDefault(); // Lock down any accidental parent form submission actions
+    e.preventDefault(); 
     e.stopPropagation();
     
-    // Smoothly route them directly over to the management panel board
-    navigate('/dashboard');
+    // Explicitly fallback to absolute native routing if browser history blocks internal state
+    try {
+      navigate('/dashboard');
+    } catch (err) {
+      console.warn("SPA Router context missing on prod environment, dropping back to window.location");
+      window.location.href = '/dashboard';
+    }
   };
 
   return (
     <div className={styles.wrapper}>
       <div className={styles.card}>
         <div className={styles.headerGroup}>
-          {/* Brand Identity Logo Asset */}
-          {/* <img 
-            src="https://yfcxeklcqqiuecrodchn.supabase.co/storage/v1/object/public/devotee-photos/assets/aksharderi_logo.webp" 
-            alt="Akshar Deri Logo" 
-            className={styles.brandLogo}
-          /> */}
           <h2 className={styles.title}>Bal Balika Shibir</h2>
           <p className={styles.subtitle}>Management & Gate Control Portal</p>
         </div>
