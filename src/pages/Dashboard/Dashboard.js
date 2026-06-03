@@ -149,11 +149,11 @@ export default function Dashboard() {
 
           {/* Active Partition Micro Indicator Badge */}
           <div className={styles.scopeIndicatorCard}>
-            <span className={styles.scopeMetaLabel}>ACTIVE DATA DOMAIN</span>
+            <span className={styles.scopeMetaLabel}>REGION </span>
             <div className={styles.scopeBadgeText} title={regionScope}>
               {regionScope === 'All' ? 'Global African Database' : regionScope}
             </div>
-            <span className={styles.scopePrefixCode}>Prefix Filter: <code>{prefixScope}</code></span>
+            {/* <span className={styles.scopePrefixCode}>Prefix Filter: <code>{prefixScope}</code></span> */}
           </div>
 
           <nav className={styles.navigationList}>

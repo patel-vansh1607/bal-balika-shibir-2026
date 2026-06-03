@@ -18,49 +18,49 @@ export default function SelectRegion() {
       id: 'All', 
       idPrefix: 'MTRC-',
       name: 'All African Regions', 
-      description: 'Master administrative clearance. View all synchronized country datasets.' 
+      description: 'View and manage data across all Regions' 
     },
     { 
       id: 'Kenya (+254)', 
       idPrefix: 'MTRC-KE-',
-      name: 'Kenya Hub', 
-      description: 'Isolate data rows matching Nairobi, Mombasa, Nakuru, and local centers (MTRC-KE-0000).' 
+      name: 'Kenya Region', 
+      description: 'View and manage data across Kenya Region' 
     },
     { 
       id: 'Tanzania (+255)', 
       idPrefix: 'MTRC-TZ-',
-      name: 'Tanzania Hub', 
-      description: 'Isolate data rows matching Dar es Salaam, Arusha, Mwanza, and local centers (MTRC-TZ-0000).' 
+      name: 'Tanzania Region', 
+      description: 'View and manage data across Tanzania Region' 
     },
     { 
       id: 'Uganda (+256)', 
       idPrefix: 'MTRC-UG-',
-      name: 'Uganda Hub', 
-      description: 'Isolate data rows matching Kampala, Entebbe, Jinja, and local centers (MTRC-UG-0000).' 
+      name: 'Uganda Region', 
+      description: 'View and manage data across Uganda Region' 
     },
     { 
       id: 'Zambia (+260)', 
       idPrefix: 'MTRC-ZM-',
-      name: 'Zambia Hub', 
-      description: 'Isolate data rows matching Lusaka, Kitwe, Ndola, and local centers (MTRC-ZM-0000).' 
+      name: 'Zambia Region', 
+      description: 'View and manage data across Zambia Region' 
     },
     { 
       id: 'Malawi (+265)', 
       idPrefix: 'MTRC-MW-',
-      name: 'Malawi Hub', 
-      description: 'Isolate data rows matching Lilongwe, Blantyre, Mzuzu, and local centers (MTRC-MW-0000).' 
+      name: 'Malawi Region', 
+      description: 'View and manage data across Malawi Region' 
     },
     { 
       id: 'Botswana (+267)', 
       idPrefix: 'MTRC-BW-',
-      name: 'Botswana Hub', 
-      description: 'Isolate data rows matching Gaborone, Francistown, Maun, and local centers (MTRC-BW-0000).' 
+      name: 'Botswana Region', 
+      description: 'View and manage data across Botswana Region' 
     },
     { 
       id: 'South Africa (+27)', 
       idPrefix: 'MTRC-ZA-',
-      name: 'South Africa Hub', 
-      description: 'Isolate data rows matching Johannesburg, Cape Town, Durban, and local centers (MTRC-ZA-0000).' 
+      name: 'South Africa Region', 
+      description: 'View and manage data across South Africa Region' 
     }
   ];
 
@@ -81,10 +81,10 @@ export default function SelectRegion() {
       if (error) throw error;
       localStorage.removeItem('selected_shibir_region');
       localStorage.removeItem('selected_shibir_prefix');
-      navigate('/login');
+      navigate('/');
     } catch (err) {
       console.error('Error logging out:', err.message);
-      navigate('/login');
+      navigate('/');
     }
   };
 
@@ -97,9 +97,9 @@ export default function SelectRegion() {
           <div className={styles.iconGlobeWrapper}>
             <FaGlobeAfrica className={styles.globalIcon} />
           </div>
-          <h2 className={styles.title}>Data Partition Gateway</h2>
+          <h2 className={styles.title}> Partition Gateway</h2>
           <p className={styles.subtitle}>
-            Select your assigned operational region below to isolate database rows.
+            Choose your preferred region you would like to view and manage within the dashboard.<br></br> You can switch regions at any time from the dashboard view. 
           </p>
         </div>
 

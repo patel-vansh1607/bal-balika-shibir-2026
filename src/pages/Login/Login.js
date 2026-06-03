@@ -43,11 +43,16 @@ export default function Login() {
         
         {/* Portal Branding Header */}
         <div className={styles.headerGroup}>
-          <div className={styles.iconShieldWrapper}>
-            <FaShieldAlt className={styles.shieldIcon} />
-          </div>
-          <h2 className={styles.title}>Bal Balika Shibir</h2>
-          <p className={styles.subtitle}>Management & Gate Control Portal</p>
+<div className={styles.container}>
+      {/* Replaced FaShieldAlt with the custom logo image */}
+      <img 
+        src="https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780507737/BAPS_Aksharderi_Transperent_PNG_o9ldiv.png" 
+        className={styles.shieldIcon} 
+        alt="BAPS Aksharderi Logo" 
+      />
+    </div>
+          <h2 className={styles.title}>Bal Balika Shibir 2026</h2>
+          <p className={styles.subtitle}>Management System</p>
         </div>
 
         {/* Runtime Error Banner */}
@@ -119,9 +124,9 @@ export default function Login() {
         </form>
 
         {/* System Information Footer */}
-        <div className={styles.loginFooter}>
+        {/* <div className={styles.loginFooter}>
           Authorized Personnel Only • Secure Session Guard active
-        </div>
+        </div> */}
 
       </div>
     </div>

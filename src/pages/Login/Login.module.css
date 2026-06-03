@@ -210,3 +210,19 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+/* YourComponent.module.css */
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Updated to fit an image element perfectly */
+.shieldIcon {
+  width: 60px;          /* Adjust height/width as needed for your layout */
+  height: auto;
+  object-fit: contain;  /* Ensures the transparent PNG does not distort */
+  display: inline-block;
+  vertical-align: middle;
+}
