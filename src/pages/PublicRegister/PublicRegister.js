@@ -49,26 +49,22 @@ export default function PublicRegister() {
 
   // RULE 2: Complex Form Sanitization & Validation
   const validateForm = () => {
-    // Trim input fields
     const cleanName = fullName.trim();
     const cleanContact = parentContact.trim();
 
-    // Name length check
     if (cleanName.length < 3) {
-      setFormError('Please enter the Balak\'s / Balika\'s full name (at least 3 characters).');
+      setFormError("Please enter the Balak's / Balika's full name (at least 3 characters).");
       return false;
     }
 
-    // Strict Age Gate Rule
     const parsedAge = parseInt(age);
     if (isNaN(parsedAge) || parsedAge < 3 || parsedAge > 18) {
       setFormError('Invalid Age. Shibir registration is strictly limited to children aged between 3 and 18.');
       return false;
     }
 
-    // Phone Format Rule (Simple International Regex Pattern matcher)
     const phoneRegex = /^\+?[1-9]\d{1,14}$/; 
-    const strippedContact = cleanContact.replace(/[\s\-()]/g, ''); // strip spaces/dashes for verification
+    const strippedContact = cleanContact.replace(/[\s\-()]/g, ''); 
     if (!phoneRegex.test(strippedContact)) {
       setFormError('Please enter a valid phone number including country code (e.g., +254700000000).');
       return false;
@@ -83,27 +79,24 @@ export default function PublicRegister() {
   };
 
   const uploadProfilePhoto = async (recordId, childName) => {
-  if (!photoFile) return null;
-  
-  // Extract file extension dynamically
-  const fileExt = photoFile.name.split('.').pop().toLowerCase();
-  
-  // Clean up special characters from names to avoid illegal characters in the URL string
-  const cleanName = childName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-  const fileName = `public_profile_${recordId}_${cleanName}.${fileExt}`;
-  
-  const { error } = await supabase.storage
-    .from('attendee-profiles')
-    .upload(fileName, photoFile, { cacheControl: '3600', upsert: true });
+    if (!photoFile) return null;
+    
+    const fileExt = photoFile.name.split('.').pop().toLowerCase();
+    const cleanName = childName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    const fileName = `public_profile_${recordId}_${cleanName}.${fileExt}`;
+    
+    const { error } = await supabase.storage
+      .from('attendee-profiles')
+      .upload(fileName, photoFile, { cacheControl: '3600', upsert: true });
 
-  if (error) throw error;
+    if (error) throw error;
 
-  const { data: { publicUrl } } = supabase.storage
-    .from('attendee-profiles')
-    .getPublicUrl(fileName);
+    const { data: { publicUrl } } = supabase.storage
+      .from('attendee-profiles')
+      .getPublicUrl(fileName);
 
-  return publicUrl;
-};
+    return publicUrl;
+  };
 
   const uploadQRToSupabase = async (recordId, childName) => {
     try {
@@ -135,7 +128,6 @@ export default function PublicRegister() {
     e.preventDefault();
     setFormError('');
     
-    // Fire our validation criteria checklist rule execution
     const validatedFields = validateForm();
     if (!validatedFields) return; 
 
@@ -170,9 +162,12 @@ export default function PublicRegister() {
     if (insertData) {
       try {
         const profileUrl = await uploadProfilePhoto(insertData.id, insertData.name);
-        const shibirToken = `SHIBIR2026_ID_${insertData.id}`;
+        
+        // Match explicit custom MTRC alphanumeric key shape directly from the row identity
+        const shibirToken = String(insertData.id).toUpperCase().trim();
         setGeneratedQRValue(shibirToken);
 
+        // Allow DOM node matrix context frame window to synchronize updated state values
         setTimeout(async () => {
           const qrPublicUrl = await uploadQRToSupabase(insertData.id, insertData.name);
           
@@ -308,7 +303,7 @@ export default function PublicRegister() {
             </button>
           </form>
 
-          {/* Core high-precision configuration engine layout block */}
+          {/* Hidden layout element for encoding structural barcode matrices */}
           <div style={{ display: 'none' }} ref={qrRef}>
             {generatedQRValue && <QRCodeSVG value={generatedQRValue} size={256} level="H" includeMargin={true} />}
           </div>

@@ -18,9 +18,10 @@ export default function CameraScanner() {
   const [operator, setOperator] = useState(null);
   const scannerInstance = useRef(null);
 
-  // 1. Initialize active operator session and pull the last 20 real gate log traces
+  // 1. Fetch active operator details & sync initial gate logs from backend on mount
   useEffect(() => {
     async function initScannerSession() {
+      // Get the currently authenticated operator session
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setOperator({
@@ -29,6 +30,7 @@ export default function CameraScanner() {
         });
       }
 
+      // Fetch the last 20 real gate log entries from the database
       const { data: logs, error } = await supabase
         .from('gate_logs')
         .select('*')
@@ -93,22 +95,25 @@ export default function CameraScanner() {
     clearScannerInstance();
     setIsEnabled(false);
 
-    // Sanitize scan strings and clean deep links if necessary
+    // Dynamic Sanitization: Safely handle both deep links and raw code tokens
     let scannedId = decodedText.trim();
     if (scannedId.includes('data=')) {
       scannedId = scannedId.split('data=').pop().split('&')[0];
     }
     scannedId = decodeURIComponent(scannedId);
 
+    // Enforce upper-case matching since alpha-codes (MTRC) are capitalized in DB
+    scannedId = scannedId.toUpperCase();
+
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const operatorEmail = operator?.email || 'unknown@shibir.org';
 
-    // 2. Querying the explicit public.attendees table structure via primary key column
+    // 2. Query public.attendees strictly using the alphanumeric text ID
     const { data: attendee, error: fetchError } = await supabase
       .from('attendees') 
       .select('*')
       .eq('id', scannedId)
-      .maybeSingle();
+      .maybeSingle(); // Handles matching gracefully without crashing on string formats
 
     let localLogPayload = {
       id: crypto.randomUUID(),
@@ -116,7 +121,7 @@ export default function CameraScanner() {
       processedBy: operatorEmail
     };
 
-    // CASE A: Unique Record ID could not be resolved from public.attendees table
+    // CASE A: Alphanumeric ID format not found in public.attendees records
     if (fetchError || !attendee) {
       const errorMsg = `Failed gate verification entry match for token input: "${scannedId}"`;
       
@@ -128,14 +133,14 @@ export default function CameraScanner() {
       }]);
 
       localLogPayload.type = 'error';
-      localLogPayload.text = `Badge Unknown. ID #${scannedId} missing from public.attendees data grid.`;
+      localLogPayload.text = `Badge Unknown. ID ${scannedId} missing from public.attendees list.`;
       
-      setScanResult({ status: 'error', message: `Badge Unknown. ID #${scannedId} does not match any entry logs.` });
+      setScanResult({ status: 'error', message: `Badge Unknown. ID ${scannedId} does not match any entry.` });
       setScannerLog(prev => [localLogPayload, ...prev]);
       return;
     }
 
-    // CASE B: Record exists on public.attendees database but registration is already verified
+    // CASE B: Attendee is found but has already checked in
     if (attendee.status === 'Checked In') {
       const warningMsg = `Duplicate entry warning flag triggered for ${attendee.name}`;
 
@@ -155,16 +160,16 @@ export default function CameraScanner() {
       return;
     }
 
-    // CASE C: Valid primary entry verification clearance confirmed
+    // CASE C: Successful valid check-in
     const successMsg = `Successful check-in confirmation completed for attendee: ${attendee.name}`;
 
-    // Mutate state record inside public.attendees table database row entry
+    // Mutate attendee status record to Checked In using text primary key
     await supabase
       .from('attendees')
       .update({ status: 'Checked In' })
       .eq('id', attendee.id);
 
-    // Save final analytical session log tracking parameter to database table
+    // Save transaction to backend logs
     await supabase.from('gate_logs').insert([{
       scanned_id: scannedId,
       status: 'success',
