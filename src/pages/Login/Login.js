@@ -30,6 +30,11 @@ export default function Login() {
     }
   };
 
+  const handleGuestAccess = () => {
+    // Navigate straight to dashboard for visitors bypassing active credentials checks
+    navigate('/dashboard');
+  };
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.card}>
@@ -69,6 +74,19 @@ export default function Login() {
 
           <button type="submit" className={styles.submitBtn} disabled={loading}>
             {loading ? 'Verifying...' : 'Verify Credentials'}
+          </button>
+          
+          <div className={styles.dividerZone}>
+            <span>or</span>
+          </div>
+
+          <button 
+            type="button" 
+            onClick={handleGuestAccess}
+            className={styles.guestBtn}
+            disabled={loading}
+          >
+            Just Visiting
           </button>
         </form>
       </div>

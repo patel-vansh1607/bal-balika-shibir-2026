@@ -101,3 +101,52 @@
   margin-bottom: 20px;
   text-align: left;
 }
+/* Decorative contextual separation divider line */
+.dividerZone {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 16px 0;
+  color: var(--text-muted, #a0aec0);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dividerZone::before,
+.dividerZone::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px dashed var(--border-light, rgba(255, 255, 255, 0.15));
+}
+
+.dividerZone:not(:empty)::before {
+  margin-right: .5em;
+}
+
+.dividerZone:not(:empty)::after {
+  margin-left: .5em;
+}
+
+/* Secondary minimalist guest button styling */
+.guestBtn {
+  width: 100%;
+  padding: 12px;
+  background: var(--bg-main, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-light, rgba(255, 255, 255, 0.2));
+  color: var(--text-main, #ffffff);
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.guestBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-primary, #8a151b);
+}
+
+.guestBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
