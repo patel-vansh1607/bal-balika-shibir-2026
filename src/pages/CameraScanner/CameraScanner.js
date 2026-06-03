@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { 
   FaCamera, 
-  FaSpinner, 
   FaCheckCircle, 
   FaExclamationTriangle, 
   FaTimes, 
@@ -23,9 +22,8 @@ const MOCK_ATTENDEE_DATABASE = [
 export default function CameraScanner() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [scannerLog, setScannerLog] = useState([]);
-  const [scanResult, setScanResult] = useState(null); // { status: 'success' | 'warning' | 'error', message: '', attendee?: {} }
+  const [scanResult, setScanResult] = useState(null); 
   
-  const scannerRef = useRef(null);
   const scannerInstance = useRef(null);
 
   // Clean up hardware video capture instances when navigating away
@@ -50,7 +48,6 @@ export default function CameraScanner() {
     setIsEnabled(true);
     setScanResult(null);
 
-    // Short execution delay to let React safely mount the target DOM node container (#qr-reader-container)
     setTimeout(() => {
       try {
         const config = {
@@ -60,7 +57,7 @@ export default function CameraScanner() {
           formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
         };
 
-        const scanner = new Html5QrcodeScanner("qr-reader-container", config, /* verbose= */ false);
+        const scanner = new Html5QrcodeScanner("qr-reader-container", config, false);
         
         scanner.render(onScanSuccess, onScanFailure);
         scannerInstance.current = scanner;
@@ -75,22 +72,17 @@ export default function CameraScanner() {
     }, 150);
   };
 
-  // Triggered automatically whenever a valid barcode string pattern is read
   const onScanSuccess = (decodedText) => {
-    // Prevent continuous scanning sound loops while processing active results cards
     clearScannerInstance();
     setIsEnabled(false);
 
-    // Clean up string parameters (extract base ID string if it's packed inside a full URL structure)
     let scannedId = decodedText.trim();
     if (scannedId.includes('data=')) {
       scannedId = scannedId.split('data=').pop().split('&')[0];
     }
     scannedId = decodeURIComponent(scannedId);
 
-    // Search lookups across mock systems database fields
     const match = MOCK_ATTENDEE_DATABASE.find(item => item.id === scannedId || item.name.toLowerCase() === scannedId.toLowerCase());
-
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
     if (!match) {
@@ -110,7 +102,6 @@ export default function CameraScanner() {
       });
       setScannerLog(prev => [{ time: timestamp, type: 'warning', text: `${match.name} flagged as duplicate access attempt.` }, ...prev]);
     } else {
-      // Execute local verification update flag mutations mutate path
       match.status = 'Checked In';
       setScanResult({
         status: 'success',
@@ -121,13 +112,13 @@ export default function CameraScanner() {
     }
   };
 
-  const onScanFailure = (error) => {
-    // Silent drop on frame capture misses to prevent browser thread logs flooding
+  const onScanFailure = () => {
+    // Silent drop on frame capture misses
   };
 
   const handleCloseResult = () => {
     setScanResult(null);
-    handleStartCamera(); // Re-trigger tracking loop stream instantly
+    handleStartCamera(); 
   };
 
   return (
@@ -209,7 +200,7 @@ export default function CameraScanner() {
       {/* Secondary Live Activity Session Logs Side Panel Audit Feed */}
       <div className={styles.auditLogPanelCard}>
         <div className={styles.auditHeader}>
-          <FaHistory style={{ color: 'var(--accent-primary, #8a151b)' }} />
+          <FaHistory style={{ color: '#8a151b' }} />
           <h3>Live Gate Session Logs</h3>
         </div>
         <div className={styles.logStreamTrackFeed}>

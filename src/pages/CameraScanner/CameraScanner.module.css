@@ -5,6 +5,7 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 @media (max-width: 900px) {
@@ -13,15 +14,13 @@
   }
 }
 
-/* Container Structure Panels */
+/* Elegant Light-Mode Minimalist Panels matching image_f66e5f.png */
 .mainCaptureCard, .auditLogPanelCard {
-  background: rgba(30, 27, 24, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid #f0edf0;
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 }
 
 .dormantPlaceholder {
@@ -34,17 +33,17 @@
   padding: 20px;
 }
 
-/* Radar Pulse Core Graphics */
+/* Subtle Crimson-Tinted Radar Pulse Wrapper */
 .radarPulseWrapper {
   position: relative;
   width: 80px;
   height: 80px;
-  background: rgba(138, 21, 27, 0.15);
+  background: #fdf5f5;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .radarPulseWrapper::before {
@@ -54,16 +53,17 @@
   height: 100%;
   border: 2px solid #8a151b;
   border-radius: 50%;
-  animation: radarWave 2s linear infinite;
+  opacity: 0.3;
+  animation: radarWave 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
 }
 
 .scanIconCenter {
-  font-size: 32px;
+  font-size: 30px;
   color: #8a151b;
 }
 
 @keyframes radarWave {
-  0% { transform: scale(1); opacity: 0.8; }
+  0% { transform: scale(1); opacity: 0.4; }
   100% { transform: scale(1.6); opacity: 0; }
 }
 
@@ -71,53 +71,58 @@
   font-size: 22px;
   font-weight: 700;
   margin: 0 0 8px 0;
-  color: #ffffff;
+  color: #2d2525;
+  letter-spacing: -0.3px;
 }
 
 .cardSubtitle {
   font-size: 14px;
-  color: #a0aec0;
+  color: #716666;
   max-width: 440px;
   line-height: 1.6;
-  margin: 0 0 24px 0;
+  margin: 0 0 28px 0;
 }
 
-/* Component Buttons Rules */
+/* Premium Deep Crimson Buttons matching image_f66e5f.png */
 .activateDeviceBtn, .resumePipelineBtn {
   background: #8a151b;
   color: #ffffff;
   border: none;
   padding: 12px 28px;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 4px 14px rgba(138, 21, 27, 0.3);
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
-.activateDeviceBtn:hover {
-  background: #a31920;
-  transform: translateY(-1px);
+.activateDeviceBtn:hover, .resumePipelineBtn:hover {
+  background: #721015;
+}
+
+.activateDeviceBtn:active, .resumePipelineBtn:active {
+  transform: scale(0.98);
 }
 
 .killPipelineBtn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  padding: 8px 16px;
-  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #e2dbe2;
+  color: #5c5050;
+  padding: 10px 20px;
+  border-radius: 8px;
   cursor: pointer;
-  margin-top: 14px;
-  font-weight: 500;
+  margin-top: 18px;
+  font-weight: 600;
+  transition: all 0.2s;
 }
 
 .killPipelineBtn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
+  background: #fdf5f5;
+  border-color: #f3dadc;
+  color: #8a151b;
 }
 
-/* html5-qrcode Video Overrides to blend seamlessly with UI design */
+/* Clean html5-qrcode Video Overrides */
 .cameraWrapperActive {
   display: flex;
   flex-direction: column;
@@ -127,38 +132,39 @@
 .videoStreamBox {
   width: 100% !important;
   max-width: 450px;
-  border: none !important;
-  border-radius: 12px;
+  border: 1px solid #f0edf0 !important;
+  border-radius: 16px;
   overflow: hidden;
-  background: #000000;
+  background: #fcfbcf;
 }
 
 .videoStreamBox :global(button) {
   background: #8a151b !important;
-  color: white !important;
+  color: #ffffff !important;
   border: none !important;
-  padding: 8px 16px !important;
-  border-radius: 6px !important;
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
   cursor: pointer !important;
   font-weight: 600 !important;
-  margin: 10px 0 !important;
+  font-size: 13px !important;
+  margin: 12px 0 !important;
 }
 
 .videoStreamBox :global(video) {
-  border-radius: 12px;
+  border-radius: 16px;
   object-fit: cover;
 }
 
-/* Verification Result Feedback States layout engines */
+/* Dynamic Scan Action Banners with Soft Theme Status Tints */
 .resultBannerCard {
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 14px;
+  padding: 24px;
   margin: 10px 0;
   animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -166,93 +172,93 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .statusContextIcon {
-  font-size: 36px;
+  font-size: 38px;
 }
 
 .resultHeader h4 {
   font-size: 20px;
   margin: 0;
   font-weight: 700;
+  letter-spacing: -0.3px;
 }
 
 .resultHeader p {
-  font-size: 12px;
-  margin: 2px 0 0 0;
+  font-size: 13px;
+  margin: 4px 0 0 0;
   opacity: 0.8;
 }
 
-/* State Background Modifier Color Variants */
-.success { background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; }
-.success .metaValueText { color: #ffffff; }
-.warning { background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #f59e0b; }
-.warning .metaValueText { color: #ffffff; }
-.error { background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; }
+/* Soft Status Badge Tones matching the Roster Table */
+.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+.success .metaValueText { color: #1e293b; }
 
-/* Structural metadata list block rendering inside evaluation cards */
+.warning { background: #fffbeb; border: 1px solid #fef3c7; color: #b45309; }
+.warning .metaValueText { color: #1e293b; }
+
+.error { background: #fdf5f5; border: 1px solid #f3dadc; color: #8a151b; }
+.error .metaValueText { color: #1e293b; }
+
+/* Profile Metadata Segments */
 .profileBadgeDataSegment {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 20px;
+  background: #faf9fa;
+  border: 1px solid #f0edf0;
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 24px;
 }
 
 .metaRowField, .metaGridHalf {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 10px;
-  margin-bottom: 10px;
+  border-bottom: 1px solid #f0edf0;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
 }
 
 .metaGridHalf {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
 .metaLabel {
   display: block;
   font-size: 11px;
-  color: #a0aec0;
+  color: #8c818c;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .metaValueText {
   font-size: 15px;
   font-weight: 600;
+  color: #2d2525;
 }
 
 .metaIdHash {
   font-family: monospace;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 15px;
+  color: #8a151b;
 }
 
-.resumePipelineBtn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Right Column: Logging Audit Feed Engine Panels */
+/* Session Terminal Stream Audit Panel */
 .auditHeader {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-  padding-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 20px;
+  border-bottom: 1px dashed #e2dbe2;
+  padding-bottom: 14px;
 }
 
 .auditHeader h3 {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: #ffffff;
+  color: #2d2525;
   margin: 0;
 }
 
@@ -260,39 +266,40 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 420px;
+  max-height: 440px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
 .emptyFeedPlaceholder {
   font-size: 13px;
-  color: #718096;
+  color: #8c818c;
   text-align: center;
-  padding: 40px 10px;
+  padding: 48px 12px;
 }
 
 .logRowEntry {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   font-size: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 8px 12px;
-  border-radius: 6px;
-  border-left: 3px solid #718096;
+  background: #faf9fa;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #f0edf0;
+  border-left: 3px solid #8c818c;
 }
 
 .logTimeToken {
   font-family: monospace;
-  color: #a0aec0;
+  color: #8c818c;
   flex-shrink: 0;
 }
 
 .logMessageText {
-  color: #e2e8f0;
+  color: #443b44;
+  line-height: 1.4;
 }
 
-/* Dynamic color badges pinned directly inside session arrays tracking log rows */
-.log_success { border-left-color: #10b981; background: rgba(16, 185, 129, 0.05); }
-.log_warning { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.05); }
-.log_error { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.05); }
+.log_success { border-left-color: #166534; background: #f0fdf4; }
+.log_warning { border-left-color: #b45309; background: #fffbeb; }
+.log_error { border-left-color: #8a151b; background: #fdf5f5; }
