@@ -1,48 +1,50 @@
 .scannerWorkspaceGrid {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 1fr 400px;
   gap: 24px;
-  width: 100%;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  font-family: system-ui, -apple-system, sans-serif;
-}
-
-@media (max-width: 900px) {
-  .scannerWorkspaceGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Elegant Light-Mode Minimalist Panels matching image_f66e5f.png */
-.mainCaptureCard, .auditLogPanelCard {
-  background: #ffffff;
-  border: 1px solid #f0edf0;
-  border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Primary Capture Card - Clean White Panel (Matches image_f51c7e.png)
+   ========================================================================== */
+.mainCaptureCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 500px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
 }
 
 .dormantPlaceholder {
+  text-align: center;
+  max-width: 480px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  min-height: 380px;
-  padding: 20px;
 }
 
-/* Subtle Crimson-Tinted Radar Pulse Wrapper */
 .radarPulseWrapper {
   position: relative;
-  width: 80px;
-  height: 80px;
-  background: #fdf5f5;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: #f7fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 50%;
   margin-bottom: 24px;
 }
 
@@ -51,255 +53,354 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  border: 2px solid #8a151b;
+  border: 1px solid rgba(138, 21, 27, 0.2);
   border-radius: 50%;
-  opacity: 0.3;
-  animation: radarWave 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  animation: pulseRadar 2.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  opacity: 0;
+}
+
+@keyframes pulseRadar {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
 }
 
 .scanIconCenter {
-  font-size: 30px;
-  color: #8a151b;
-}
-
-@keyframes radarWave {
-  0% { transform: scale(1); opacity: 0.4; }
-  100% { transform: scale(1.6); opacity: 0; }
+  font-size: 26px;
+  color: #718096;
 }
 
 .cardTitle {
+  color: #2d3748;
   font-size: 22px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  color: #2d2525;
+  font-weight: 600;
+  margin: 0 0 12px 0;
   letter-spacing: -0.3px;
 }
 
 .cardSubtitle {
+  color: #718096;
   font-size: 14px;
-  color: #716666;
-  max-width: 440px;
   line-height: 1.6;
-  margin: 0 0 28px 0;
+  margin: 0 0 32px 0;
 }
 
-/* Premium Deep Crimson Buttons matching image_f66e5f.png */
-.activateDeviceBtn, .resumePipelineBtn {
-  background: #8a151b;
+.activateDeviceBtn {
+  background: #8a151b; /* Your signature deep red */
   color: #ffffff;
   border: none;
   padding: 12px 28px;
-  font-weight: 600;
   font-size: 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
-}
-
-.activateDeviceBtn:hover, .resumePipelineBtn:hover {
-  background: #721015;
-}
-
-.activateDeviceBtn:active, .resumePipelineBtn:active {
-  transform: scale(0.98);
-}
-
-.killPipelineBtn {
-  background: #ffffff;
-  border: 1px solid #e2dbe2;
-  color: #5c5050;
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 18px;
   font-weight: 600;
-  transition: all 0.2s;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(138, 21, 27, 0.15);
 }
 
-.killPipelineBtn:hover {
-  background: #fdf5f5;
-  border-color: #f3dadc;
-  color: #8a151b;
+.activateDeviceBtn:hover {
+  background: #a11d24;
 }
 
-/* Clean html5-qrcode Video Overrides */
+/* ==========================================================================
+   Active Camera Framework
+   ========================================================================== */
 .cameraWrapperActive {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 20px;
 }
 
 .videoStreamBox {
-  width: 100% !important;
+  width: 100%;
   max-width: 450px;
-  border: 1px solid #f0edf0 !important;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
-  background: #fcfbcf;
+  border: 1px solid #e2e8f0;
+  background: #f7fafc;
 }
 
-.videoStreamBox :global(button) {
-  background: #8a151b !important;
-  color: #ffffff !important;
-  border: none !important;
-  padding: 10px 20px !important;
-  border-radius: 8px !important;
-  cursor: pointer !important;
-  font-weight: 600 !important;
-  font-size: 13px !important;
-  margin: 12px 0 !important;
+.videoStreamBox video {
+  width: 100% !important;
+  height: auto !important;
+  object-fit: cover !important;
 }
 
-.videoStreamBox :global(video) {
-  border-radius: 16px;
-  object-fit: cover;
+.killPipelineBtn {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  color: #4a5568;
+  border: 1px solid #cbd5e0;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-/* Dynamic Scan Action Banners with Soft Theme Status Tints */
+.killPipelineBtn:hover {
+  background: #fff5f5;
+  border-color: #feb2b2;
+  color: #c53030;
+}
+
+/* ==========================================================================
+   Dynamic Scan Evaluation Feedback Banners (Matches table row accents)
+   ========================================================================== */
 .resultBannerCard {
-  border-radius: 14px;
+  width: 100%;
+  max-width: 550px;
+  border-radius: 12px;
   padding: 24px;
-  margin: 10px 0;
-  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border: 1px solid transparent;
+  animation: slideInUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes slideInUp {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
+
+.resultBannerCard.success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.resultBannerCard.success .statusContextIcon { color: #16a34a; }
+.resultBannerCard.success h4 { color: #166534; }
+
+.resultBannerCard.warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+.resultBannerCard.warning .statusContextIcon { color: #d97706; }
+.resultBannerCard.warning h4 { color: #92400e; }
+
+.resultBannerCard.error {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+.resultBannerCard.error .statusContextIcon { color: #dc2626; }
+.resultBannerCard.error h4 { color: #991b1b; }
 
 .resultHeader {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
-  margin-bottom: 24px;
 }
 
 .statusContextIcon {
-  font-size: 38px;
+  font-size: 24px;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .resultHeader h4 {
-  font-size: 20px;
-  margin: 0;
-  font-weight: 700;
-  letter-spacing: -0.3px;
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
 }
 
 .resultHeader p {
+  color: #718096;
   font-size: 13px;
-  margin: 4px 0 0 0;
-  opacity: 0.8;
+  margin: 0;
 }
 
-/* Soft Status Badge Tones matching the Roster Table */
-.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
-.success .metaValueText { color: #1e293b; }
-
-.warning { background: #fffbeb; border: 1px solid #fef3c7; color: #b45309; }
-.warning .metaValueText { color: #1e293b; }
-
-.error { background: #fdf5f5; border: 1px solid #f3dadc; color: #8a151b; }
-.error .metaValueText { color: #1e293b; }
-
-/* Profile Metadata Segments */
+/* ==========================================================================
+   Attendee Profile Badge Breakdown Meta Structure
+   ========================================================================== */
 .profileBadgeDataSegment {
-  background: #faf9fa;
-  border: 1px solid #f0edf0;
-  border-radius: 10px;
-  padding: 18px;
-  margin-bottom: 24px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
 }
 
-.metaRowField, .metaGridHalf {
-  border-bottom: 1px solid #f0edf0;
+.metaRowField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   padding-bottom: 12px;
   margin-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .metaGridHalf {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 16px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .metaLabel {
-  display: block;
+  color: #718096;
   font-size: 11px;
-  color: #8c818c;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 6px;
 }
 
 .metaValueText {
-  font-size: 15px;
-  font-weight: 600;
-  color: #2d2525;
+  color: #2d3748;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .metaIdHash {
+  color: #2d3748;
   font-family: monospace;
-  font-weight: 700;
   font-size: 15px;
-  color: #8a151b;
+  font-weight: 600;
 }
 
-/* Session Terminal Stream Audit Panel */
+.resumePipelineBtn {
+  background: #ffffff;
+  color: #2d3748;
+  border: 1px solid #cbd5e0;
+  padding: 11px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.resumePipelineBtn:hover {
+  background: #f7fafc;
+  border-color: #a0aec0;
+}
+
+/* ==========================================================================
+   Audit Session Side Log Panel Feed (Matches image_f51c7e.png Style Cards)
+   ========================================================================== */
+.auditLogPanelCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 500px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
 .auditHeader {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
-  border-bottom: 1px dashed #e2dbe2;
-  padding-bottom: 14px;
+  padding: 20px;
+  border-bottom: 1px solid #edf2f7;
 }
 
 .auditHeader h3 {
+  color: #2d3748;
   font-size: 15px;
   font-weight: 600;
-  color: #2d2525;
   margin: 0;
 }
 
 .logStreamTrackFeed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 440px;
-  overflow-y: auto;
-  padding-right: 4px;
+}
+
+.logStreamTrackFeed::-webkit-scrollbar {
+  width: 4px;
+}
+.logStreamTrackFeed::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 10px;
 }
 
 .emptyFeedPlaceholder {
+  color: #a0aec0;
   font-size: 13px;
-  color: #8c818c;
   text-align: center;
-  padding: 48px 12px;
+  margin: auto 0;
+  padding: 0 24px;
+  line-height: 1.5;
 }
 
 .logRowEntry {
+  border-left: 3px solid transparent;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 0 6px 6px 0;
   display: flex;
-  gap: 12px;
-  font-size: 12px;
-  background: #faf9fa;
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid #f0edf0;
-  border-left: 3px solid #8c818c;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid #edf2f7;
+  border-right: 1px solid #edf2f7;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.logRowEntry.log_success {
+  border-left-color: #16a34a;
+  background: rgba(22, 163, 74, 0.02);
+}
+
+.logRowEntry.log_warning {
+  border-left-color: #d97706;
+  background: rgba(217, 119, 6, 0.02);
+}
+
+.logRowEntry.log_error {
+  border-left-color: #dc2626;
+  background: rgba(220, 38, 38, 0.02);
+}
+
+.logMetaWrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .logTimeToken {
+  color: #718096;
+  font-size: 11px;
   font-family: monospace;
-  color: #8c818c;
-  flex-shrink: 0;
+}
+
+.operatorBadge {
+  background: #edf2f7;
+  color: #4a5568;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: capitalize;
+  font-weight: 500;
 }
 
 .logMessageText {
-  color: #443b44;
+  color: #2d3748;
+  font-size: 13px;
   line-height: 1.4;
+  font-weight: 400;
 }
 
-.log_success { border-left-color: #166534; background: #f0fdf4; }
-.log_warning { border-left-color: #b45309; background: #fffbeb; }
-.log_error { border-left-color: #8a151b; background: #fdf5f5; }
+@media (max-width: 1024px) {
+  .scannerWorkspaceGrid {
+    grid-template-columns: 1fr;
+  }
+  .mainCaptureCard, .auditLogPanelCard {
+    height: auto;
+    min-height: auto;
+  }
+  .logStreamTrackFeed {
+    max-height: 350px;
+  }
+}
