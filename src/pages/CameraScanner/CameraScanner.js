@@ -8,29 +8,47 @@ import {
   FaUserCheck, 
   FaHistory 
 } from 'react-icons/fa';
+import { supabase } from '../../supabaseClient'; 
 import styles from './CameraScanner.module.css';
-
-// Local Mock Database for decoupled gate pipeline matching
-const MOCK_ATTENDEE_DATABASE = [
-  { id: "10", name: "Suresh Patel", age: 11, center: "Nairobi", status: "Pending", photo: "public_profile_10_s12.png" },
-  { id: "11", name: "Aman Shah", age: 12, center: "Mombasa", status: "Pending", photo: "public_profile_11_23131.png" },
-  { id: "7", name: "Vansh Patel", age: 14, center: "Nakuru", status: "Checked In", photo: "public_profile_7_vansh_pat.png" },
-  { id: "8", name: "Aman Patel", age: 10, center: "Nakuru", status: "Pending", photo: "public_profile_8_aman_pa.png" },
-  { id: "9", name: "Manan Patel", age: 13, center: "Kisumu", status: "Pending", photo: "public_profile_9_manan_p.png" }
-];
 
 export default function CameraScanner() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [scannerLog, setScannerLog] = useState([]);
   const [scanResult, setScanResult] = useState(null); 
-  
+  const [operator, setOperator] = useState(null);
   const scannerInstance = useRef(null);
 
-  // Clean up hardware video capture instances when navigating away
+  // 1. Initialize active operator session and pull the last 20 real gate log traces
   useEffect(() => {
-    return () => {
-      clearScannerInstance();
-    };
+    async function initScannerSession() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setOperator({
+          email: user.email,
+          name: user.email.split('@')[0]
+        });
+      }
+
+      const { data: logs, error } = await supabase
+        .from('gate_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (!error && logs) {
+        const formattedLogs = logs.map(log => ({
+          id: log.id,
+          time: new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          type: log.status,
+          text: log.message,
+          processedBy: log.operator_email
+        }));
+        setScannerLog(formattedLogs);
+      }
+    }
+
+    initScannerSession();
+    return () => clearScannerInstance();
   }, []);
 
   const clearScannerInstance = () => {
@@ -58,62 +76,112 @@ export default function CameraScanner() {
         };
 
         const scanner = new Html5QrcodeScanner("qr-reader-container", config, false);
-        
         scanner.render(onScanSuccess, onScanFailure);
         scannerInstance.current = scanner;
       } catch (error) {
         console.error("Camera device layout mounting crash:", error);
         setScanResult({
           status: 'error',
-          message: 'Could not access local video stream hardware. Check browser security clearances.'
+          message: 'Could not access local video stream hardware.'
         });
         setIsEnabled(false);
       }
     }, 150);
   };
 
-  const onScanSuccess = (decodedText) => {
+  const onScanSuccess = async (decodedText) => {
     clearScannerInstance();
     setIsEnabled(false);
 
+    // Sanitize scan strings and clean deep links if necessary
     let scannedId = decodedText.trim();
     if (scannedId.includes('data=')) {
       scannedId = scannedId.split('data=').pop().split('&')[0];
     }
     scannedId = decodeURIComponent(scannedId);
 
-    const match = MOCK_ATTENDEE_DATABASE.find(item => item.id === scannedId || item.name.toLowerCase() === scannedId.toLowerCase());
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const operatorEmail = operator?.email || 'unknown@shibir.org';
 
-    if (!match) {
-      setScanResult({
+    // 2. Querying the explicit public.attendees table structure via primary key column
+    const { data: attendee, error: fetchError } = await supabase
+      .from('attendees') 
+      .select('*')
+      .eq('id', scannedId)
+      .maybeSingle();
+
+    let localLogPayload = {
+      id: crypto.randomUUID(),
+      time: timestamp,
+      processedBy: operatorEmail
+    };
+
+    // CASE A: Unique Record ID could not be resolved from public.attendees table
+    if (fetchError || !attendee) {
+      const errorMsg = `Failed gate verification entry match for token input: "${scannedId}"`;
+      
+      await supabase.from('gate_logs').insert([{
+        scanned_id: scannedId,
         status: 'error',
-        message: `Badge Unknown. ID #${scannedId} does not match any entry logs.`
-      });
-      setScannerLog(prev => [{ time: timestamp, type: 'error', text: `Failed scan query for token: ${scannedId}` }, ...prev]);
+        message: errorMsg,
+        operator_email: operatorEmail
+      }]);
+
+      localLogPayload.type = 'error';
+      localLogPayload.text = `Badge Unknown. ID #${scannedId} missing from public.attendees data grid.`;
+      
+      setScanResult({ status: 'error', message: `Badge Unknown. ID #${scannedId} does not match any entry logs.` });
+      setScannerLog(prev => [localLogPayload, ...prev]);
       return;
     }
 
-    if (match.status === 'Checked In') {
-      setScanResult({
+    // CASE B: Record exists on public.attendees database but registration is already verified
+    if (attendee.status === 'Checked In') {
+      const warningMsg = `Duplicate entry warning flag triggered for ${attendee.name}`;
+
+      await supabase.from('gate_logs').insert([{
+        scanned_id: scannedId,
         status: 'warning',
-        message: 'Duplicate Scan Warning!',
-        attendee: match
-      });
-      setScannerLog(prev => [{ time: timestamp, type: 'warning', text: `${match.name} flagged as duplicate access attempt.` }, ...prev]);
-    } else {
-      match.status = 'Checked In';
-      setScanResult({
-        status: 'success',
-        message: 'Gate Admission Approved!',
-        attendee: match
-      });
-      setScannerLog(prev => [{ time: timestamp, type: 'success', text: `Verified Check-In for ${match.name}` }, ...prev]);
+        message: warningMsg,
+        operator_email: operatorEmail,
+        attendee_name: attendee.name
+      }]);
+
+      localLogPayload.type = 'warning';
+      localLogPayload.text = `Duplicate flag triggered for ${attendee.name} (${attendee.center})`;
+
+      setScanResult({ status: 'warning', message: 'Duplicate Scan Warning!', attendee });
+      setScannerLog(prev => [localLogPayload, ...prev]);
+      return;
     }
+
+    // CASE C: Valid primary entry verification clearance confirmed
+    const successMsg = `Successful check-in confirmation completed for attendee: ${attendee.name}`;
+
+    // Mutate state record inside public.attendees table database row entry
+    await supabase
+      .from('attendees')
+      .update({ status: 'Checked In' })
+      .eq('id', attendee.id);
+
+    // Save final analytical session log tracking parameter to database table
+    await supabase.from('gate_logs').insert([{
+      scanned_id: scannedId,
+      status: 'success',
+      message: successMsg,
+      operator_email: operatorEmail,
+      attendee_name: attendee.name
+    }]);
+
+    localLogPayload.type = 'success';
+    localLogPayload.text = `Verified Check-In for ${attendee.name}`;
+
+    setScanResult({ status: 'success', message: 'Gate Admission Approved!', attendee });
+    setScannerLog(prev => [localLogPayload, ...prev]);
   };
 
   const onScanFailure = () => {
-    // Silent drop on frame capture misses
+    // Silent frame capture drop
   };
 
   const handleCloseResult = () => {
@@ -209,9 +277,12 @@ export default function CameraScanner() {
               No scan entries registered over the current browser environment session.
             </div>
           ) : (
-            scannerLog.map((log, index) => (
-              <div key={index} className={`${styles.logRowEntry} ${styles[`log_${log.type}`]}`}>
-                <span className={styles.logTimeToken}>{log.time}</span>
+            scannerLog.map((log) => (
+              <div key={log.id} className={`${styles.logRowEntry} ${styles[`log_${log.type}`]}`}>
+                <div className={styles.logMetaWrapper}>
+                  <span className={styles.logTimeToken}>{log.time}</span>
+                  <span className={styles.operatorBadge}>By: {log.processedBy ? log.processedBy.split('@')[0] : 'system'}</span>
+                </div>
                 <span className={styles.logMessageText}>{log.text}</span>
               </div>
             ))
