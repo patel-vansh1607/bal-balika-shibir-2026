@@ -7,7 +7,7 @@ import styles from './PublicRegister.module.css';
 export default function PublicRegister() {
   const [fullName, setFullName] = useState('');
   const [age, setAge] = useState('');
-  const [gender, setGender] = useState('Balak'); // 'Balak' = Male, 'Balika' = Female
+  const [gender, setGender] = useState('Balak');
   const [center, setCenter] = useState('Nairobi, Kenya');
   const [parentContact, setParentContact] = useState('');
   const [photoFile, setPhotoFile] = useState(null);
@@ -23,7 +23,7 @@ export default function PublicRegister() {
   
   const qrRef = useRef(null);
 
-  // RULE 1: Photo Validation (Max 2.5MB and valid image type)
+  // Photo Validation (Max 2.5MB and valid image type)
   const handlePhotoChange = (e) => {
     setFormError('');
     const file = e.target.files[0];
@@ -33,11 +33,11 @@ export default function PublicRegister() {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
       setFormError('Unsupported file format. Please upload a clear JPG, PNG, or WEBP image.');
-      e.target.value = ''; // Clear selection
+      e.target.value = ''; 
       return;
     }
 
-    const maxSizeInBytes = 2.5 * 1024 * 1024; // 2.5MB limit
+    const maxSizeInBytes = 2.5 * 1024 * 1024; 
     if (file.size > maxSizeInBytes) {
       setFormError('The selected image is too large. Photo size must be under 2.5MB.');
       e.target.value = '';
@@ -48,7 +48,7 @@ export default function PublicRegister() {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
-  // RULE 2: Complex Form Sanitization & Validation
+  // Form Sanitization & Validation
   const validateForm = () => {
     const cleanName = fullName.trim();
     const cleanContact = parentContact.trim();
@@ -144,7 +144,7 @@ export default function PublicRegister() {
 
     const { cleanName, parsedAge, cleanContact } = validatedFields;
 
-    // Database payload commit
+    // Database payload commit - Includes the dynamic gender field insertion 
     const { data: insertData, error: insertError } = await supabase
       .from('attendees')
       .insert([
@@ -235,6 +235,7 @@ export default function PublicRegister() {
           <form onSubmit={handleSubmit} noValidate>
             <div className={styles.formGrid}>
               
+              {/* Row 1: Full Width Name Field */}
               <div className={styles.formGroupFull}>
                 <label className={styles.label}>Full Name</label>
                 <input 
@@ -244,65 +245,67 @@ export default function PublicRegister() {
                 />
               </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Age</label>
-                <input 
-                  type="number" required min="3" max="18" className={styles.input}
-                  placeholder="e.g. 11"
-                  value={age} onChange={(e) => setAge(e.target.value)} disabled={loading}
-                />
+              {/* Row 2: Inline Horizontal Field Group Engine */}
+              <div>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Age</label>
+                  <input 
+                    type="number" required min="3" max="18" className={styles.input}
+                    placeholder="e.g. 11"
+                    value={age} onChange={(e) => setAge(e.target.value)} disabled={loading}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Mandal</label>
+                  <select 
+                    className={styles.select} 
+                    value={gender} 
+                    onChange={(e) => setGender(e.target.value)} 
+                    disabled={loading}
+                  >
+                    <option value="Balak">Balak </option>
+                    <option value="Balika">Balika </option>
+                  </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Center</label>
+                  <select className={styles.select} value={center} onChange={(e) => setCenter(e.target.value)} disabled={loading}>
+                    <optgroup label="Kenya">
+                      <option value="Nairobi, Kenya">Nairobi</option>
+                      <option value="Nakuru, Kenya">Nakuru</option>
+                      <option value="Kisumu, Kenya">Kisumu</option>
+                      <option value="Mombasa, Kenya">Mombasa</option>
+                    </optgroup>
+                    <optgroup label="Uganda">
+                      <option value="Kampala, Uganda">Kampala</option>
+                      <option value="Jinja, Uganda">Jinja</option>
+                    </optgroup>
+                    <optgroup label="Tanzania">
+                      <option value="Dar es Salaam, Tanzania">Dar es Salaam</option>
+                      <option value="Arusha, Tanzania">Arusha</option>
+                    </optgroup>
+                    <optgroup label="Other African Regions">
+                      <option value="Lilongwe, Malawi">Lilongwe, Malawi</option>
+                      <option value="Lusaka, Zambia">Lusaka, Zambia</option>
+                      <option value="Gaborone, Botswana">Gaborone, Botswana</option>
+                      <option value="Johannesburg, South Africa">Johannesburg, South Africa</option>
+                    </optgroup>
+                  </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>WhatsApp Contact</label>
+                  <input 
+                    type="tel" required className={styles.input}
+                    placeholder="e.g. +254 700 000 000"
+                    value={parentContact} onChange={(e) => setParentContact(e.target.value)} disabled={loading}
+                  />
+                </div>
               </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Category Classification</label>
-                <select 
-                  className={styles.select} 
-                  value={gender} 
-                  onChange={(e) => setGender(e.target.value)} 
-                  disabled={loading}
-                >
-                  <option value="Balak">Balak (Male)</option>
-                  <option value="Balika">Balika (Female)</option>
-                </select>
-              </div>
-
-              {/* CENTER SELECTION - CHANGED TO styles.formGroup */}
-              <div className={styles.formGroup}>
-                <label className={styles.label}> Center </label>
-                <select className={styles.select} value={center} onChange={(e) => setCenter(e.target.value)} disabled={loading}>
-                  <optgroup label="Kenya">
-                    <option value="Nairobi, Kenya">Nairobi</option>
-                    <option value="Nakuru, Kenya">Nakuru</option>
-                    <option value="Kisumu, Kenya">Kisumu</option>
-                    <option value="Mombasa, Kenya">Mombasa</option>
-                  </optgroup>
-                  <optgroup label="Uganda">
-                    <option value="Kampala, Uganda">Kampala</option>
-                    <option value="Jinja, Uganda">Jinja</option>
-                  </optgroup>
-                  <optgroup label="Tanzania">
-                    <option value="Dar es Salaam, Tanzania">Dar es Salaam</option>
-                    <option value="Arusha, Tanzania">Arusha</option>
-                  </optgroup>
-                  <optgroup label="Other African Regions">
-                    <option value="Lilongwe, Malawi">Lilongwe, Malawi</option>
-                    <option value="Lusaka, Zambia">Lusaka, Zambia</option>
-                    <option value="Gaborone, Botswana">Gaborone, Botswana</option>
-                    <option value="Johannesburg, South Africa">Johannesburg, South Africa</option>
-                  </optgroup>
-                </select>
-              </div>
-
-              {/* WHATSAPP CONTACT - CHANGED TO styles.formGroup */}
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Parent / Guardian WhatsApp Contact</label>
-                <input 
-                  type="tel" required className={styles.input}
-                  placeholder="e.g. +254 700 000 000"
-                  value={parentContact} onChange={(e) => setParentContact(e.target.value)} disabled={loading}
-                />
-              </div>
-
+              {/* Row 3: Full Width Photo Profile Section */}
               <div className={styles.formGroupFull}>
                 <label className={styles.label}>Profile Picture (Clear Passport Style Shot)</label>
                 <div className={styles.photoUploadWrapper}>
