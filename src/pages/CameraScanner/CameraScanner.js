@@ -16,6 +16,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
   const [scannerLog, setScannerLog] = useState([]);
   const [scanResult, setScanResult] = useState(null); 
   const [operator, setOperator] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false); // 🔥 Added state for UI loading spinner
   const scannerInstance = useRef(null);
   const isProcessingScan = useRef(false);
 
@@ -68,17 +69,17 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
 
   const startCameraEngineDirectly = () => {
     isProcessingScan.current = false;
+    setIsProcessing(false); // Reset visual loading block
 
     // Small delay ensures the target DOM element container `#qr-reader-container` is fully painted
     setTimeout(() => {
       try {
         const config = {
-          fps: 15,
+          fps: 20, 
           qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
           formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
           videoConstraints: {
-            facingMode: { exact: "environment" } // Force back camera
+            facingMode: "environment" 
           }
         };
 
@@ -92,12 +93,13 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
           message: 'Could not directly access rear video stream hardware.'
         });
       }
-    }, 200);
+    }, 100); 
   };
 
   const onScanSuccess = async (decodedText) => {
     if (isProcessingScan.current) return;
     isProcessingScan.current = true;
+    setIsProcessing(true); // 🔥 Turn on the beautiful loading spinner UI element instantly
 
     clearScannerInstance();
 
@@ -109,6 +111,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
 
     if (!scannedId) {
       isProcessingScan.current = false;
+      setIsProcessing(false);
       return;
     }
 
@@ -145,6 +148,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       });
       setScannerLog(prev => [localLogPayload, ...prev]);
       isProcessingScan.current = false;
+      setIsProcessing(false); // Turn off loader on result display
       return;
     }
 
@@ -221,6 +225,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       console.error("Critical error inside camera stream capture block:", err);
     } finally {
       isProcessingScan.current = false;
+      setIsProcessing(false); // 🔥 Database handshake is done, turn off loading view cleanly
     }
   };
 
@@ -230,7 +235,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
 
   const handleCloseResult = () => {
     setScanResult(null);
-    startCameraEngineDirectly(); // 🔥 Instantly re-opens the live stream when clearing a result card
+    startCameraEngineDirectly(); 
   };
 
   return (
@@ -239,14 +244,37 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       {/* Primary Video Capture Card Frame */}
       <div className={styles.mainCaptureCard}>
         
-        {/* Live Active Stream Container - Always rendered unless a result card is active */}
-        {!scanResult && (
+        {/* State A: Show the beautiful loading state while fetching database response */}
+        {isProcessing && !scanResult && (
+          <div className={styles.cameraWrapperActive} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+            {/* Inline spinning styling directly applied so it loads instantly */}
+            <div style={{
+              width: '50px',
+              height: '50px',
+              border: '4px solid #f4ece6',
+              borderTop: '4px solid #8a151b', // Styled with your custom BAPS Maroon theme color variable
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              marginBottom: '16px'
+            }}></div>
+            <style>{`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}</style>
+            <h4 style={{ margin: '0', color: '#2d2926', fontFamily: 'sans-serif' }}>Verifying Credentials...</h4>
+            <p style={{ margin: '4px 0 0 0', color: '#6c635c', fontSize: '13px' }}>Connecting to Shibir Cloud Database Securely</p>
+          </div>
+        )}
+
+        {/* State B: Live Active Stream Container - Rendered when not loading and no result is showing */}
+        {!scanResult && !isProcessing && (
           <div className={styles.cameraWrapperActive}>
             <div className={styles.streamScopeBanner}>
               Scanning exclusively for <strong>{prefixScope}</strong> identity passes...
             </div>
             
-            {/* The html5-qrcode engine injects the live canvas directly here on mount */}
             <div id="qr-reader-container" className={styles.videoStreamBox}></div>
 
             <div className={styles.activeFenceBadge} style={{ marginTop: '12px', justifyContent: 'center' }}>
@@ -255,8 +283,8 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
           </div>
         )}
 
-        {/* Dynamic Scanning Verification Display Panel Result Feedback Cards */}
-        {scanResult && (
+        {/* State C: Dynamic Scanning Verification Display Panel Result Feedback Cards */}
+        {scanResult && !isProcessing && (
           <div className={`${styles.resultBannerCard} ${styles[scanResult.status]}`}>
             <div className={styles.resultHeader}>
               {scanResult.status === 'success' && <FaCheckCircle className={styles.statusContextIcon} />}
@@ -310,16 +338,17 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
               No scan entries registered over the current browser environment session.
             </div>
           ) : (
-            scannerLog.map((log) => (
-              <div key={log.id} className={`${styles.logRowEntry} ${styles[`log_${log.type}`]}`}>
-                <div className={styles.logMetaWrapper}>
-                  <span className={styles.logTimeToken}>{log.time}</span>
-                  <span className={styles.operatorBadge}>By: {log.processedBy}</span>
-                </div>
-                <span className={styles.logMessageText}>{log.text}</span>
-              </div>
-            ))
+            <div className={styles.emptyFeedPlaceholder} style={{display: 'none'}}></div>
           )}
+          {scannerLog.map((log) => (
+            <div key={log.id} className={`${styles.logRowEntry} ${styles[`log_${log.type}`]}`}>
+              <div className={styles.logMetaWrapper}>
+                <span className={styles.logTimeToken}>{log.time}</span>
+                <span className={styles.operatorBadge}>By: {log.processedBy}</span>
+              </div>
+              <span className={styles.logMessageText}>{log.text}</span>
+            </div>
+          ))}
         </div>
       </div>
 
