@@ -29,7 +29,8 @@ serve(async (req) => {
     }
 
     const emailPayload = {
-      from: 'Bal-Balika Shibir <onboarding@resend.dev>', 
+      // 🔥 UPDATED: Swapped sandbox email with your live custom domain address
+      from: 'Bal-Balika Shibir <registration@vocnakuru.live>', 
       to: [email],
       subject: `Registration Confirmed! Shibir ID: ${memberId}`,
       html: `
