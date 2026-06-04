@@ -217,7 +217,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
             localLogPayload.type = 'success';
             localLogPayload.text = successMsg;
 
-            setScanResult({ status: 'success', message: 'Gate Admission Approved!', attendee });
+            setScanResult({ status: 'success', message: 'Checked In Approved!', attendee });
             setScannerLog(prev => [localLogPayload, ...prev]);
 
           } catch (err) {
@@ -372,7 +372,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
                     {scanResult.message}
                   </h4>
                   <p style={{ margin: '0', color: currentTheme.subtext, fontSize: '13px', lineHeight: '1.4', fontWeight: '500' }}>
-                    {scanResult.customDetail || 'Security Evaluation Complete'}
+                    {scanResult.customDetail || 'Check In Complete'}
                   </p>
                 </div>
               </div>
@@ -387,17 +387,17 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '12px', marginBottom: '12px', borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: '12px' }}>
                     <div>
-                      <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#666', fontWeight: '600' }}>Age Group</span>
+                      <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#666', fontWeight: '600' }}>Age</span>
                       <span style={{ fontSize: '14px', fontWeight: '600', color: '#222' }}>{scanResult.attendee.age} Years Old</span>
                     </div>
                     <div>
-                      <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#666', fontWeight: '600' }}>Center Branch</span>
+                      <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#666', fontWeight: '600' }}>Center</span>
                       <span style={{ fontSize: '14px', fontWeight: '600', color: '#222' }}>{scanResult.attendee.center}</span>
                     </div>
                   </div>
 
                   <div style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: '10px' }}>
-                    <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#666', fontWeight: '600' }}>System Token Reference</span>
+                    <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#666', fontWeight: '600' }}>Shibir ID Number</span>
                     <code style={{ fontSize: '12px', color: '#444', background: 'rgba(0,0,0,0.05)', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '4px', wordBreak: 'break-all' }}>
                       {scanResult.attendee.member_id}
                     </code>
