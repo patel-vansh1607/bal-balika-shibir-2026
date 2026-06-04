@@ -13,8 +13,11 @@ export default function App() {
         {/* Login page acts as the root route */}
         <Route path="/" element={<Login />} />
         
-        {/* Dashboard page layout */}
-        <Route path="/dashboard" element={<Dashboard />} />
+        {/* 🔥 CHANGED: Added "/*" to allow internal nested sub-routing 
+          inside the Dashboard component layout.
+        */}
+        <Route path="/dashboard/*" element={<Dashboard />} />
+        
         <Route path="/register" element={<PublicRegister />} />
         <Route path="/select-region" element={<SelectRegion />} />
       </Routes>

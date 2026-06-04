@@ -59,7 +59,7 @@ serve(async (req) => {
               <div style="background-color: #f4ece6; border: 1px solid #e6dfd9; padding: 20px; border-radius: 12px; margin: 24px 0;">
                 <p style="margin: 8px 0; font-size: 15px; color: #6c635c;"><strong style="text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em;">Attendee Name:</strong> <span style="font-weight: bold; color: #2d2926; margin-left: 5px;">${name}</span></p>
                 <p style="margin: 8px 0; font-size: 15px; color: #6c635c;"><strong style="text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em;"> Shibir ID:</strong> <span style="font-weight: bold; color: #8a151b; margin-left: 5px; font-size: 17px;">${memberId}</span></p>
-                <p style="margin: 8px 0; font-size: 15px; color: #6c635c;"><strong style="text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em;"> Region:</strong> <span style="font-weight: bold; color: #2d2926; margin-left: 5px;">${region}</span></p>
+                <p style="margin: 8px 0; font-size: 15px; color: #6c635c;"><strong style="text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em;"> Country:</strong> <span style="font-weight: bold; color: #2d2926; margin-left: 5px;">${region}</span></p>
                 <p style="margin: 8px 0; font-size: 15px; color: #6c635c;"><strong style="text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em;">Center :</strong> <span style="font-weight: bold; color: #2d2926; margin-left: 5px;">${center}</span></p>
               </div>
 
