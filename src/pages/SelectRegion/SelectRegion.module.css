@@ -83,14 +83,13 @@
   align-items: center;
   justify-content: center;
   border: 2px solid transparent;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .badgeCircle:hover { border-color: var(--accent-primary); }
 
-.badgeImg { width: 65px; height: 65px; object-fit: contain; }
+.badgeImg { width: 65px; height: 65px; object-fit: contain;transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .badgeText { font-size: 14px; font-weight: 600; margin-top: 12px; color: var(--text-main); }
-
 /* ==========================================================================
    FOOTER
    ========================================================================== */
@@ -99,7 +98,10 @@
   padding-top: 20px;
   text-align: center;
 }
-
+/* Add this rule to your existing styles */
+.badgeCircle:hover .badgeImg {
+  transform: scale(1.25); /* Adjust the 1.15 value to make it larger or smaller */
+}
 .logoutBtn {
   background: transparent;
   border: none;
