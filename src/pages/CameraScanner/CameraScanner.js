@@ -33,6 +33,64 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     }
   }, []);
 
+  // --- MOBILITY OPTIMIZED ENGINE INITIALIZER ---
+  const startCameraEngineDirectly = useCallback(async () => {
+    isProcessingScan.current = false;
+    setIsProcessing(false); 
+
+    await stopCameraEngine();
+
+    const container = document.getElementById("qr-reader-container");
+    if (!container) return;
+
+    try {
+      // ⚡ Native Web API Handshake: Triggers permissions early to prevent library UI fallbacks
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const preemptiveStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        preemptiveStream.getTracks().forEach(track => track.stop());
+      }
+
+      const scanner = new Html5Qrcode("qr-reader-container", {
+        formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+        verbose: false
+      });
+      
+      html5QrcodeInstance.current = scanner;
+
+      const config = {
+        fps: 24, 
+        qrbox: (width, height) => {
+          const size = Math.min(width, height) * 0.75;
+          return { width: size, height: size };
+        }
+      };
+
+      await scanner.start(
+        { facingMode: "environment" }, 
+        config,
+        onScanSuccess,
+        onScanFailure
+      );
+
+      const videoElement = container.querySelector('video');
+      if (videoElement) {
+        videoElement.setAttribute('playsinline', 'true');
+        videoElement.setAttribute('webkit-playsinline', 'true');
+        videoElement.style.objectFit = 'cover';
+        videoElement.style.width = '100%';
+        videoElement.style.height = '100%';
+      }
+
+    } catch (error) {
+      console.error("Mobile Camera Hardware Handshake Refused:", error);
+      setScanResult({
+        status: 'error',
+        message: 'Camera Access Refused.',
+        customDetail: 'Please confirm camera permissions are granted for this origin, and that the page is running on HTTPS.'
+      });
+    }
+  }, [stopCameraEngine]); // Moved above onScanSuccess to allow clean referencing dependency loops
+
   // --- BUSINESS LOGIC PROCESSING BLOCK ---
   const onScanSuccess = useCallback(async (decodedText) => {
     if (isProcessingScan.current) return;
@@ -165,69 +223,11 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       isProcessingScan.current = false;
       setIsProcessing(false); 
     }
-  }, [stopCameraEngine, operator, prefixScope, regionScope]);
+  }, [stopCameraEngine, operator, prefixScope, regionScope, startCameraEngineDirectly]); // 🔥 Added missing dependency here
 
   const onScanFailure = () => {
     // Drop un-decoded background stream frames cleanly
   };
-
-  // --- MOBILITY OPTIMIZED ENGINE INITIALIZER ---
-  const startCameraEngineDirectly = useCallback(async () => {
-    isProcessingScan.current = false;
-    setIsProcessing(false); 
-
-    await stopCameraEngine();
-
-    const container = document.getElementById("qr-reader-container");
-    if (!container) return;
-
-    try {
-      // ⚡ Native Web API Handshake: Triggers permissions early to prevent library UI fallbacks
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const preemptiveStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        preemptiveStream.getTracks().forEach(track => track.stop());
-      }
-
-      const scanner = new Html5Qrcode("qr-reader-container", {
-        formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
-        verbose: false
-      });
-      
-      html5QrcodeInstance.current = scanner;
-
-      const config = {
-        fps: 24, 
-        qrbox: (width, height) => {
-          const size = Math.min(width, height) * 0.75;
-          return { width: size, height: size };
-        }
-      };
-
-      await scanner.start(
-        { facingMode: "environment" }, 
-        config,
-        onScanSuccess,
-        onScanFailure
-      );
-
-      const videoElement = container.querySelector('video');
-      if (videoElement) {
-        videoElement.setAttribute('playsinline', 'true');
-        videoElement.setAttribute('webkit-playsinline', 'true');
-        videoElement.style.objectFit = 'cover';
-        videoElement.style.width = '100%';
-        videoElement.style.height = '100%';
-      }
-
-    } catch (error) {
-      console.error("Mobile Camera Hardware Handshake Refused:", error);
-      setScanResult({
-        status: 'error',
-        message: 'Camera Access Refused.',
-        customDetail: 'Please confirm camera permissions are granted for this origin, and that the page is running on HTTPS.'
-      });
-    }
-  }, [onScanSuccess, stopCameraEngine]);
 
   useEffect(() => {
     async function initScannerSession() {
@@ -259,7 +259,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
 
     initScannerSession();
     
-    // Slight macro-task delay ensures layout nodes are ready
     const initializationTimeout = setTimeout(() => {
       startCameraEngineDirectly();
     }, 150);
@@ -268,7 +267,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       clearTimeout(initializationTimeout);
       stopCameraEngine();
     };
-  }, [startCameraEngineDirectly, stopCameraEngine]); // 🔥 Added startCameraEngineDirectly here to clear eslint warning
+  }, [startCameraEngineDirectly, stopCameraEngine]); 
 
   const handleCloseResult = () => {
     setScanResult(null);
