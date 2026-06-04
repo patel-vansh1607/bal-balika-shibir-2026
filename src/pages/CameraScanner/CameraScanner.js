@@ -14,7 +14,6 @@ import styles from './CameraScanner.module.css';
 export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC-' }) {
   const [scannerLog, setScannerLog] = useState([]);
   const [scanResult, setScanResult] = useState(null); 
-  const [operator, setOperator] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false); 
   
   const html5QrcodeInstance = useRef(null);
@@ -148,8 +147,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
             });
             setScannerLog(prev => [localLogPayload, ...prev]);
             setIsProcessing(false); 
-            
-            // Pauses processing down below; stream stays up but freezes validation overlays until manual dismiss
             return;
           }
 
@@ -247,7 +244,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
         message: 'Camera Access Refused.',
         customDetail: 'Please confirm camera permissions are granted for this origin, and that the page is running on HTTPS.'
       });
-    } {
+    } finally {
       isStartingEngine.current = false;
     }
   }, [stopCameraEngine, onScanFailure, prefixScope, regionScope]);
@@ -261,8 +258,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
             email: user.email,
             name: user.user_metadata?.full_name || user.email.split('@')[0]
           };
-          setOperator(userData);
-          operatorRef.current = userData; // Sync to ref immediately
+          operatorRef.current = userData; // Sync to ref tracking structure
         }
 
         const { data: logs, error } = await supabase
