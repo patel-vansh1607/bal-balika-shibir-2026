@@ -286,7 +286,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     } finally {
       isStartingEngine.current = false;
     }
-  }, [stopCameraEngine, onScanFailure, prefixScope, regionScope]);
+  }, [stopCameraEngine, onScanFailure, regionScope]); // 🔥 FIXED: Unused prefixScope hook dependency removed completely
 
   useEffect(() => {
     async function initScannerSession() {
