@@ -223,7 +223,7 @@ export default function RegisteredRoster({ attendees = [], dataFetching = false,
           </div>
         ) : filteredAttendees.length === 0 ? (
           <div className={styles.tableMessageBlock}>
-            <p>No delegates found matching <strong>{regionScope === 'All' ? 'All African Regions' : regionScope}</strong> selection grid.</p>
+            <p>No attendes found matching <strong>{regionScope === 'All' ? 'All African Regions' : regionScope}</strong> selection grid.</p>
           </div>
         ) : (
           <div className={styles.tableContainer}>
