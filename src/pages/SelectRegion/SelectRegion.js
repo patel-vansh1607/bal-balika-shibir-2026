@@ -12,7 +12,7 @@ import styles from './SelectRegion.module.css';
 export default function SelectRegion() {
   const navigate = useNavigate();
 
-  // Expanded explicit regional database partitions matching all target Shibir countries
+  // Cleaned regional database partitions matching public registration targets exactly
   const regions = [
     { 
       id: 'All', 
@@ -21,43 +21,43 @@ export default function SelectRegion() {
       description: 'View and manage data across all Regions' 
     },
     { 
-      id: 'Kenya (+254)', 
+      id: 'Kenya', 
       idPrefix: 'MTRC-KE-',
       name: 'Kenya Region', 
       description: 'View and manage data across Kenya Region' 
     },
     { 
-      id: 'Tanzania (+255)', 
+      id: 'Tanzania', 
       idPrefix: 'MTRC-TZ-',
       name: 'Tanzania Region', 
       description: 'View and manage data across Tanzania Region' 
     },
     { 
-      id: 'Uganda (+256)', 
+      id: 'Uganda', 
       idPrefix: 'MTRC-UG-',
       name: 'Uganda Region', 
       description: 'View and manage data across Uganda Region' 
     },
     { 
-      id: 'Zambia (+260)', 
+      id: 'Zambia', 
       idPrefix: 'MTRC-ZM-',
       name: 'Zambia Region', 
       description: 'View and manage data across Zambia Region' 
     },
     { 
-      id: 'Malawi (+265)', 
+      id: 'Malawi', 
       idPrefix: 'MTRC-MW-',
       name: 'Malawi Region', 
       description: 'View and manage data across Malawi Region' 
     },
     { 
-      id: 'Botswana (+267)', 
+      id: 'Botswana', 
       idPrefix: 'MTRC-BW-',
       name: 'Botswana Region', 
       description: 'View and manage data across Botswana Region' 
     },
     { 
-      id: 'South Africa (+27)', 
+      id: 'South Africa', 
       idPrefix: 'MTRC-ZA-',
       name: 'South Africa Region', 
       description: 'View and manage data across South Africa Region' 

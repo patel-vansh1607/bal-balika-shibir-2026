@@ -105,6 +105,12 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
           }
           scannedId = decodeURIComponent(scannedId).toUpperCase().trim();
 
+          // Try splitting off generic local tags if present (e.g. MTRC-15 -> 15)
+          let rawNumericFallback = scannedId;
+          if (scannedId.startsWith('MTRC-') && !scannedId.includes('-KE-') && !scannedId.includes('-TZ-') && !scannedId.includes('-UG-') && !scannedId.includes('-ZM-') && !scannedId.includes('-MW-') && !scannedId.includes('-BW-') && !scannedId.includes('-ZA-')) {
+            rawNumericFallback = scannedId.replace('MTRC-', '');
+          }
+
           if (!scannedId) {
             isProcessingScan.current = false;
             setIsProcessing(false);
@@ -122,8 +128,64 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
             processedBy: operatorName
           };
 
-          if (regionScope !== 'All' && !scannedId.startsWith(prefixScope.toUpperCase())) {
-            const crossBorderErrorMsg = `Access Denied: Scanned ID "${scannedId}" belongs to another regional center branch.`;
+          // Step 1: Pre-fetch record flexibly via custom alphanumeric token OR numeric Primary Key fallback
+          let attendeeRecord = null;
+          let fetchErrorInstance = null;
+
+          try {
+            // Check absolute alphanumeric layout first
+            const { data: byMemberId, error: err1 } = await supabase
+              .from('attendees')
+              .select('*')
+              .eq('member_id', scannedId)
+              .maybeSingle();
+
+            if (byMemberId) {
+              attendeeRecord = byMemberId;
+            } else if (!isNaN(rawNumericFallback)) {
+              // Check structural integer index key second
+              const { data: byId, error: err2 } = await supabase
+                .from('attendees')
+                .select('*')
+                .eq('id', parseInt(rawNumericFallback, 10))
+                .maybeSingle();
+              attendeeRecord = byId;
+              fetchErrorInstance = err2;
+            } else {
+              fetchErrorInstance = err1;
+            }
+          } catch (lookupErr) {
+            console.error("Database resolution failed:", lookupErr);
+          }
+
+          // Step 2: Handle totally unrecognized tokens
+          if (fetchErrorInstance || !attendeeRecord) {
+            const errorMsg = `Denied Entry: Token "${scannedId}" is completely unknown to the database.`;
+            
+            await supabase.from('gate_logs').insert([{
+              scanned_id: scannedId,
+              status: 'error',
+              message: errorMsg,
+              operator_email: operatorEmail,
+              operator_name: operatorName,
+              attendee_name: 'Unknown Badge'
+            }]);
+
+            localLogPayload.type = 'error';
+            localLogPayload.text = errorMsg;
+            
+            setScanResult({ status: 'error', message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
+            setScannerLog(prev => [localLogPayload, ...prev]);
+            setIsProcessing(false);
+            return;
+          }
+
+          // Step 3: Validate geographical permission logic cleanly matching database names
+          const assignedRegion = attendeeRecord.region || '';
+          const targetRegionScope = regionScope || 'All';
+
+          if (targetRegionScope !== 'All' && assignedRegion.toLowerCase() !== targetRegionScope.toLowerCase()) {
+            const crossBorderErrorMsg = `Access Denied: ${attendeeRecord.name} belongs to ${assignedRegion} Region.`;
             
             try {
               await supabase.from('gate_logs').insert([{
@@ -132,7 +194,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
                 message: crossBorderErrorMsg,
                 operator_email: operatorEmail,
                 operator_name: operatorName,
-                attendee_name: 'Cross-Region Member'
+                attendee_name: attendeeRecord.name || 'Cross-Region Member'
               }]);
             } catch (dbErr) {
               console.error("Database log write failed:", dbErr);
@@ -144,66 +206,43 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
             setScanResult({ 
               status: 'error', 
               message: 'Cross-Partition Domain Violation!', 
-              customDetail: `This scanner is restricted strictly to ${regionScope} (${prefixScope}) codes. Entry rejected.` 
+              customDetail: `This scanner is restricted strictly to ${regionScope}. Entry rejected.` 
             });
             setScannerLog(prev => [localLogPayload, ...prev]);
             setIsProcessing(false); 
             return;
           }
 
+          // Step 4: Handle duplicate check-ins
+          if (attendeeRecord.status === 'Checked In') {
+            const warningMsg = `Duplicate Flag: ${attendeeRecord.name} scanned again at verification check.`;
+
+            await supabase.from('gate_logs').insert([{
+              scanned_id: scannedId,
+              status: 'warning',
+              message: warningMsg,
+              operator_email: operatorEmail,
+              operator_name: operatorName,
+              attendee_name: attendeeRecord.name
+            }]);
+
+            localLogPayload.type = 'warning';
+            localLogPayload.text = warningMsg;
+
+            setScanResult({ status: 'warning', message: 'Duplicate Scan Warning!', attendee: attendeeRecord });
+            setScannerLog(prev => [localLogPayload, ...prev]);
+            setIsProcessing(false);
+            return;
+          }
+
+          // Step 5: Process standard successful validation
+          const successMsg = `Approved Admission: Check-in completed for ${attendeeRecord.name} (${attendeeRecord.center})`;
+
           try {
-            const { data: attendee, error: fetchError } = await supabase
-              .from('attendees') 
-              .select('*')
-              .eq('member_id', scannedId)
-              .maybeSingle();
-
-            if (fetchError || !attendee) {
-              const errorMsg = `Denied Entry: Token "${scannedId}" is completely unknown to the database.`;
-              
-              await supabase.from('gate_logs').insert([{
-                scanned_id: scannedId,
-                status: 'error',
-                message: errorMsg,
-                operator_email: operatorEmail,
-                operator_name: operatorName,
-                attendee_name: 'Unknown Badge'
-              }]);
-
-              localLogPayload.type = 'error';
-              localLogPayload.text = errorMsg;
-              
-              setScanResult({ status: 'error', message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
-              setScannerLog(prev => [localLogPayload, ...prev]);
-              return;
-            }
-
-            if (attendee.status === 'Checked In') {
-              const warningMsg = `Duplicate Flag: ${attendee.name} scanned again at verification check.`;
-
-              await supabase.from('gate_logs').insert([{
-                scanned_id: scannedId,
-                status: 'warning',
-                message: warningMsg,
-                operator_email: operatorEmail,
-                operator_name: operatorName,
-                attendee_name: attendee.name
-              }]);
-
-              localLogPayload.type = 'warning';
-              localLogPayload.text = warningMsg;
-
-              setScanResult({ status: 'warning', message: 'Duplicate Scan Warning!', attendee });
-              setScannerLog(prev => [localLogPayload, ...prev]);
-              return;
-            }
-
-            const successMsg = `Approved Admission: Verified check-in completed for ${attendee.name} (${attendee.center})`;
-
             await supabase
               .from('attendees')
               .update({ status: 'Checked In' })
-              .eq('member_id', attendee.member_id);
+              .eq('id', attendeeRecord.id);
 
             await supabase.from('gate_logs').insert([{
               scanned_id: scannedId,
@@ -211,17 +250,16 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
               message: successMsg,
               operator_email: operatorEmail,
               operator_name: operatorName,
-              attendee_name: attendee.name
+              attendee_name: attendeeRecord.name
             }]);
 
             localLogPayload.type = 'success';
             localLogPayload.text = successMsg;
 
-            setScanResult({ status: 'success', message: 'Checked In Approved!', attendee });
+            setScanResult({ status: 'success', message: 'Checked In Approved!', attendee: attendeeRecord });
             setScannerLog(prev => [localLogPayload, ...prev]);
-
-          } catch (err) {
-            console.error("Critical error inside camera stream capture block:", err);
+          } catch (writeErr) {
+            console.error("Failed executing admission payload state commitment:", writeErr);
           } finally {
             setIsProcessing(false); 
           }
@@ -399,7 +437,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
                   <div style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: '10px' }}>
                     <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#666', fontWeight: '600' }}>Shibir ID Number</span>
                     <code style={{ fontSize: '12px', color: '#444', background: 'rgba(0,0,0,0.05)', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '4px', wordBreak: 'break-all' }}>
-                      {scanResult.attendee.member_id}
+                      {scanResult.attendee.member_id || `MTRC-${scanResult.attendee.id}`}
                     </code>
                   </div>
 
@@ -417,7 +455,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
                 cursor: 'pointer', marginTop: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
               }}
             >
-              <FaUserCheck /> Dimiss & Scan Next
+              <FaUserCheck /> Dismiss & Scan Next
             </button>
           </div>
         )}

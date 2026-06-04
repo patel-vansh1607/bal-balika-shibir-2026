@@ -267,22 +267,9 @@ export default function PublicRegister() {
 
     const { constructedFullName, parsedAge, strippedContact, cleanEmail } = validatedFields;
 
-    const { count, error: countError } = await supabase
-      .from('attendees')
-      .select('*', { count: 'exact', head: true })
-      .eq('region', selectedRegion);
+    // 🔥 REMOVED: Stale frontend guess count logic entirely!
 
-    if (countError) {
-      setFormError(`Sequence validation pipeline crashed: ${countError.message}`);
-      setLoading(false);
-      return;
-    }
-
-    const nextLocalSequenceNumber = (count || 0) + 1;
-    const countryAbbreviation = regionDataset[selectedRegion]?.idAbbreviation || 'XX';
-    const formattedSequence = String(nextLocalSequenceNumber).padStart(4, '0');
-    const customShibirMemberId = `MTRC-${countryAbbreviation}-${formattedSequence}`;
-
+    // 🔥 UPDATED: Submit payload without member_id, and request back the DB trigger assigned data
     const { data: insertData, error: insertError } = await supabase
       .from('attendees')
       .insert([
@@ -294,11 +281,11 @@ export default function PublicRegister() {
           center: selectedCenter, 
           parent_contact: strippedContact,
           parent_email: cleanEmail, 
-          member_id: customShibirMemberId,
           status: 'Pending'
+          // member_id is excluded here so Postgres trigger generates it dynamically
         }
       ])
-      .select()
+      .select('id, name, region, center, member_id') // Ask for the database calculated member_id right back
       .single();
 
     if (insertError) {
@@ -310,22 +297,25 @@ export default function PublicRegister() {
     if (insertData) {
       try {
         const profileUrl = await uploadProfilePhoto(insertData.id, insertData.name);
-        setGeneratedQRValue(customShibirMemberId);
+        
+        // Use the absolute TRUE member_id returned directly from Supabase
+        const trueMemberId = insertData.member_id;
+        setGeneratedQRValue(trueMemberId);
 
         setTimeout(async () => {
-          const qrUrl = await uploadQRToSupabase(insertData.id, customShibirMemberId, insertData.name);
+          const qrUrl = await uploadQRToSupabase(insertData.id, trueMemberId, insertData.name);
           
           await supabase
             .from('attendees')
-            .update({ photo_url: profileUrl })
+            .update({ photo_url: profileUrl, qr_code_url: qrUrl })
             .eq('id', insertData.id);
 
-          // Invoke client function edge pipeline to execute secure Resend dispatch code
+          // Invoke client edge pipeline to execute secure Resend dispatch code with correct ID
           await supabase.functions.invoke('send-registration-email', {
             body: {
               email: cleanEmail,
               name: insertData.name,
-              memberId: customShibirMemberId,
+              memberId: trueMemberId,
               region: selectedRegion,
               center: selectedCenter,
               qrUrl: qrUrl
@@ -333,7 +323,7 @@ export default function PublicRegister() {
           });
 
           setFinalAttendeeData({
-            memberId: customShibirMemberId,
+            memberId: trueMemberId,
             name: insertData.name,
             region: insertData.region,
             center: insertData.center

@@ -25,14 +25,15 @@ export default function RegisteredRoster({ attendees = [], dataFetching = false,
 
   // Apply localized sub-filters (Search bar, Mandal select, Center branch select)
   const filteredAttendees = attendees.filter(attendee => {
+    // Robust checks handling both snake_case and camelCase from structural payloads
     const nameSafe = attendee.name ? attendee.name.toLowerCase() : '';
-    const contactSafe = attendee.parent_contact ? attendee.parent_contact : '';
-    const customIdSafe = attendee.member_id ? attendee.member_id.toLowerCase() : '';
+    const contactSafe = attendee.parent_contact || attendee.parentContact || '';
+    const customIdSafe = attendee.member_id || attendee.memberId || '';
     
     const matchesSearch = 
       nameSafe.includes(searchTerm.toLowerCase()) || 
-      contactSafe.includes(searchTerm) ||
-      customIdSafe.includes(searchTerm.toLowerCase());
+      String(contactSafe).includes(searchTerm) ||
+      String(customIdSafe).toLowerCase().includes(searchTerm.toLowerCase());
       
     const matchesCenter = selectedCenter === 'All' || attendee.center === selectedCenter;
     const matchesGender = selectedGender === 'All' || attendee.gender === selectedGender;
@@ -49,15 +50,19 @@ export default function RegisteredRoster({ attendees = [], dataFetching = false,
     const headers = ["Member ID", "Full Name", "Mandal", "Age", "Center Branch", "Parent Contact", "Photo Link"];
     const csvRows = [
       headers.join(','),
-      ...filteredAttendees.map(row => [
-        `"${row.member_id || row.id}"`, // Prefers custom country ID token string over backend index
-        `"${row.name.replace(/"/g, '""')}"`,
-        `"${row.gender || 'Balak'}"`,
-        `"${row.age}"`,
-        `"${row.center}"`,
-        `"${row.parent_contact || ''}"`,
-        `"${row.photo_url || ''}"`
-      ].join(','))
+      ...filteredAttendees.map(row => {
+        const finalId = row.member_id || row.memberId || row.id;
+        const finalContact = row.parent_contact || row.parentContact || '';
+        return [
+          `"${finalId}"`, 
+          `"${row.name.replace(/"/g, '""')}"`,
+          `"${row.gender || 'Balak'}"`,
+          `"${row.age}"`,
+          `"${row.center}"`,
+          `"${finalContact}"`,
+          `"${row.photo_url || row.photoUrl || ''}"`
+        ].join(',');
+      })
     ];
 
     const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
@@ -237,9 +242,12 @@ export default function RegisteredRoster({ attendees = [], dataFetching = false,
               </thead>
               <tbody>
                 {filteredAttendees.map((attendee) => {
-                  const resolvedAvatarUrl = getAvatarUrl(attendee.photo_url);
+                  const resolvedAvatarUrl = getAvatarUrl(attendee.photo_url || attendee.photoUrl);
                   const hasImageError = imageErrors[attendee.id];
-                  const systemIdCode = attendee.member_id || `MTRC-${attendee.id}`;
+                  
+                  // Unified token identifier fallback logic
+                  const systemIdCode = attendee.member_id || attendee.memberId || `MTRC-${attendee.id}`;
+                  const parentContactDisplay = attendee.parent_contact || attendee.parentContact;
 
                   return (
                     <tr key={attendee.id}>
@@ -276,9 +284,9 @@ export default function RegisteredRoster({ attendees = [], dataFetching = false,
                         </span>
                       </td>
                       <td className={styles.monospaceText}>
-                        {attendee.parent_contact ? (
+                        {parentContactDisplay ? (
                           <span className={styles.inlineIconFlex}>
-                            <FaPhoneAlt className={styles.mutedIcon} /> {attendee.parent_contact}
+                            <FaPhoneAlt className={styles.mutedIcon} /> {parentContactDisplay}
                           </span>
                         ) : (
                           <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>N/A</span>
@@ -314,7 +322,7 @@ export default function RegisteredRoster({ attendees = [], dataFetching = false,
 
             <div className={styles.qrContainer}>
               <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(activeQrModalUser.member_id || activeQrModalUser.id)}&color=8a151b`} 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(activeQrModalUser.member_id || activeQrModalUser.memberId || activeQrModalUser.id)}&color=8a151b`} 
                 alt="Verification Token Map"
                 className={styles.qrImage}
               />
@@ -322,9 +330,9 @@ export default function RegisteredRoster({ attendees = [], dataFetching = false,
 
             <div className={styles.modalInfoBox}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
-                {getAvatarUrl(activeQrModalUser.photo_url) && !imageErrors[activeQrModalUser.id] ? (
+                {getAvatarUrl(activeQrModalUser.photo_url || activeQrModalUser.photoUrl) && !imageErrors[activeQrModalUser.id] ? (
                   <img 
-                    src={getAvatarUrl(activeQrModalUser.photo_url)} 
+                    src={getAvatarUrl(activeQrModalUser.photo_url || activeQrModalUser.photoUrl)} 
                     alt="" 
                     crossOrigin="anonymous"
                     className={styles.modalAvatarImg}
@@ -350,13 +358,13 @@ export default function RegisteredRoster({ attendees = [], dataFetching = false,
               <div className={styles.modalDataRow}>
                 <span>ID Number:</span>
                 <span style={{ fontFamily: 'monospace', color: 'var(--accent-primary)', fontWeight: '700' }}>
-                  {(activeQrModalUser.member_id || activeQrModalUser.id).toUpperCase()}
+                  {String(activeQrModalUser.member_id || activeQrModalUser.memberId || activeQrModalUser.id).toUpperCase()}
                 </span>
               </div>
             </div>
 
             <button 
-              onClick={() => downloadQRImg(activeQrModalUser.member_id || activeQrModalUser.id, activeQrModalUser.name)}
+              onClick={() => downloadQRImg(activeQrModalUser.member_id || activeQrModalUser.memberId || activeQrModalUser.id, activeQrModalUser.name)}
               className={styles.modalDownloadBtn}
             >
               <FaDownload /> Download QR Code
