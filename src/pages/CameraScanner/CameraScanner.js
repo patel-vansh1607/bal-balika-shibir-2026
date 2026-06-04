@@ -19,6 +19,9 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
   const html5QrcodeInstance = useRef(null);
   const isProcessingScan = useRef(false);
 
+  // Use refs to hold mutable function tracks to break React Hook circular dependencies
+  const startEngineRef = useRef(null);
+
   // Safely stop and kill the native device video hardware tracks
   const stopCameraEngine = useCallback(async () => {
     if (html5QrcodeInstance.current) {
@@ -33,63 +36,9 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     }
   }, []);
 
-  // --- MOBILITY OPTIMIZED ENGINE INITIALIZER ---
-  const startCameraEngineDirectly = useCallback(async () => {
-    isProcessingScan.current = false;
-    setIsProcessing(false); 
-
-    await stopCameraEngine();
-
-    const container = document.getElementById("qr-reader-container");
-    if (!container) return;
-
-    try {
-      // ⚡ Native Web API Handshake: Triggers permissions early to prevent library UI fallbacks
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const preemptiveStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        preemptiveStream.getTracks().forEach(track => track.stop());
-      }
-
-      const scanner = new Html5Qrcode("qr-reader-container", {
-        formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
-        verbose: false
-      });
-      
-      html5QrcodeInstance.current = scanner;
-
-      const config = {
-        fps: 24, 
-        qrbox: (width, height) => {
-          const size = Math.min(width, height) * 0.75;
-          return { width: size, height: size };
-        }
-      };
-
-      await scanner.start(
-        { facingMode: "environment" }, 
-        config,
-        onScanSuccess,
-        onScanFailure
-      );
-
-      const videoElement = container.querySelector('video');
-      if (videoElement) {
-        videoElement.setAttribute('playsinline', 'true');
-        videoElement.setAttribute('webkit-playsinline', 'true');
-        videoElement.style.objectFit = 'cover';
-        videoElement.style.width = '100%';
-        videoElement.style.height = '100%';
-      }
-
-    } catch (error) {
-      console.error("Mobile Camera Hardware Handshake Refused:", error);
-      setScanResult({
-        status: 'error',
-        message: 'Camera Access Refused.',
-        customDetail: 'Please confirm camera permissions are granted for this origin, and that the page is running on HTTPS.'
-      });
-    }
-  }, [stopCameraEngine]); // Moved above onScanSuccess to allow clean referencing dependency loops
+  const onScanFailure = useCallback(() => {
+    // Drop un-decoded background stream frames cleanly
+  }, []);
 
   // --- BUSINESS LOGIC PROCESSING BLOCK ---
   const onScanSuccess = useCallback(async (decodedText) => {
@@ -108,7 +57,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     if (!scannedId) {
       isProcessingScan.current = false;
       setIsProcessing(false);
-      startCameraEngineDirectly();
+      if (startEngineRef.current) startEngineRef.current();
       return;
     }
 
@@ -223,11 +172,70 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       isProcessingScan.current = false;
       setIsProcessing(false); 
     }
-  }, [stopCameraEngine, operator, prefixScope, regionScope, startCameraEngineDirectly]); // 🔥 Added missing dependency here
+  }, [stopCameraEngine, operator, prefixScope, regionScope]);
 
-  const onScanFailure = () => {
-    // Drop un-decoded background stream frames cleanly
-  };
+  // --- MOBILITY OPTIMIZED ENGINE INITIALIZER ---
+  const startCameraEngineDirectly = useCallback(async () => {
+    isProcessingScan.current = false;
+    setIsProcessing(false); 
+
+    await stopCameraEngine();
+
+    const container = document.getElementById("qr-reader-container");
+    if (!container) return;
+
+    try {
+      // ⚡ Native Web API Handshake: Triggers permissions early to prevent library UI fallbacks
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const preemptiveStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        preemptiveStream.getTracks().forEach(track => track.stop());
+      }
+
+      const scanner = new Html5Qrcode("qr-reader-container", {
+        formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+        verbose: false
+      });
+      
+      html5QrcodeInstance.current = scanner;
+
+      const config = {
+        fps: 24, 
+        qrbox: (width, height) => {
+          const size = Math.min(width, height) * 0.75;
+          return { width: size, height: size };
+        }
+      };
+
+      await scanner.start(
+        { facingMode: "environment" }, 
+        config,
+        onScanSuccess,
+        onScanFailure
+      );
+
+      const videoElement = container.querySelector('video');
+      if (videoElement) {
+        videoElement.setAttribute('playsinline', 'true');
+        videoElement.setAttribute('webkit-playsinline', 'true');
+        videoElement.style.objectFit = 'cover';
+        videoElement.style.width = '100%';
+        videoElement.style.height = '100%';
+      }
+
+    } catch (error) {
+      console.error("Mobile Camera Hardware Handshake Refused:", error);
+      setScanResult({
+        status: 'error',
+        message: 'Camera Access Refused.',
+        customDetail: 'Please confirm camera permissions are granted for this origin, and that the page is running on HTTPS.'
+      });
+    }
+  }, [stopCameraEngine, onScanSuccess, onScanFailure]);
+
+  // Maintain hot link reference updating to circumvent ESLint hooks rules
+  useEffect(() => {
+    startEngineRef.current = startCameraEngineDirectly;
+  }, [startCameraEngineDirectly]);
 
   useEffect(() => {
     async function initScannerSession() {
