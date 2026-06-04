@@ -1,137 +1,71 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import { 
-  FaGlobeAfrica, 
-  FaMapMarkerAlt, 
-  FaSignOutAlt, 
-  FaChevronRight 
-} from 'react-icons/fa';
+import { FaGlobeAfrica, FaSignOutAlt } from 'react-icons/fa';
 import styles from './SelectRegion.module.css';
 
 export default function SelectRegion() {
   const navigate = useNavigate();
+  const [hoveredRegion, setHoveredRegion] = useState(null);
 
-  // Cleaned regional database partitions matching public registration targets exactly
   const regions = [
-    { 
-      id: 'All', 
-      idPrefix: 'MTRC-',
-      name: 'All African Regions', 
-      description: 'View and manage data across all Regions' 
-    },
-    { 
-      id: 'Kenya', 
-      idPrefix: 'MTRC-KE-',
-      name: 'Kenya Region', 
-      description: 'View and manage data across Kenya Region' 
-    },
-    { 
-      id: 'Tanzania', 
-      idPrefix: 'MTRC-TZ-',
-      name: 'Tanzania Region', 
-      description: 'View and manage data across Tanzania Region' 
-    },
-    { 
-      id: 'Uganda', 
-      idPrefix: 'MTRC-UG-',
-      name: 'Uganda Region', 
-      description: 'View and manage data across Uganda Region' 
-    },
-    { 
-      id: 'Zambia', 
-      idPrefix: 'MTRC-ZM-',
-      name: 'Zambia Region', 
-      description: 'View and manage data across Zambia Region' 
-    },
-    { 
-      id: 'Malawi', 
-      idPrefix: 'MTRC-MW-',
-      name: 'Malawi Region', 
-      description: 'View and manage data across Malawi Region' 
-    },
-    { 
-      id: 'Botswana', 
-      idPrefix: 'MTRC-BW-',
-      name: 'Botswana Region', 
-      description: 'View and manage data across Botswana Region' 
-    },
-    { 
-      id: 'South Africa', 
-      idPrefix: 'MTRC-ZA-',
-      name: 'South Africa Region', 
-      description: 'View and manage data across South Africa Region' 
-    }
+    { id: 'All', idPrefix: 'MTRC-', name: 'All Africa', flagMapUrl: 'https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780577973/africa-01_jjhu7b.svg' },
+    { id: 'Kenya', idPrefix: 'MTRC-KE-', name: 'Kenya', flagMapUrl: 'https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780575889/kenya-01_xeerfd.svg' },
+    { id: 'Tanzania', idPrefix: 'MTRC-TZ-', name: 'Tanzania', flagMapUrl: 'https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780576370/tanazani-01_eaabsq.svg' },
+    { id: 'Uganda', idPrefix: 'MTRC-UG-', name: 'Uganda', flagMapUrl: 'https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780576575/ug-01_sunvac.svg' },
+    { id: 'Zambia', idPrefix: 'MTRC-ZM-', name: 'Zambia', flagMapUrl: 'https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780576863/zambia-01_gs6kaj.svg' },
+    { id: 'Malawi', idPrefix: 'MTRC-MW-', name: 'Malawi', flagMapUrl: 'https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780577014/mw-01_jf4mka.svg' },
+    { id: 'Botswana', idPrefix: 'MTRC-BW-', name: 'Botswana', flagMapUrl: 'https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780577157/botswana-01_nt9yiv.svg' },
+    { id: 'South Africa', idPrefix: 'MTRC-ZA-', name: 'South Africa', flagMapUrl: 'https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780577502/south_africa-01_vkpcbk.svg' }
   ];
 
   const handleRegionSelect = (region) => {
-    // Commit the text identifier name key (matches database "region" strings exactly)
     localStorage.setItem('selected_shibir_region', region.id);
-    
-    // Commit the specific alphanumeric prefix string key to safely constrain query filters
     localStorage.setItem('selected_shibir_prefix', region.idPrefix);
-    
-    // Push the session forward into the management dashboard layer
     navigate('/dashboard');
   };
 
   const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      localStorage.removeItem('selected_shibir_region');
-      localStorage.removeItem('selected_shibir_prefix');
-      navigate('/');
-    } catch (err) {
-      console.error('Error logging out:', err.message);
-      navigate('/');
-    }
+    await supabase.auth.signOut();
+    localStorage.clear();
+    navigate('/');
   };
 
   return (
     <div className={styles.regionWrapper}>
-      <div className={styles.regionCard}>
+      <div className={styles.regionCard} style={{ maxWidth: '1150px' }}>
         
-        {/* Partition Header Context */}
         <div className={styles.regionHeader}>
-          <div className={styles.iconGlobeWrapper}>
-            <FaGlobeAfrica className={styles.globalIcon} />
-          </div>
-          <h2 className={styles.title}> Choose Your Region</h2>
-          <p className={styles.subtitle}>
-            Choose your preferred region you would like to view and manage within the dashboard.<br></br> You can switch regions at any time from the dashboard view. 
-          </p>
+          <div className={styles.iconGlobeWrapper}><FaGlobeAfrica className={styles.globalIcon} /></div>
+          <h2 className={styles.title}>Choose Your Region</h2>
+          <p className={styles.subtitle}>Select the region you want to view data.</p>
         </div>
 
-        {/* Partition Selection Stack List */}
-        <div className={styles.regionGrid}>
+        {/* --- HORIZONTAL PREMIUM ROW ONLY --- */}
+        <div className={styles.badgeScrollContainer}>
           {regions.map((region) => (
-            <button 
-              key={region.id} 
-              className={styles.partitionBtn}
+            <div 
+              key={region.id}
               onClick={() => handleRegionSelect(region)}
+              onMouseEnter={() => setHoveredRegion(region.id)}
+              onMouseLeave={() => setHoveredRegion(null)}
+              className={styles.badgeItem}
             >
-              <div className={styles.btnContentLeft}>
-                <div className={styles.markerCircle}>
-                  <FaMapMarkerAlt className={styles.markerIcon} />
-                </div>
-                <div className={styles.textMetadata}>
-                  <div className={styles.regionName}>{region.name}</div>
-                  <div className={styles.regionDesc}>{region.description}</div>
-                </div>
+              <span className={styles.badgeText} style={{ color: hoveredRegion === region.id ? '#8a151b' : '#2d2926' }}>
+                {region.name}
+              </span>
+              <div className={styles.badgeCircle} style={{ borderColor: hoveredRegion === region.id ? '#8a151b' : 'transparent' }}>
+                <img src={region.flagMapUrl} alt={region.name} className={styles.badgeImg} />
               </div>
-              <FaChevronRight className={styles.arrowIcon} />
-            </button>
+            </div>
           ))}
         </div>
 
-        {/* System Sign Out Footer Action */}
         <div className={styles.footerActionRow}>
           <button onClick={handleLogout} className={styles.logoutBtn}>
             <FaSignOutAlt /> Sign Out Safely
           </button>
         </div>
-
       </div>
     </div>
   );

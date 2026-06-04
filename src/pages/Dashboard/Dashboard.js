@@ -188,7 +188,7 @@ export default function Dashboard() {
         <div className={styles.sidebarFooter}>
           {/* Quick Route Switchback Button to main gateway view */}
           <button onClick={() => navigate('/select-region')} className={styles.switchGatewayBtn}>
-            <FaArrowLeft style={{ marginRight: '6px' }} /> Switch Partition
+            <FaArrowLeft style={{ marginRight: '6px' }} /> Switch Region
           </button>
           
           <div className={styles.userInfoBlock}>

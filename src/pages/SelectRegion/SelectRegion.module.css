@@ -14,18 +14,18 @@
   border: 1px solid var(--border-light);
   border-radius: 16px;
   width: 100%;
-  max-width: 560px;
+  max-width: 900px; /* Increased for better horizontal alignment */
   padding: 40px 32px;
   box-shadow: 0 10px 30px rgba(138, 21, 27, 0.03);
   box-sizing: border-box;
 }
 
 /* ==========================================================================
-   PARTITION HEADER CONTEXT
+   HEADER
    ========================================================================== */
 .regionHeader {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 .iconGlobeWrapper {
@@ -40,150 +40,77 @@
   border: 1px solid var(--border-light);
 }
 
-.globalIcon {
-  font-size: 26px;
-  color: var(--accent-primary);
-}
-
-.title {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-main);
-  margin: 0;
-}
-
-.subtitle {
-  font-family: var(--font-sans);
-  font-size: 14px;
-  color: var(--text-muted);
-  margin: 8px 0 0 0;
-  line-height: 1.5;
-}
+.globalIcon { font-size: 26px; color: var(--accent-primary); }
+.title { font-size: 28px; font-weight: 700; color: var(--text-main); margin: 0; }
 
 /* ==========================================================================
-   SELECTION SECTOR STACK BUTTONS
+   HORIZONTAL BADGE ROW (Laptop: 1 line, Mobile: 2 per line)
    ========================================================================== */
-.regionGrid {
+.badgeScrollContainer {
+  display: flex;
+  flex-direction: row;
+  justify-content: center; /* Centers the whole row on laptops */
+  flex-wrap: wrap; /* Allows wrapping on smaller screens */
+  gap: 20px;
+  padding: 24px 8px;
+  margin-bottom: 36px;
+}
+
+.badgeItem {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 28px;
-}
-
-.partitionBtn {
-  background-color: var(--bg-main);
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  padding: 16px;
+  align-items: center;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  box-sizing: border-box;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100px; /* Fixed width for consistent horizontal alignment */
+  gap: 18px;
 }
 
-.partitionBtn:hover {
-  background-color: #ffffff;
-  border-color: var(--accent-primary);
-  box-shadow: 0 6px 16px rgba(138, 21, 27, 0.05);
-  transform: translateY(-1.5px);
+/* Mobile Responsive: 2 per line */
+@media (max-width: 600px) {
+  .badgeScrollContainer {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    justify-items: center;
+  }
 }
 
-.btnContentLeft {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  text-align: left;
-}
-
-.markerCircle {
-  width: 38px;
-  height: 38px;
+.badgeCircle {
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
-  background-color: #ffffff;
-  border: 1px solid var(--border-light);
+  background: #fcf7f2;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  transition: all 0.2s;
 }
 
-.partitionBtn:hover .markerCircle {
-  background-color: var(--accent-soft);
-  border-color: var(--accent-primary);
-}
+.badgeCircle:hover { border-color: var(--accent-primary); }
 
-.markerIcon {
-  font-size: 15px;
-  color: var(--text-muted);
-  transition: color 0.2s ease;
-}
-
-.partitionBtn:hover .markerIcon {
-  color: var(--accent-primary);
-}
-
-.textMetadata {
-  display: flex;
-  flex-direction: column;
-}
-
-.regionName {
-  font-family: var(--font-sans);
-  font-size: 15.5px;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.regionDesc {
-  font-family: var(--font-sans);
-  font-size: 12.5px;
-  color: var(--text-muted);
-  margin-top: 3px;
-  line-height: 1.4;
-}
-
-.arrowIcon {
-  font-size: 12px;
-  color: var(--border-light);
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.partitionBtn:hover .arrowIcon {
-  color: var(--accent-primary);
-  transform: translateX(3px);
-}
+.badgeImg { width: 65px; height: 65px; object-fit: contain; }
+.badgeText { font-size: 14px; font-weight: 600; margin-top: 12px; color: var(--text-main); }
 
 /* ==========================================================================
-   SYSTEM SIGN OUT FOOTER
+   FOOTER
    ========================================================================== */
 .footerActionRow {
   border-top: 1px dashed var(--border-light);
   padding-top: 20px;
+  text-align: center;
 }
 
 .logoutBtn {
   background: transparent;
   border: none;
-  font-family: var(--font-sans);
-  font-size: 13.5px;
   font-weight: 700;
   color: var(--accent-primary);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 8px 16px;
   border-radius: 6px;
-  transition: background-color 0.2s ease;
 }
 
-.logoutBtn:hover {
-  background-color: var(--accent-soft);
-}
+.logoutBtn:hover { background-color: var(--accent-soft); }
