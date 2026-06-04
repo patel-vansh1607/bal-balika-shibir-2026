@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { 
   FaCheckCircle, 
   FaExclamationTriangle, 
@@ -16,8 +16,218 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
   const [scanResult, setScanResult] = useState(null); 
   const [operator, setOperator] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false); 
-  const scannerInstance = useRef(null);
+  const html5QrcodeInstance = useRef(null);
   const isProcessingScan = useRef(false);
+
+  // Safely stop and kill the native device video hardware tracks
+  const stopCameraEngine = useCallback(async () => {
+    if (html5QrcodeInstance.current) {
+      if (html5QrcodeInstance.current.isScanning) {
+        try {
+          await html5QrcodeInstance.current.stop();
+        } catch (err) {
+          // Suppress asynchronous race condition rejections during teardown
+        }
+      }
+      html5QrcodeInstance.current = null;
+    }
+  }, []);
+
+  // --- BUSINESS LOGIC PROCESSING BLOCK ---
+  const onScanSuccess = useCallback(async (decodedText) => {
+    if (isProcessingScan.current) return;
+    isProcessingScan.current = true;
+    setIsProcessing(true); 
+
+    await stopCameraEngine();
+
+    let scannedId = decodedText.trim();
+    if (scannedId.includes('data=')) {
+      scannedId = scannedId.split('data=').pop().split('&')[0];
+    }
+    scannedId = decodeURIComponent(scannedId).toUpperCase().trim();
+
+    if (!scannedId) {
+      isProcessingScan.current = false;
+      setIsProcessing(false);
+      startCameraEngineDirectly();
+      return;
+    }
+
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const operatorEmail = operator?.email || 'unknown@shibir.org';
+    const operatorName = operator?.name || 'system';
+
+    let localLogPayload = {
+      id: crypto.randomUUID(),
+      time: timestamp,
+      processedBy: operatorName
+    };
+
+    if (regionScope !== 'All' && !scannedId.startsWith(prefixScope.toUpperCase())) {
+      const crossBorderErrorMsg = `Access Denied: Scanned ID "${scannedId}" belongs to another regional center branch.`;
+      
+      await supabase.from('gate_logs').insert([{
+        scanned_id: scannedId,
+        status: 'error',
+        message: crossBorderErrorMsg,
+        operator_email: operatorEmail,
+        operator_name: operatorName,
+        attendee_name: 'Cross-Region Member'
+      }]);
+
+      localLogPayload.type = 'error';
+      localLogPayload.text = crossBorderErrorMsg;
+      
+      setScanResult({ 
+        status: 'error', 
+        message: 'Cross-Partition Domain Violation!', 
+        customDetail: `This scanner is restricted strictly to ${regionScope} (${prefixScope}) codes. Entry rejected.` 
+      });
+      setScannerLog(prev => [localLogPayload, ...prev]);
+      isProcessingScan.current = false;
+      setIsProcessing(false); 
+      return;
+    }
+
+    try {
+      const { data: attendee, error: fetchError } = await supabase
+        .from('attendees') 
+        .select('*')
+        .eq('member_id', scannedId)
+        .maybeSingle();
+
+      if (fetchError || !attendee) {
+        const errorMsg = `Denied Entry: Token "${scannedId}" is completely unknown to the database.`;
+        
+        await supabase.from('gate_logs').insert([{
+          scanned_id: scannedId,
+          status: 'error',
+          message: errorMsg,
+          operator_email: operatorEmail,
+          operator_name: operatorName,
+          attendee_name: 'Unknown Badge'
+        }]);
+
+        localLogPayload.type = 'error';
+        localLogPayload.text = errorMsg;
+        
+        setScanResult({ status: 'error', message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
+        setScannerLog(prev => [localLogPayload, ...prev]);
+        return;
+      }
+
+      if (attendee.status === 'Checked In') {
+        const warningMsg = `Duplicate Flag: ${attendee.name} scanned again at verification check.`;
+
+        await supabase.from('gate_logs').insert([{
+          scanned_id: scannedId,
+          status: 'warning',
+          message: warningMsg,
+          operator_email: operatorEmail,
+          operator_name: operatorName,
+          attendee_name: attendee.name
+        }]);
+
+        localLogPayload.type = 'warning';
+        localLogPayload.text = warningMsg;
+
+        setScanResult({ status: 'warning', message: 'Duplicate Scan Warning!', attendee });
+        setScannerLog(prev => [localLogPayload, ...prev]);
+        return;
+      }
+
+      const successMsg = `Approved Admission: Verified check-in completed for ${attendee.name} (${attendee.center})`;
+
+      await supabase
+        .from('attendees')
+        .update({ status: 'Checked In' })
+        .eq('member_id', attendee.member_id);
+
+      await supabase.from('gate_logs').insert([{
+        scanned_id: scannedId,
+        status: 'success',
+        message: successMsg,
+        operator_email: operatorEmail,
+        operator_name: operatorName,
+        attendee_name: attendee.name
+      }]);
+
+      localLogPayload.type = 'success';
+      localLogPayload.text = successMsg;
+
+      setScanResult({ status: 'success', message: 'Gate Admission Approved!', attendee });
+      setScannerLog(prev => [localLogPayload, ...prev]);
+
+    } catch (err) {
+      console.error("Critical error inside camera stream capture block:", err);
+    } finally {
+      isProcessingScan.current = false;
+      setIsProcessing(false); 
+    }
+  }, [stopCameraEngine, operator, prefixScope, regionScope]);
+
+  const onScanFailure = () => {
+    // Drop un-decoded background stream frames cleanly
+  };
+
+  // --- MOBILITY OPTIMIZED ENGINE INITIALIZER ---
+  const startCameraEngineDirectly = useCallback(async () => {
+    isProcessingScan.current = false;
+    setIsProcessing(false); 
+
+    await stopCameraEngine();
+
+    const container = document.getElementById("qr-reader-container");
+    if (!container) return;
+
+    try {
+      // ⚡ Native Web API Handshake: Triggers permissions early to prevent library UI fallbacks
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const preemptiveStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        preemptiveStream.getTracks().forEach(track => track.stop());
+      }
+
+      const scanner = new Html5Qrcode("qr-reader-container", {
+        formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+        verbose: false
+      });
+      
+      html5QrcodeInstance.current = scanner;
+
+      const config = {
+        fps: 24, 
+        qrbox: (width, height) => {
+          const size = Math.min(width, height) * 0.75;
+          return { width: size, height: size };
+        }
+      };
+
+      await scanner.start(
+        { facingMode: "environment" }, 
+        config,
+        onScanSuccess,
+        onScanFailure
+      );
+
+      const videoElement = container.querySelector('video');
+      if (videoElement) {
+        videoElement.setAttribute('playsinline', 'true');
+        videoElement.setAttribute('webkit-playsinline', 'true');
+        videoElement.style.objectFit = 'cover';
+        videoElement.style.width = '100%';
+        videoElement.style.height = '100%';
+      }
+
+    } catch (error) {
+      console.error("Mobile Camera Hardware Handshake Refused:", error);
+      setScanResult({
+        status: 'error',
+        message: 'Camera Access Refused.',
+        customDetail: 'Please confirm camera permissions are granted for this origin, and that the page is running on HTTPS.'
+      });
+    }
+  }, [onScanSuccess, stopCameraEngine]);
 
   useEffect(() => {
     async function initScannerSession() {
@@ -48,180 +258,17 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     }
 
     initScannerSession();
-    startCameraEngineDirectly(); 
+    
+    // Slight macro-task delay ensures layout nodes are ready
+    const initializationTimeout = setTimeout(() => {
+      startCameraEngineDirectly();
+    }, 150);
 
-    return () => clearScannerInstance();
-  }, []);
-
-  const clearScannerInstance = () => {
-    if (scannerInstance.current) {
-      try {
-        scannerInstance.current.clear();
-        scannerInstance.current = null;
-      } catch (err) {
-        console.error("Failed to unmount scanner:", err);
-      }
-    }
-  };
-
-  const startCameraEngineDirectly = () => {
-    isProcessingScan.current = false;
-    setIsProcessing(false); 
-    clearScannerInstance();
-
-    setTimeout(() => {
-      try {
-        const config = {
-          fps: 20, 
-          qrbox: { width: 250, height: 250 },
-          formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
-          videoConstraints: {
-            facingMode: "environment" 
-          }
-        };
-
-        const scanner = new Html5QrcodeScanner("qr-reader-container", config, false);
-        scanner.render(onScanSuccess, onScanFailure);
-        scannerInstance.current = scanner;
-      } catch (error) {
-        console.error("Camera direct boot failed:", error);
-      }
-    }, 100); 
-  };
-
-  const onScanSuccess = async (decodedText) => {
-    if (isProcessingScan.current) return;
-    isProcessingScan.current = true;
-    setIsProcessing(true); // Triggers the clean loading display over the camera view
-
-    let scannedId = decodedText.trim();
-    if (scannedId.includes('data=')) {
-      scannedId = scannedId.split('data=').pop().split('&')[0];
-    }
-    scannedId = decodeURIComponent(scannedId).toUpperCase().trim();
-
-    if (!scannedId) {
-      isProcessingScan.current = false;
-      setIsProcessing(false);
-      return;
-    }
-
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const operatorEmail = operator?.email || 'unknown@shibir.org';
-    const operatorName = operator?.name || 'system';
-
-    let localLogPayload = {
-      id: crypto.randomUUID(),
-      time: timestamp,
-      processedBy: operatorName
+    return () => {
+      clearTimeout(initializationTimeout);
+      stopCameraEngine();
     };
-
-    if (regionScope !== 'All' && !scannedId.startsWith(prefixScope.toUpperCase())) {
-      const crossBorderErrorMsg = `Access Denied: Scanned ID "${scannedId}" belongs to another regional center branch.`;
-      
-      await supabase.from('gate_logs').insert([{
-        scanned_id: scannedId,
-        status: 'error',
-        message: crossBorderErrorMsg,
-        operator_email: operatorEmail,
-        operator_name: operatorName,
-        attendee_name: 'Cross-Region Member'
-      }]);
-
-      localLogPayload.type = 'error';
-      localLogPayload.text = crossBorderErrorMsg;
-      
-      clearScannerInstance();
-      setScanResult({ 
-        status: 'error', 
-        message: 'Cross-Partition Domain Violation!', 
-        customDetail: `This scanner is restricted strictly to ${regionScope} (${prefixScope}) codes.` 
-      });
-      setScannerLog(prev => [localLogPayload, ...prev]);
-      isProcessingScan.current = false;
-      setIsProcessing(false);
-      return;
-    }
-
-    try {
-      const { data: attendee, error: fetchError } = await supabase
-        .from('attendees') 
-        .select('*')
-        .eq('member_id', scannedId)
-        .maybeSingle();
-
-      clearScannerInstance();
-
-      if (fetchError || !attendee) {
-        const errorMsg = `Denied Entry: Token "${scannedId}" is completely unknown to the database.`;
-        await supabase.from('gate_logs').insert([{
-          scanned_id: scannedId,
-          status: 'error',
-          message: errorMsg,
-          operator_email: operatorEmail,
-          operator_name: operatorName,
-          attendee_name: 'Unknown Badge'
-        }]);
-
-        localLogPayload.type = 'error';
-        localLogPayload.text = errorMsg;
-        
-        setScanResult({ status: 'error', message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
-        setScannerLog(prev => [localLogPayload, ...prev]);
-        return;
-      }
-
-      if (attendee.status === 'Checked In') {
-        const warningMsg = `Duplicate Flag: ${attendee.name} scanned again at verification check.`;
-        await supabase.from('gate_logs').insert([{
-          scanned_id: scannedId,
-          status: 'warning',
-          message: warningMsg,
-          operator_email: operatorEmail,
-          operator_name: operatorName,
-          attendee_name: attendee.name
-        }]);
-
-        localLogPayload.type = 'warning';
-        localLogPayload.text = warningMsg;
-
-        setScanResult({ status: 'warning', message: 'Duplicate Scan Warning!', attendee });
-        setScannerLog(prev => [localLogPayload, ...prev]);
-        return;
-      }
-
-      const successMsg = `Approved Admission: Verified check-in completed for ${attendee.name} (${attendee.center})`;
-      await supabase
-        .from('attendees')
-        .update({ status: 'Checked In' })
-        .eq('member_id', attendee.member_id);
-
-      await supabase.from('gate_logs').insert([{
-        scanned_id: scannedId,
-        status: 'success',
-        message: successMsg,
-        operator_email: operatorEmail,
-        operator_name: operatorName,
-        attendee_name: attendee.name
-      }]);
-
-      localLogPayload.type = 'success';
-      localLogPayload.text = successMsg;
-
-      setScanResult({ status: 'success', message: 'Gate Admission Approved!', attendee });
-      setScannerLog(prev => [localLogPayload, ...prev]);
-
-    } catch (err) {
-      console.error("Database processing error:", err);
-    } finally {
-      isProcessingScan.current = false;
-      setIsProcessing(false); 
-    }
-  };
-
-  const onScanFailure = () => {
-    // Drop un-decoded frames cleanly
-  };
+  }, [startCameraEngineDirectly, stopCameraEngine]); // 🔥 Added startCameraEngineDirectly here to clear eslint warning
 
   const handleCloseResult = () => {
     setScanResult(null);
@@ -230,56 +277,34 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
 
   return (
     <div className={styles.scannerWorkspaceGrid}>
-      <div className={styles.mainCaptureCard} style={{ position: 'relative' }}>
+      <div className={styles.mainCaptureCard} style={{ position: 'relative', overflow: 'hidden' }}>
         
-        {/* 🔥 VISUAL LOADING STATE BLOCKER */}
+        {/* --- SYSTEM LOADING ABSOLUTE OVERLAY --- */}
         {isProcessing && !scanResult && (
           <div style={{
-            position: 'absolute',
-            top: 0, left: 0, right: 0, bottom: 0,
-            background: '#ffffff',
-            zIndex: 10,
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(255, 255, 255, 0.95)', zIndex: 5,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            minHeight: '300px'
+            minHeight: '340px'
           }}>
             <div style={{
-              width: '45px',
-              height: '45px',
-              border: '4px solid #f4ece6',
-              borderTop: '4px solid #8a151b', 
-              borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite',
-              marginBottom: '12px'
+              width: '45px', height: '45px',
+              border: '4px solid #f4ece6', borderTop: '4px solid #8a151b', 
+              borderRadius: '50%', animation: 'spin-loader 0.8s linear infinite',
+              marginBottom: '16px'
             }}></div>
-            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-            <h4 style={{ margin: '0', color: '#2d2926' }}>Verifying Credentials...</h4>
+            <style>{`@keyframes spin-loader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            <h4 style={{ margin: '0', color: '#2d2926', fontFamily: 'sans-serif' }}>Verifying Credentials...</h4>
+            <p style={{ margin: '4px 0 0 0', color: '#6c635c', fontSize: '13px' }}>Connecting to Shibir Cloud Database Securely</p>
           </div>
         )}
 
-        {/* --- LIVE ACTIVE STREAM FRAME --- */}
-        {/* We use visibility instead of complete DOM removal to protect phone hardware play track promises */}
-        <div style={{ visibility: scanResult ? 'hidden' : 'visible', height: scanResult ? '0px' : 'auto', overflow: 'hidden' }}>
-          <div className={styles.streamScopeBanner}>
-            Scanning exclusively for <strong>{prefixScope}</strong> identity passes...
-          </div>
-          
-          <div id="qr-reader-container" className={styles.videoStreamBox}></div>
-
-          {/* Clean up default fallback file choice selectors on native mobile viewports */}
-          <style>{`
-            #qr-reader-container button, #qr-reader-container input, #qr-reader-container span a { display: none !important; }
-            #qr-reader-container img { display:none !important; }
-            #qr-reader-container { border: none !important; }
-          `}</style>
-
-          <div className={styles.activeFenceBadge} style={{ marginTop: '12px', justifyContent: 'center' }}>
-            <FaShieldAlt /> Region: <strong>{regionScope === 'All' ? 'All Africa' : regionScope}</strong>
-          </div>
-        </div>
-
-        {/* --- EVALUATION RESULT RESPONSES PANEL --- */}
-        {scanResult && (
-          <div className={`${styles.resultBannerCard} ${styles[scanResult.status]}`}>
+        {/* --- DYNAMIC VERIFICATION RESULTS CARD OVERLAY --- */}
+        {scanResult && !isProcessing && (
+          <div className={`${styles.resultBannerCard} ${styles[scanResult.status]}`} style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 6,
+            background: '#fff', overflowY: 'auto', padding: '16px'
+          }}>
             <div className={styles.resultHeader}>
               {scanResult.status === 'success' && <FaCheckCircle className={styles.statusContextIcon} />}
               {scanResult.status === 'warning' && <FaExclamationTriangle className={styles.statusContextIcon} />}
@@ -318,8 +343,33 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
             </button>
           </div>
         )}
+
+        {/* --- BASE INTERFACE AND CAMERA MOUNT VIEWPORT --- */}
+        <div className={styles.cameraWrapperActive}>
+          <div className={styles.streamScopeBanner}>
+            Scanning exclusively for <strong>{prefixScope}</strong> identity passes...
+          </div>
+          
+          <div id="qr-reader-container" className={styles.videoStreamBox} style={{ overflow: 'hidden', position: 'relative', width: '100%', minHeight: '320px', background: '#000' }}></div>
+
+          {/* Failsafe injection blocks library fallback DOM interfaces */}
+          <style>{`
+            #qr-reader-container button, 
+            #qr-reader-container img, 
+            #qr-reader-container input, 
+            #qr-reader-container a { 
+              display: none !important; 
+            }
+          `}</style>
+
+          <div className={styles.activeFenceBadge} style={{ marginTop: '12px', justifyContent: 'center' }}>
+            <FaShieldAlt /> Region: <strong>{regionScope === 'All' ? 'All Africa' : regionScope}</strong>
+          </div>
+        </div>
+
       </div>
 
+      {/* --- SIDE AUDIT TRAIL LOG PANEL --- */}
       <div className={styles.auditLogPanelCard}>
         <div className={styles.auditHeader}>
           <FaHistory style={{ color: '#8a151b' }} />
@@ -328,7 +378,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
         <div className={styles.logStreamTrackFeed}>
           {scannerLog.length === 0 ? (
             <div className={styles.emptyFeedPlaceholder}>
-              No scan entries registered over the current browser environment session.
+              No entries logged in this active session.
             </div>
           ) : null}
           {scannerLog.map((log) => (
