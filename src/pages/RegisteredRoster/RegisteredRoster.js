@@ -126,7 +126,7 @@ export default function RegisteredRoster({ attendees = [], dataFetching = false,
       {/* Dynamic Statistics Metrics Hub */}
       <section className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <div className={styles.statLabel}>Matched in Scope</div>
+          <div className={styles.statLabel}>Total Registered</div>
           <p className={styles.statValue}>{filteredAttendees.length}</p>
         </div>
         <div className={styles.statCard}>
@@ -269,7 +269,7 @@ export default function RegisteredRoster({ attendees = [], dataFetching = false,
                           {attendee.gender || 'Balak'}
                         </span>
                       </td>
-                      <td>{attendee.age} Y/O</td>
+                      <td>{attendee.age}</td>
                       <td>
                         <span className={styles.inlineIconFlex}>
                           <FaMapMarkerAlt className={styles.mutedIcon} /> {attendee.center}

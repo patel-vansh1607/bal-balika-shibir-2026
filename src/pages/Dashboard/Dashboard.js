@@ -224,7 +224,7 @@ export default function Dashboard() {
             {dataFetching ? (
               <span className={styles.syncingIndicator}><FaSpinner className={styles.spin} /> Syncing Data...</span>
             ) : (
-              <><span className={styles.pulseDot}></span> Scope Safe</>
+              <><span className={styles.pulseDot}></span> MTRC</>
             )}
           </span>
         </header>
