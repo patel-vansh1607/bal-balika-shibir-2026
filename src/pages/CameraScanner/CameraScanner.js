@@ -19,23 +19,28 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
   const html5QrcodeInstance = useRef(null);
   const isProcessingScan = useRef(false);
   const isStartingEngine = useRef(false);
-  
-  // Use a ref to store operator to eliminate stale closure/hook dependency loops
   const operatorRef = useRef(null);
 
-  // Safely stop and kill the native device video hardware tracks
+  // Dynamic Theme Definitions for Bulletproof Responsiveness & Visual Feedback
+  const statusThemes = {
+    success: { bg: '#f0fdf4', accent: '#22c55e', text: '#14532d', subtext: '#166534' },
+    warning: { bg: '#fffbeb', accent: '#eab308', text: '#713f12', subtext: '#854d0e' },
+    error: { bg: '#fef2f2', accent: '#ef4444', text: '#7f1d1d', subtext: '#991b1b' }
+  };
+
+  const currentTheme = scanResult ? (statusThemes[scanResult.status] || statusThemes.success) : statusThemes.success;
+
   const stopCameraEngine = useCallback(async () => {
     if (html5QrcodeInstance.current) {
       if (html5QrcodeInstance.current.isScanning) {
         try {
           await html5QrcodeInstance.current.stop();
         } catch (err) {
-          // Suppress asynchronous race condition rejections during teardown
+          // Suppress asynchronous race conditions during teardown
         }
       }
       html5QrcodeInstance.current = null;
     }
-    // Deep clean container layout remnants to prevent flickering on rebuilds
     const container = document.getElementById("qr-reader-container");
     if (container) {
       container.innerHTML = "";
@@ -46,7 +51,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     // Drop un-decoded background stream frames cleanly
   }, []);
 
-  // --- MOBILITY OPTIMIZED ENGINE INITIALIZER ---
   const startCameraEngineDirectly = useCallback(async () => {
     if (isStartingEngine.current) return;
     isStartingEngine.current = true;
@@ -63,7 +67,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     }
 
     try {
-      // ⚡ Native Web API Handshake: Triggers permissions early to prevent library UI fallbacks
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         try {
           const preemptiveStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -92,7 +95,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
         { facingMode: "environment" }, 
         config,
         async (decodedText) => {
-          // Guard lock ensures we drop concurrent video stream frames while validating
           if (isProcessingScan.current) return;
           isProcessingScan.current = true;
           setIsProcessing(true); 
@@ -120,7 +122,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
             processedBy: operatorName
           };
 
-          // Region restriction scope boundary validator
           if (regionScope !== 'All' && !scannedId.startsWith(prefixScope.toUpperCase())) {
             const crossBorderErrorMsg = `Access Denied: Scanned ID "${scannedId}" belongs to another regional center branch.`;
             
@@ -258,7 +259,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
             email: user.email,
             name: user.user_metadata?.full_name || user.email.split('@')[0]
           };
-          operatorRef.current = userData; // Sync to ref tracking structure
+          operatorRef.current = userData; 
         }
 
         const { data: logs, error } = await supabase
@@ -296,7 +297,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     };
   }, [startCameraEngineDirectly]); 
 
-  // Fast UI unlock sequence avoiding native hardware lifecycle teardowns
   const handleCloseResult = () => {
     setScanResult(null);
     isProcessingScan.current = false; 
@@ -304,69 +304,120 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
 
   return (
     <div className={styles.scannerWorkspaceGrid}>
-      <div className={styles.mainCaptureCard} style={{ position: 'relative', overflow: 'hidden' }}>
+      <div className={styles.mainCaptureCard} style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px' }}>
         
-        {/* --- SYSTEM LOADING ABSOLUTE OVERLAY --- */}
+        {/* --- PREMIUM GLOWING GLASS-MORPHISM LOADING OVERLAY --- */}
         {isProcessing && !scanResult && (
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(255, 255, 255, 0.95)', zIndex: 5,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            minHeight: '340px'
+            background: 'rgba(255, 255, 255, 0.75)',
+            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+            zIndex: 10, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', padding: '24px',
+            animation: 'fadeIn 0.25s ease-out'
           }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{
+                width: '60px', height: '60px',
+                border: '3px solid rgba(138, 21, 27, 0.1)', borderTop: '3px solid #8a151b', 
+                borderRadius: '50%', animation: 'spin-loader 0.75s infinite linear'
+              }}></div>
+              <div style={{
+                position: 'absolute', width: '40px', height: '40px',
+                border: '3px solid transparent', borderBottom: '3px solid #2d2926',
+                borderRadius: '50%', animation: 'spin-loader 1.2s infinite reverse linear'
+              }}></div>
+            </div>
+            
+            <style>{`
+              @keyframes spin-loader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+              @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            `}</style>
+            
+            <h3 style={{ margin: '20px 0 6px 0', color: '#2d2926', fontFamily: 'system-ui, sans-serif', fontWeight: '600', letterSpacing: '-0.01em' }}>
+              Verifying Badge Securely
+            </h3>
             <div style={{
-              width: '45px', height: '45px',
-              border: '4px solid #f4ece6', borderTop: '4px solid #8a151b', 
-              borderRadius: '50%', animation: 'spin-loader 0.8s linear infinite',
-              marginBottom: '16px'
-            }}></div>
-            <style>{`@keyframes spin-loader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-            <h4 style={{ margin: '0', color: '#2d2926', fontFamily: 'sans-serif' }}>Verifying Credentials...</h4>
-            <p style={{ margin: '4px 0 0 0', color: '#6c635c', fontSize: '13px' }}>Connecting to Shibir Cloud Database Securely</p>
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '6px 14px', background: 'rgba(0,0,0,0.04)', borderRadius: '20px'
+            }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#8a151b', animation: 'ping 1s infinite' }}></span>
+              <p style={{ margin: '0', color: '#555', fontSize: '12px', fontWeight: '500' }}>Querying Shibir Engine...</p>
+            </div>
+            <style>{`@keyframes ping { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }`}</style>
           </div>
         )}
 
-        {/* --- DYNAMIC VERIFICATION RESULTS CARD OVERLAY --- */}
+        {/* --- HIGHLY RESPONSIVE ADAPTIVE CARD OVERLAY --- */}
         {scanResult && !isProcessing && (
           <div className={`${styles.resultBannerCard} ${styles[scanResult.status]}`} style={{
-            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 6,
-            background: '#fff', overflowY: 'auto', padding: '16px'
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9,
+            background: currentTheme.bg, overflowY: 'auto', padding: '20px',
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+            boxSizing: 'border-box', animation: 'fadeIn 0.2s ease-out'
           }}>
-            <div className={styles.resultHeader}>
-              {scanResult.status === 'success' && <FaCheckCircle className={styles.statusContextIcon} />}
-              {scanResult.status === 'warning' && <FaExclamationTriangle className={styles.statusContextIcon} />}
-              {scanResult.status === 'error' && <FaTimes className={styles.statusContextIcon} />}
-              <div>
-                <h4>{scanResult.message}</h4>
-                <p>{scanResult.customDetail || 'Security Clearance Evaluation Complete'}</p>
+            
+            <div style={{ width: '100%' }}>
+              <div style={{ 
+                display: 'flex', alignItems: 'flex-start', gap: '14px', 
+                borderBottom: `1px solid rgba(0,0,0,0.06)`, paddingBottom: '16px', marginBottom: '16px'
+              }}>
+                <div style={{ fontSize: '32px', color: currentTheme.accent, display: 'flex', alignItems: 'center' }}>
+                  {scanResult.status === 'success' && <FaCheckCircle />}
+                  {scanResult.status === 'warning' && <FaExclamationTriangle />}
+                  {scanResult.status === 'error' && <FaTimes />}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ margin: '0 0 4px 0', color: currentTheme.text, fontSize: '18px', fontWeight: '700', lineHeight: '1.2' }}>
+                    {scanResult.message}
+                  </h4>
+                  <p style={{ margin: '0', color: currentTheme.subtext, fontSize: '13px', lineHeight: '1.4', fontWeight: '500' }}>
+                    {scanResult.customDetail || 'Security Evaluation Complete'}
+                  </p>
+                </div>
               </div>
+
+              {scanResult.attendee && (
+                <div style={{ background: 'rgba(255,255,255,0.65)', borderRadius: '10px', padding: '14px', border: '1px solid rgba(0,0,0,0.04)' }}>
+                  
+                  <div style={{ marginBottom: '12px' }}>
+                    <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#666', fontWeight: '600', letterSpacing: '0.05em' }}>Full Name</span>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#111' }}>{scanResult.attendee.name}</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '12px', marginBottom: '12px', borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: '12px' }}>
+                    <div>
+                      <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#666', fontWeight: '600' }}>Age Group</span>
+                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#222' }}>{scanResult.attendee.age} Years Old</span>
+                    </div>
+                    <div>
+                      <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#666', fontWeight: '600' }}>Center Branch</span>
+                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#222' }}>{scanResult.attendee.center}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: '10px' }}>
+                    <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#666', fontWeight: '600' }}>System Token Reference</span>
+                    <code style={{ fontSize: '12px', color: '#444', background: 'rgba(0,0,0,0.05)', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '4px', wordBreak: 'break-all' }}>
+                      {scanResult.attendee.member_id}
+                    </code>
+                  </div>
+
+                </div>
+              )}
             </div>
 
-            {scanResult.attendee && (
-              <div className={styles.profileBadgeDataSegment}>
-                <div className={styles.metaRowField}>
-                  <span className={styles.metaLabel}>Full Name</span>
-                  <span className={styles.metaValueText}>{scanResult.attendee.name}</span>
-                </div>
-                <div className={styles.metaGridHalf}>
-                  <div>
-                    <span className={styles.metaLabel}>Age Bracket</span>
-                    <span className={styles.metaValueText}>{scanResult.attendee.age} Years Old</span>
-                  </div>
-                  <div>
-                    <span className={styles.metaLabel}>Center Branch</span>
-                    <span className={styles.metaValueText}>{scanResult.attendee.center}</span>
-                  </div>
-                </div>
-                <div className={styles.metaRowField} style={{ borderBottom: 'none', paddingBottom: '0' }}>
-                  <span className={styles.metaLabel}>System Member ID Reference</span>
-                  <span className={styles.metaIdHash}>{scanResult.attendee.member_id}</span>
-                </div>
-              </div>
-            )}
-
-            <button onClick={handleCloseResult} className={styles.resumePipelineBtn}>
-              <FaUserCheck style={{ marginRight: '8px' }} /> Ready for Next Scan
+            <button 
+              onClick={handleCloseResult} 
+              className={styles.resumePipelineBtn}
+              style={{
+                width: '100%', padding: '14px', background: '#2d2926', color: '#fff',
+                border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                cursor: 'pointer', marginTop: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+              }}
+            >
+              <FaUserCheck /> Dimiss & Scan Next
             </button>
           </div>
         )}
@@ -379,7 +430,6 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
           
           <div id="qr-reader-container" className={styles.videoStreamBox} style={{ overflow: 'hidden', position: 'relative', width: '100%', minHeight: '320px', background: '#000' }}></div>
 
-          {/* Failsafe injection blocks library fallback DOM interfaces */}
           <style>{`
             #qr-reader-container button, 
             #qr-reader-container img, 
