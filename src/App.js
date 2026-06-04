@@ -9,7 +9,7 @@ import MaintenancePage from './pages/MaintenancePage/MaintenancePage';
 
 export default function App() {
   // Flip to false to bring the live site back instantly
-  const isUnderMaintenance = true;
+  const isUnderMaintenance = false  ;
 
   if (isUnderMaintenance) {
     return (
