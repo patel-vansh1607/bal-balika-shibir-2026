@@ -16,11 +16,13 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
   const [scanResult, setScanResult] = useState(null); 
   const [operator, setOperator] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false); 
+  
   const html5QrcodeInstance = useRef(null);
   const isProcessingScan = useRef(false);
-
-  // Use refs to hold mutable function tracks to break React Hook circular dependencies
-  const startEngineRef = useRef(null);
+  const isStartingEngine = useRef(false);
+  
+  // Use a ref to store operator to eliminate stale closure/hook dependency loops
+  const operatorRef = useRef(null);
 
   // Safely stop and kill the native device video hardware tracks
   const stopCameraEngine = useCallback(async () => {
@@ -34,161 +36,42 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       }
       html5QrcodeInstance.current = null;
     }
+    // Deep clean container layout remnants to prevent flickering on rebuilds
+    const container = document.getElementById("qr-reader-container");
+    if (container) {
+      container.innerHTML = "";
+    }
   }, []);
 
   const onScanFailure = useCallback(() => {
     // Drop un-decoded background stream frames cleanly
   }, []);
 
-  // --- BUSINESS LOGIC PROCESSING BLOCK ---
-  const onScanSuccess = useCallback(async (decodedText) => {
-    if (isProcessingScan.current) return;
-    isProcessingScan.current = true;
-    setIsProcessing(true); 
-
-    await stopCameraEngine();
-
-    let scannedId = decodedText.trim();
-    if (scannedId.includes('data=')) {
-      scannedId = scannedId.split('data=').pop().split('&')[0];
-    }
-    scannedId = decodeURIComponent(scannedId).toUpperCase().trim();
-
-    if (!scannedId) {
-      isProcessingScan.current = false;
-      setIsProcessing(false);
-      if (startEngineRef.current) startEngineRef.current();
-      return;
-    }
-
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const operatorEmail = operator?.email || 'unknown@shibir.org';
-    const operatorName = operator?.name || 'system';
-
-    let localLogPayload = {
-      id: crypto.randomUUID(),
-      time: timestamp,
-      processedBy: operatorName
-    };
-
-    if (regionScope !== 'All' && !scannedId.startsWith(prefixScope.toUpperCase())) {
-      const crossBorderErrorMsg = `Access Denied: Scanned ID "${scannedId}" belongs to another regional center branch.`;
-      
-      await supabase.from('gate_logs').insert([{
-        scanned_id: scannedId,
-        status: 'error',
-        message: crossBorderErrorMsg,
-        operator_email: operatorEmail,
-        operator_name: operatorName,
-        attendee_name: 'Cross-Region Member'
-      }]);
-
-      localLogPayload.type = 'error';
-      localLogPayload.text = crossBorderErrorMsg;
-      
-      setScanResult({ 
-        status: 'error', 
-        message: 'Cross-Partition Domain Violation!', 
-        customDetail: `This scanner is restricted strictly to ${regionScope} (${prefixScope}) codes. Entry rejected.` 
-      });
-      setScannerLog(prev => [localLogPayload, ...prev]);
-      isProcessingScan.current = false;
-      setIsProcessing(false); 
-      return;
-    }
-
-    try {
-      const { data: attendee, error: fetchError } = await supabase
-        .from('attendees') 
-        .select('*')
-        .eq('member_id', scannedId)
-        .maybeSingle();
-
-      if (fetchError || !attendee) {
-        const errorMsg = `Denied Entry: Token "${scannedId}" is completely unknown to the database.`;
-        
-        await supabase.from('gate_logs').insert([{
-          scanned_id: scannedId,
-          status: 'error',
-          message: errorMsg,
-          operator_email: operatorEmail,
-          operator_name: operatorName,
-          attendee_name: 'Unknown Badge'
-        }]);
-
-        localLogPayload.type = 'error';
-        localLogPayload.text = errorMsg;
-        
-        setScanResult({ status: 'error', message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
-        setScannerLog(prev => [localLogPayload, ...prev]);
-        return;
-      }
-
-      if (attendee.status === 'Checked In') {
-        const warningMsg = `Duplicate Flag: ${attendee.name} scanned again at verification check.`;
-
-        await supabase.from('gate_logs').insert([{
-          scanned_id: scannedId,
-          status: 'warning',
-          message: warningMsg,
-          operator_email: operatorEmail,
-          operator_name: operatorName,
-          attendee_name: attendee.name
-        }]);
-
-        localLogPayload.type = 'warning';
-        localLogPayload.text = warningMsg;
-
-        setScanResult({ status: 'warning', message: 'Duplicate Scan Warning!', attendee });
-        setScannerLog(prev => [localLogPayload, ...prev]);
-        return;
-      }
-
-      const successMsg = `Approved Admission: Verified check-in completed for ${attendee.name} (${attendee.center})`;
-
-      await supabase
-        .from('attendees')
-        .update({ status: 'Checked In' })
-        .eq('member_id', attendee.member_id);
-
-      await supabase.from('gate_logs').insert([{
-        scanned_id: scannedId,
-        status: 'success',
-        message: successMsg,
-        operator_email: operatorEmail,
-        operator_name: operatorName,
-        attendee_name: attendee.name
-      }]);
-
-      localLogPayload.type = 'success';
-      localLogPayload.text = successMsg;
-
-      setScanResult({ status: 'success', message: 'Gate Admission Approved!', attendee });
-      setScannerLog(prev => [localLogPayload, ...prev]);
-
-    } catch (err) {
-      console.error("Critical error inside camera stream capture block:", err);
-    } finally {
-      isProcessingScan.current = false;
-      setIsProcessing(false); 
-    }
-  }, [stopCameraEngine, operator, prefixScope, regionScope]);
-
   // --- MOBILITY OPTIMIZED ENGINE INITIALIZER ---
   const startCameraEngineDirectly = useCallback(async () => {
+    if (isStartingEngine.current) return;
+    isStartingEngine.current = true;
+
     isProcessingScan.current = false;
     setIsProcessing(false); 
 
     await stopCameraEngine();
 
     const container = document.getElementById("qr-reader-container");
-    if (!container) return;
+    if (!container) {
+      isStartingEngine.current = false;
+      return;
+    }
 
     try {
       // ⚡ Native Web API Handshake: Triggers permissions early to prevent library UI fallbacks
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const preemptiveStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        preemptiveStream.getTracks().forEach(track => track.stop());
+        try {
+          const preemptiveStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          preemptiveStream.getTracks().forEach(track => track.stop());
+        } catch (e) {
+          console.warn("Preemptive camera handshake omitted:", e);
+        }
       }
 
       const scanner = new Html5Qrcode("qr-reader-container", {
@@ -209,7 +92,142 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
       await scanner.start(
         { facingMode: "environment" }, 
         config,
-        onScanSuccess,
+        async (decodedText) => {
+          // Guard lock ensures we drop concurrent video stream frames while validating
+          if (isProcessingScan.current) return;
+          isProcessingScan.current = true;
+          setIsProcessing(true); 
+
+          let scannedId = decodedText.trim();
+          if (scannedId.includes('data=')) {
+            scannedId = scannedId.split('data=').pop().split('&')[0];
+          }
+          scannedId = decodeURIComponent(scannedId).toUpperCase().trim();
+
+          if (!scannedId) {
+            isProcessingScan.current = false;
+            setIsProcessing(false);
+            return;
+          }
+
+          const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const currentOperator = operatorRef.current;
+          const operatorEmail = currentOperator?.email || 'unknown@shibir.org';
+          const operatorName = currentOperator?.name || 'system';
+
+          let localLogPayload = {
+            id: crypto.randomUUID(),
+            time: timestamp,
+            processedBy: operatorName
+          };
+
+          // Region restriction scope boundary validator
+          if (regionScope !== 'All' && !scannedId.startsWith(prefixScope.toUpperCase())) {
+            const crossBorderErrorMsg = `Access Denied: Scanned ID "${scannedId}" belongs to another regional center branch.`;
+            
+            try {
+              await supabase.from('gate_logs').insert([{
+                scanned_id: scannedId,
+                status: 'error',
+                message: crossBorderErrorMsg,
+                operator_email: operatorEmail,
+                operator_name: operatorName,
+                attendee_name: 'Cross-Region Member'
+              }]);
+            } catch (dbErr) {
+              console.error("Database log write failed:", dbErr);
+            }
+
+            localLogPayload.type = 'error';
+            localLogPayload.text = crossBorderErrorMsg;
+            
+            setScanResult({ 
+              status: 'error', 
+              message: 'Cross-Partition Domain Violation!', 
+              customDetail: `This scanner is restricted strictly to ${regionScope} (${prefixScope}) codes. Entry rejected.` 
+            });
+            setScannerLog(prev => [localLogPayload, ...prev]);
+            setIsProcessing(false); 
+            
+            // Pauses processing down below; stream stays up but freezes validation overlays until manual dismiss
+            return;
+          }
+
+          try {
+            const { data: attendee, error: fetchError } = await supabase
+              .from('attendees') 
+              .select('*')
+              .eq('member_id', scannedId)
+              .maybeSingle();
+
+            if (fetchError || !attendee) {
+              const errorMsg = `Denied Entry: Token "${scannedId}" is completely unknown to the database.`;
+              
+              await supabase.from('gate_logs').insert([{
+                scanned_id: scannedId,
+                status: 'error',
+                message: errorMsg,
+                operator_email: operatorEmail,
+                operator_name: operatorName,
+                attendee_name: 'Unknown Badge'
+              }]);
+
+              localLogPayload.type = 'error';
+              localLogPayload.text = errorMsg;
+              
+              setScanResult({ status: 'error', message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
+              setScannerLog(prev => [localLogPayload, ...prev]);
+              return;
+            }
+
+            if (attendee.status === 'Checked In') {
+              const warningMsg = `Duplicate Flag: ${attendee.name} scanned again at verification check.`;
+
+              await supabase.from('gate_logs').insert([{
+                scanned_id: scannedId,
+                status: 'warning',
+                message: warningMsg,
+                operator_email: operatorEmail,
+                operator_name: operatorName,
+                attendee_name: attendee.name
+              }]);
+
+              localLogPayload.type = 'warning';
+              localLogPayload.text = warningMsg;
+
+              setScanResult({ status: 'warning', message: 'Duplicate Scan Warning!', attendee });
+              setScannerLog(prev => [localLogPayload, ...prev]);
+              return;
+            }
+
+            const successMsg = `Approved Admission: Verified check-in completed for ${attendee.name} (${attendee.center})`;
+
+            await supabase
+              .from('attendees')
+              .update({ status: 'Checked In' })
+              .eq('member_id', attendee.member_id);
+
+            await supabase.from('gate_logs').insert([{
+              scanned_id: scannedId,
+              status: 'success',
+              message: successMsg,
+              operator_email: operatorEmail,
+              operator_name: operatorName,
+              attendee_name: attendee.name
+            }]);
+
+            localLogPayload.type = 'success';
+            localLogPayload.text = successMsg;
+
+            setScanResult({ status: 'success', message: 'Gate Admission Approved!', attendee });
+            setScannerLog(prev => [localLogPayload, ...prev]);
+
+          } catch (err) {
+            console.error("Critical error inside camera stream capture block:", err);
+          } finally {
+            setIsProcessing(false); 
+          }
+        },
         onScanFailure
       );
 
@@ -229,39 +247,42 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
         message: 'Camera Access Refused.',
         customDetail: 'Please confirm camera permissions are granted for this origin, and that the page is running on HTTPS.'
       });
+    } {
+      isStartingEngine.current = false;
     }
-  }, [stopCameraEngine, onScanSuccess, onScanFailure]);
-
-  // Maintain hot link reference updating to circumvent ESLint hooks rules
-  useEffect(() => {
-    startEngineRef.current = startCameraEngineDirectly;
-  }, [startCameraEngineDirectly]);
+  }, [stopCameraEngine, onScanFailure, prefixScope, regionScope]);
 
   useEffect(() => {
     async function initScannerSession() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setOperator({
-          email: user.email,
-          name: user.user_metadata?.full_name || user.email.split('@')[0]
-        });
-      }
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const userData = {
+            email: user.email,
+            name: user.user_metadata?.full_name || user.email.split('@')[0]
+          };
+          setOperator(userData);
+          operatorRef.current = userData; // Sync to ref immediately
+        }
 
-      const { data: logs, error } = await supabase
-        .from('gate_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
+        const { data: logs, error } = await supabase
+          .from('gate_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(20);
 
-      if (!error && logs) {
-        const formattedLogs = logs.map(log => ({
-          id: log.id,
-          time: new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          type: log.status,
-          text: log.message,
-          processedBy: log.operator_name || log.operator_email?.split('@')[0] || 'system'
-        }));
-        setScannerLog(formattedLogs);
+        if (!error && logs) {
+          const formattedLogs = logs.map(log => ({
+            id: log.id,
+            time: new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            type: log.status,
+            text: log.message,
+            processedBy: log.operator_name || log.operator_email?.split('@')[0] || 'system'
+          }));
+          setScannerLog(formattedLogs);
+        }
+      } catch (err) {
+        console.error("Initialization error:", err);
       }
     }
 
@@ -273,13 +294,16 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
 
     return () => {
       clearTimeout(initializationTimeout);
-      stopCameraEngine();
+      if (html5QrcodeInstance.current?.isScanning) {
+        html5QrcodeInstance.current.stop().catch(() => {});
+      }
     };
-  }, [startCameraEngineDirectly, stopCameraEngine]); 
+  }, [startCameraEngineDirectly]); 
 
+  // Fast UI unlock sequence avoiding native hardware lifecycle teardowns
   const handleCloseResult = () => {
     setScanResult(null);
-    startCameraEngineDirectly(); 
+    isProcessingScan.current = false; 
   };
 
   return (
