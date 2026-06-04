@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, NavLink, Routes, Route, Navigate } from 'react-router-dom';
+import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import AddAttendee from '../AddAttendee/AddAttendee'; 
 import OverviewMetrics from '../OverviewMetrics/OverviewMetrics'; 
@@ -22,6 +22,7 @@ import {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation(); // Used to read URL paths directly for CSS mapping
   const [loading, setLoading] = useState(true);
   const [dataFetching, setDataFetching] = useState(true);
   const [userEmail, setUserEmail] = useState('');
@@ -50,6 +51,7 @@ export default function Dashboard() {
       const cachedPrefix = localStorage.getItem('selected_shibir_prefix');
 
       if (!cachedRegion) {
+        // Redirection fallback if partition tokens are missing
         navigate('/select-region');
         return;
       }
@@ -69,8 +71,11 @@ export default function Dashboard() {
     const fetchIsolatedDataset = async () => {
       try {
         setDataFetching(true);
+        
+        // Base dynamic builder query pipeline
         let query = supabase.from('attendees').select('*');
 
+        // Apply row containment filters if scope isn't set to "All" global clearance
         if (regionScope !== 'All') {
           query = query.eq('region', regionScope);
         }
@@ -94,6 +99,12 @@ export default function Dashboard() {
     localStorage.removeItem('selected_shibir_region');
     localStorage.removeItem('selected_shibir_prefix');
     navigate('/');
+  };
+
+  // Centralized router management engine replacing handleTabChange
+  const handleNavigation = (targetPath) => {
+    navigate(targetPath);
+    setIsMobileMenuOpen(false);
   };
 
   if (loading) {
@@ -137,50 +148,45 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Active Partition Micro Indicator Badge */}
           <div className={styles.scopeIndicatorCard}>
             <span className={styles.scopeMetaLabel}>REGION </span>
             <div className={styles.scopeBadgeText} title={regionScope}>
               {regionScope === 'All' ? 'Global African Database' : regionScope}
             </div>
+            {/* <span className={styles.scopePrefixCode}>Prefix Filter: <code>{prefixScope}</code></span> */}
           </div>
 
           <nav className={styles.navigationList}>
-            {/* NavLink components automatically apply a `.active` class when matched */}
-            <NavLink 
-              to="/dashboard/overview" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
+            <button 
+              onClick={() => handleNavigation('/dashboard/overview')} 
+              className={`${styles.navLink} ${location.pathname === '/dashboard/overview' ? styles.navLinkActive : ''}`}
             >
               <FaChartBar className={styles.iconMargin} /> Overview Metrics
-            </NavLink>
-
-            <NavLink 
-              to="/dashboard/scanner" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
+            </button>
+            <button 
+              onClick={() => handleNavigation('/dashboard/scanner')} 
+              className={`${styles.navLink} ${location.pathname === '/dashboard/scanner' ? styles.navLinkActive : ''}`}
             >
               <FaCamera className={styles.iconMargin} /> Camera QR Scanner
-            </NavLink>
-
-            <NavLink 
-              to="/dashboard/roster" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
+            </button>
+            <button 
+              onClick={() => handleNavigation('/dashboard/roster')} 
+              className={`${styles.navLink} ${location.pathname === '/dashboard/roster' ? styles.navLinkActive : ''}`}
             >
               <FaUsers className={styles.iconMargin} /> Registered Roster
-            </NavLink>
-
-            <NavLink 
-              to="/dashboard/add-new" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
+            </button>
+            <button 
+              onClick={() => handleNavigation('/dashboard/add-new')} 
+              className={`${styles.navLink} ${location.pathname === '/dashboard/add-new' ? styles.navLinkActive : ''}`}
             >
               <FaUserPlus className={styles.iconMargin} /> Register Attendee
-            </NavLink>
+            </button>
           </nav>
         </div>
 
         <div className={styles.sidebarFooter}>
+          {/* Quick Route Switchback Button to main gateway view */}
           <button onClick={() => navigate('/select-region')} className={styles.switchGatewayBtn}>
             <FaArrowLeft style={{ marginRight: '6px' }} /> Switch Partition
           </button>
@@ -227,7 +233,8 @@ export default function Dashboard() {
         </header>
 
         <div className={styles.viewWrapper}>
-          {/* Sub-routing structural switch map block */}
+          
+          {/* Sub-routing configuration switch container block */}
           <Routes>
             <Route path="overview" element={<OverviewMetrics attendees={attendees} dataFetching={dataFetching} />} />
             <Route path="scanner" element={<CameraScanner regionScope={regionScope} prefixScope={prefixScope} />} />
@@ -236,6 +243,7 @@ export default function Dashboard() {
             {/* Safe fallback catch direction map */}
             <Route path="*" element={<Navigate to="overview" replace />} />
           </Routes>
+
         </div>
       </div>
     </div>
