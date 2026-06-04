@@ -45,37 +45,37 @@ export default function PublicRegister() {
   const qrRef = useRef(null);
 
   const regionDataset = {
-    'Kenya (+254)': { 
+    'Kenya': { 
       code: '+254', 
       idAbbreviation: 'KE',
       centers: ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Malindi', 'Kericho', 'Kakamega', 'Nyeri', 'Machakos', 'Meru', 'Kitale', 'Garissa', 'Voi', 'Naivasha', 'Narok', 'Embu', 'Lamu', 'Nanyuki'] 
     },
-    'Tanzania (+255)': { 
+    'Tanzania': { 
       code: '+255', 
       idAbbreviation: 'TZ',
       centers: ['Dar es Salaam', 'Arusha', 'Mwanza', 'Zanzibar City', 'Dodoma', 'Moshi', 'Tanga', 'Morogoro', 'Mbeya', 'Iringa', 'Kigoma', 'Songea', 'Tabora', 'Musoma', 'Shinyanga', 'Sumbawanga', 'Lindi', 'Singida', 'Bukoba'] 
     },
-    'Uganda (+256)': { 
+    'Uganda': { 
       code: '+256', 
       idAbbreviation: 'UG',
       centers: ['Kampala', 'Entebbe', 'Jinja', 'Mbarara', 'Gulu', 'Mbale', 'Masaka', 'Arua', 'Lira', 'Fort Portal', 'Kabale', 'Tororo', 'Soroti', 'Mukono', 'Hoima', 'Kasese', 'Busia', 'Iganga', 'Wakiso'] 
     },
-    'Zambia (+260)': { 
+    'Zambia': { 
       code: '+260', 
       idAbbreviation: 'ZM',
       centers: ['Lusaka', 'Kitwe', 'Ndola', 'Livingstone', 'Kabwe', 'Chingola', 'Mufulira', 'Luanshya', 'Kasama', 'Chipata', 'Chinsali', 'Mansa', 'Solwezi', 'Mongu', 'Mazabuka', 'Monze', 'Choma', 'Kapiri Mposhi'] 
     },
-    'Malawi (+265)': { 
+    'Malawi': { 
       code: '+265', 
       idAbbreviation: 'MW',
       centers: ['Lilongwe', 'Blantyre', 'Mzuzu', 'Zomba', 'Kasungu', 'Mangochi', 'Karonga', 'Salima', 'Nkhotakota', 'Liwonde', 'Balaka', 'Luchenza', 'Dedza', 'Mchinji', 'Chikwawa', 'Nsanje', 'Rumphi'] 
     },
-    'Botswana (+267)': { 
+    'Botswana': { 
       code: '+267', 
       idAbbreviation: 'BW',
       centers: ['Gaborone', 'Francistown', 'Molepolole', 'Maun', 'Mogoditshane', 'Serowe', 'Selebi-Phikwe', 'Kanye', 'Lobatse', 'Palapye', 'Mahalapye', 'Mochudi', 'Ghanzi', 'Kasane', 'Orapa', 'Jwaneng', 'Sowa'] 
     },
-    'South Africa (+27)': { 
+    'South Africa': { 
       code: '+27', 
       idAbbreviation: 'ZA',
       centers: ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria', 'Port Elizabeth', 'Bloemfontein', 'East London', 'Polokwane', 'Nelspruit', 'Kimberley', 'Pietermaritzburg', 'Rustenburg', 'George', 'Welkom', 'Klerksdorp', 'Vereeniging', 'Stellenbosch', 'Paarl', 'Upington', 'Mthatha', 'Soweto', 'Benoni', 'Tembisa'] 
