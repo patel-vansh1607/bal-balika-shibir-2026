@@ -363,7 +363,7 @@ export default function PublicRegister() {
   return (
     <div className={styles.publicWrapper}>
       <header className={styles.publicHeader}>
-        <h1>Making the Right Choice</h1>
+        <h1>Making the Right Choices</h1>
         <p>Bal-Balika Shibir Africa 2026</p>
       </header>
 

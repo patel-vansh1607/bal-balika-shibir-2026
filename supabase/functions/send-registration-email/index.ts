@@ -46,7 +46,7 @@ serve(async (req) => {
             <div style="font-family: 'Calibri', 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; border: 1px solid #e6dfd9; border-radius: 16px; color: #2d2926; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(138, 21, 27, 0.02);">
               
               <h2 style="font-size: 26px; font-weight: 700; color: #8a151b; text-align: center; border-bottom: 1px solid #e6dfd9; padding-bottom: 16px; margin-top: 0;">
-                Making the Right Choice
+                Making the Right Choices
               </h2>
               
               <p style="font-size: 20px; font-weight: 700; margin-top: 24px; color: #2d2926;">

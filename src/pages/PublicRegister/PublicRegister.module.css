@@ -90,12 +90,11 @@
 
 /* Base style for the row wrapper layers */
 .rowFieldContainer {
-  display: flex;
+display: flex;
   flex-direction: row;
+  flex-wrap: wrap; /* Allows wrapping on smaller screens */
+  gap: 16px;
   width: 100%;
-  gap: 16px; /* Restores and enforces the consistent horizontal gap space everywhere */
-  align-items: flex-start;
-  box-sizing: border-box;
 }
 
 /* Ensure each individual input container inside a row splits layout space evenly */
