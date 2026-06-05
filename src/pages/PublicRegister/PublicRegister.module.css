@@ -415,26 +415,26 @@ display: flex;
 @media (max-width: 920px) {
   .containerSplit {
     flex-direction: column;
-    align-items: stretch;
   }
   
-  /* Stacks elements row parameters cleanly on smaller phone viewports */
-  .rowFieldContainer,
+  /* Simplify the row behavior without fighting the grid */
+  .rowFieldContainer {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .rowFieldContainer > .formGroup {
+    flex: 1 1 100%; /* Force items to take full width on mobile */
+    min-width: 100%;
+  }
+
+  /* Clear the grid override entirely */
   .rowFieldContainer:has(.searchDropdownContainer) {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 20px !important;
+    display: flex !important; /* Revert to flex */
+    grid-template-columns: none !important;
   }
-  
+
   .badgeWrapper {
-    width: 100%;
-    position: static; /* Clear sticky execution framework for simple page scrolling stack */
-  }
-  
-  .badgeIdCard, 
-  .downloadLink {
-    max-width: 400px;
-    margin: 0 auto;
     width: 100%;
   }
 }
