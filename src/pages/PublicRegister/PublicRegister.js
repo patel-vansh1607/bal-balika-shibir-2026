@@ -58,7 +58,7 @@ export default function PublicRegister() {
     'Uganda': { 
       code: '+256', 
       idAbbreviation: 'UG',
-      centers: ['Kampala', 'Entebbe', 'Jinja', 'Mbarara', 'Gulu', 'Mbale', 'Masaka', 'Arua', 'Lira', 'Fort Portal', 'Kabale', 'Tororo', 'Soroti', 'Mukono', 'Hoima', 'Kasese', 'Busia', 'Iganga', 'Wakiso'] 
+      centers: ['Campala', 'Entebbe', 'Jinja', 'Mbarara', 'Gulu', 'Mbale', 'Masaka', 'Arua', 'Lira', 'Fort Portal', 'Kabale', 'Tororo', 'Soroti', 'Mukono', 'Hoima', 'Kasese', 'Busia', 'Iganga', 'Wakiso'] 
     },
     'Zambia': { 
       code: '+260', 
@@ -77,7 +77,7 @@ export default function PublicRegister() {
     },
     'South Africa': { 
       code: '+27', 
-      idAbbreviation: 'ZA',
+      idAbbreviation: 'SA',
       centers: ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria', 'Port Elizabeth', 'Bloemfontein', 'East London', 'Polokwane', 'Nelspruit', 'Kimberley', 'Pietermaritzburg', 'Rustenburg', 'George', 'Welkom', 'Klerksdorp', 'Vereeniging', 'Stellenbosch', 'Paarl', 'Upington', 'Mthatha', 'Soweto', 'Benoni', 'Tembisa'] 
     }
   };
@@ -96,31 +96,35 @@ export default function PublicRegister() {
   }, []);
 
   const filteredCountries = Object.keys(regionDataset).filter((country) =>
-    country.toLowerCase().includes(regionSearchQuery.toLowerCase())
+    country.toLowerCase().includes(regionSearchQuery.toLowerCase().trim())
   );
 
-  const availableCenters = selectedRegion ? regionDataset[selectedRegion].centers : [];
+  const availableCenters = selectedRegion && regionDataset[selectedRegion.trim()] 
+    ? regionDataset[selectedRegion.trim()].centers 
+    : [];
+
   const filteredCenters = availableCenters.filter((center) =>
-    center.toLowerCase().includes(centerSearchQuery.toLowerCase())
+    center.toLowerCase().includes(centerSearchQuery.toLowerCase().trim())
   );
 
   const handleSelectCountry = (countryName) => {
-    setSelectedRegion(countryName);
-    setRegionSearchQuery(countryName);
+    const cleanCountry = countryName.trim();
+    setSelectedRegion(cleanCountry);
+    setRegionSearchQuery(''); // Clear the query string so dropdown list works correctly next click
     setIsRegionDropdownOpen(false);
     setSelectedCenter('');
     setCenterSearchQuery('');
 
-    if (regionDataset[countryName]) {
-      setParentContact(regionDataset[countryName].code);
+    if (regionDataset[cleanCountry]) {
+      setParentContact(regionDataset[cleanCountry].code);
     } else {
       setParentContact('');
     }
   };
 
   const handleSelectCenter = (centerName) => {
-    setSelectedCenter(centerName);
-    setCenterSearchQuery(centerName);
+    setSelectedCenter(centerName.trim());
+    setCenterSearchQuery(''); // Clear the query string so it doesn't leave filters stuck
     setIsCenterDropdownOpen(false);
   };
 
@@ -267,9 +271,6 @@ export default function PublicRegister() {
 
     const { constructedFullName, parsedAge, strippedContact, cleanEmail } = validatedFields;
 
-    // 🔥 REMOVED: Stale frontend guess count logic entirely!
-
-    // 🔥 UPDATED: Submit payload without member_id, and request back the DB trigger assigned data
     const { data: insertData, error: insertError } = await supabase
       .from('attendees')
       .insert([
@@ -282,10 +283,9 @@ export default function PublicRegister() {
           parent_contact: strippedContact,
           parent_email: cleanEmail, 
           status: 'Pending'
-          // member_id is excluded here so Postgres trigger generates it dynamically
         }
       ])
-      .select('id, name, region, center, member_id') // Ask for the database calculated member_id right back
+      .select('id, name, region, center, member_id') 
       .single();
 
     if (insertError) {
@@ -297,8 +297,6 @@ export default function PublicRegister() {
     if (insertData) {
       try {
         const profileUrl = await uploadProfilePhoto(insertData.id, insertData.name);
-        
-        // Use the absolute TRUE member_id returned directly from Supabase
         const trueMemberId = insertData.member_id;
         setGeneratedQRValue(trueMemberId);
 
@@ -310,7 +308,6 @@ export default function PublicRegister() {
             .update({ photo_url: profileUrl, qr_code_url: qrUrl })
             .eq('id', insertData.id);
 
-          // Invoke client edge pipeline to execute secure Resend dispatch code with correct ID
           await supabase.functions.invoke('send-registration-email', {
             body: {
               email: cleanEmail,
@@ -323,11 +320,11 @@ export default function PublicRegister() {
           });
 
           setFinalAttendeeData({
-            memberId: trueMemberId,
-            name: insertData.name,
-            region: insertData.region,
-            center: insertData.center
-          });
+  memberId: trueMemberId,
+  name: insertData.name,
+  region: selectedRegion, // <--- Forces "South Africa" directly from the dropdown selection
+  center: selectedCenter
+});
 
           setSuccess(true);
           setLoading(false);
@@ -389,7 +386,7 @@ export default function PublicRegister() {
               </div>
 
               <p style={{ fontSize: '14px', color: '#70757a', margin: '0 0 40px 0' }}>
-                Region Location Assignment: {finalAttendeeData.center}, {finalAttendeeData.region.split(' ')[0]}
+                Region & Center: {finalAttendeeData.center}, {finalAttendeeData.region}
               </p>
 
               <hr style={{ border: '0', height: '1px', background: '#dadce0', margin: '0 auto 32px auto', maxWidth: '400px' }} />
