@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import AddAttendee from '../AddAttendee/AddAttendee'; 
+import PublicRegister from '../PublicRegister/PublicRegister'; 
 import OverviewMetrics from '../OverviewMetrics/OverviewMetrics'; 
 import CameraScanner from '../CameraScanner/CameraScanner'; 
 import RegisteredRoster from '../RegisteredRoster/RegisteredRoster';
@@ -239,7 +239,7 @@ export default function Dashboard() {
             <Route path="overview" element={<OverviewMetrics attendees={attendees} dataFetching={dataFetching} />} />
             <Route path="scanner" element={<CameraScanner regionScope={regionScope} prefixScope={prefixScope} />} />
             <Route path="roster" element={<RegisteredRoster attendees={attendees} dataFetching={dataFetching} regionScope={regionScope} />} />
-            <Route path="add-new" element={<AddAttendee defaultRegion={regionScope !== 'All' ? regionScope : ''} />} />
+            <Route path="add-new" element={<PublicRegister defaultRegion={regionScope !== 'All' ? regionScope : ''} />} />
             {/* Safe fallback catch direction map */}
             <Route path="*" element={<Navigate to="overview" replace />} />
           </Routes>

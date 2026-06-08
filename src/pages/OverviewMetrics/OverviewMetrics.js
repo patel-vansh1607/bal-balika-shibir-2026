@@ -3,8 +3,8 @@ import { FaClipboardList, FaCheckCircle } from 'react-icons/fa';
 import styles from '../Dashboard/Dashboard.module.css'; // Utilizing existing core modular dashboard styles
 
 export default function OverviewMetrics({ attendees = [] }) {
-  const totalRegistered = 145;
-  const totalCheckedIn = attendees.filter(a => a.status === "Checked In").length + 82;
+  const totalRegistered = attendees.length;
+  const totalCheckedIn = attendees.filter(a => a.status === "Checked In").length;
   const verifiedRatio = totalRegistered > 0 ? Math.round((totalCheckedIn / totalRegistered) * 100) : 0;
 
   return (
@@ -12,8 +12,8 @@ export default function OverviewMetrics({ attendees = [] }) {
       {/* Numeric Highlights Row */}
       <section className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <div className={styles.statLabel}>Total Registrations</div>
-          <p className={styles.statValue}>{totalRegistered}</p>
+          <div className={styles.statLabel}>Total Region Registrations</div>
+          <p className={styles.statValue}>{attendees.length}</p>
         </div>
         
         <div className={styles.statCard}>

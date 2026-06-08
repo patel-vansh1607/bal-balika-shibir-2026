@@ -1,34 +1,34 @@
 // src/App.js
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ProtectedRoute from './pages/ProtectedRoute/ProtectedRoute'; // Ensure this path is correct
 import Login from './pages/Login/Login';
 import Dashboard from './pages/Dashboard/Dashboard';
 import PublicRegister from './pages/PublicRegister/PublicRegister';
 import SelectRegion from './pages/SelectRegion/SelectRegion';
-import MaintenancePage from './pages/MaintenancePage/MaintenancePage';
+import NotFound from './pages/NotFound/NotFound';
 
 export default function App() {
-  // Flip to false to bring the live site back instantly
-  const isUnderMaintenance = false  ;
-
-  if (isUnderMaintenance) {
-    return (
-      <Router>
-        <Routes>
-          <Route path="*" element={<MaintenancePage />} />
-        </Routes>
-      </Router>
-    );
-  }
-
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/dashboard/*" element={<Dashboard />} />
+        
+        {/* Protected Route Wrapper */}
+        <Route 
+          path="/dashboard/*" 
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+
         <Route path="/register" element={<PublicRegister />} />
         <Route path="/select-region" element={<SelectRegion />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        
+        {/* Catch-all redirect */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );

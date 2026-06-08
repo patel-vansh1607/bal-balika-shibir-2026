@@ -140,7 +140,7 @@ export default function RegisteredRoster({
 
       link.href = blobUrl;
 
-      link.download = `Pass_${memberId}_${userName.replace(/\s+/g, "_")}.png`;
+      link.download = `ID_${memberId}_${userName.replace(/\s+/g, "_")}.png`;
 
       document.body.appendChild(link);
 
