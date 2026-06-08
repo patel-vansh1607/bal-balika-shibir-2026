@@ -126,7 +126,7 @@
    BUTTON CORES
    ========================================================================== */
 .exportBtn {
-  background-color: #107c41;
+  background-color: #B96D76;
   color: #ffffff;
   font-family: var(--font-sans);
   font-weight: 600;
@@ -140,23 +140,47 @@
   gap: 8px;
   transition: opacity 0.2s ease;
 }
-
-.refreshBtn {
-  background-color: var(--bg-main);
-  border: 1px solid var(--border-light);
-  color: var(--text-main);
-  padding: 12px 14px;
+.qrBtn {
+  background-color: #6366F1;
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 13.5px;
+  border: none;
+  padding: 12px 18px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 0.2s ease;
+}
+.refreshBtn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #5A6978;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
 }
 
-.refreshBtn:hover, .exportBtn:hover {
-  opacity: 0.9;
+.refreshBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* ==========================================================================
@@ -487,7 +511,7 @@
   .selectDropdown {
     width: 100%;
   }
-  .exportBtn {
+  .exportBtn, .qrBtn {
     width: 100%;
     justify-content: center;
   }
