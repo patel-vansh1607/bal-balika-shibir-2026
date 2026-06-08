@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
+import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import PublicRegister from '../PublicRegister/PublicRegister'; 
 import OverviewMetrics from '../OverviewMetrics/OverviewMetrics'; 

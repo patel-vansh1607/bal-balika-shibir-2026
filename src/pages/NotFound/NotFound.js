@@ -1,18 +1,8 @@
-import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../supabaseClient";
-import styles from "./NotFound.module.css"; // Import the CSS module
+import styles from "./NotFound.module.css"; 
 
 export default function NotFound() {
   const navigate = useNavigate();
-  const [isAuth, setIsAuth] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuth(!!session);
-    });
-  }, []);
-
   return (
     <div className={styles.regionWrapper}>
       <div className={styles.card}>
