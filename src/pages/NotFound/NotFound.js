@@ -1,7 +1,7 @@
-// src/pages/NotFound/NotFound.js
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../supabaseClient'; // Ensure your path is correct
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../supabaseClient";
+import styles from "./NotFound.module.css"; // Import the CSS module
 
 export default function NotFound() {
   const navigate = useNavigate();
@@ -14,15 +14,28 @@ export default function NotFound() {
   }, []);
 
   return (
-    <div className="regionWrapper">
-      <div className="card" style={{ maxWidth: '400px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '48px', color: 'var(--accent-primary)' }}>404</h1>
-        <h2 style={{ fontFamily: 'var(--font-display)' }}>Page Not Found</h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
+    <div className={styles.regionWrapper}>
+      <div className={styles.card}>
+        <h1
+          style={{
+            fontSize: "48px",
+            color: "var(--accent-primary)",
+            margin: "0 0 10px 0",
+          }}
+        >
+          404
+        </h1>
+        <h2 style={{ fontFamily: "var(--font-display)", margin: "0 0 15px 0" }}>
+          Page Not Found
+        </h2>
+        <p style={{ color: "var(--text-muted)", marginBottom: "24px" }}>
           This page doesn't exist. Let's get you back on track.
         </p>
-        <button className="primary-btn" onClick={() => navigate(isAuth ? '/dashboard' : '/')}>
-          {isAuth ? 'Return to Dashboard' : 'Return to Login'}
+        <button
+          className={styles.primaryBtn}
+          onClick={() => navigate(-1)} 
+        >
+          Go Back
         </button>
       </div>
     </div>

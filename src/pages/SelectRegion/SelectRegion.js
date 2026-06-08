@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import { FaGlobeAfrica, FaSignOutAlt } from 'react-icons/fa';
+import { FaGlobeAfrica, FaSignOutAlt, FaSpinner} from 'react-icons/fa';
 import styles from './SelectRegion.module.css';
+
 
 export default function SelectRegion() {
   const navigate = useNavigate();
   const [hoveredRegion, setHoveredRegion] = useState(null);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
 
   const regions = [
     { id: 'All', idPrefix: 'MTRC-', name: 'All Africa', flagMapUrl: 'https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780577973/africa-01_jjhu7b.svg' },
@@ -22,14 +25,21 @@ export default function SelectRegion() {
   const handleRegionSelect = (region) => {
     localStorage.setItem('selected_shibir_region', region.id);
     localStorage.setItem('selected_shibir_prefix', region.idPrefix);
-    navigate('/dashboard');
+    navigate('/dashboard/overview');
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    localStorage.clear();
-    navigate('/');
-  };
+const handleLogout = async () => {
+  setIsLoggingOut(true); // Trigger loading state
+  
+  // Optional: add a tiny delay so the user actually sees the "Logging out..." text
+  await new Promise(resolve => setTimeout(resolve, 800)); 
+
+  await supabase.auth.signOut();
+  localStorage.removeItem('selected_shibir_region');
+  localStorage.removeItem('selected_shibir_prefix');
+  navigate('/');
+}
+
 
   return (
     <div className={styles.regionWrapper}>
@@ -62,9 +72,23 @@ export default function SelectRegion() {
         </div>
 
         <div className={styles.footerActionRow}>
-          <button onClick={handleLogout} className={styles.logoutBtn}>
-            <FaSignOutAlt /> Sign Out Safely
-          </button>
+          <button 
+  onClick={handleLogout} 
+  className={styles.logoutBtn}
+  disabled={isLoggingOut} // Prevents double-clicks
+>
+  {isLoggingOut ? (
+    <>
+      <FaSpinner className={styles.spin} style={{ marginRight: '6px' }} /> 
+      Logging out...
+    </>
+  ) : (
+    <>
+      <FaSignOutAlt style={{ marginRight: '6px' }} /> 
+      Logout
+    </>
+  )}
+</button>
         </div>
       </div>
     </div>

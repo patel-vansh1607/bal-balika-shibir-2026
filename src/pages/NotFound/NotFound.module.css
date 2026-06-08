@@ -1,0 +1,33 @@
+.regionWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh; /* Keeps it centered vertically in the viewport */
+  padding: 20px;
+}
+
+.card {
+  background: var(--white);
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color);
+  text-align: center;
+  width: 100%;
+}
+
+.primaryBtn {
+  background-color: var(--accent-primary);
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-family: var(--font-main);
+}
+
+.primaryBtn:hover {
+  background-color: var(--accent-hover);
+}

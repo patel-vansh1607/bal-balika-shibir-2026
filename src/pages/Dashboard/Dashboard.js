@@ -19,6 +19,7 @@ import {
   FaSpinner,
   FaArrowLeft
 } from 'react-icons/fa';
+import NotFound from '../NotFound/NotFound';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const [dataFetching, setDataFetching] = useState(true);
   const [userEmail, setUserEmail] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // Real-time Data Store Stream
   const [attendees, setAttendees] = useState([]);
@@ -94,13 +96,18 @@ export default function Dashboard() {
     fetchIsolatedDataset();
   }, [loading, regionScope]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem('selected_shibir_region');
-    localStorage.removeItem('selected_shibir_prefix');
-    navigate('/');
-  };
+const handleLogout = async () => {
+  setIsLoggingOut(true); // Trigger loading state
+  
+  // Optional: add a tiny delay so the user actually sees the "Logging out..." text
+  await new Promise(resolve => setTimeout(resolve, 800)); 
 
+  await supabase.auth.signOut();
+  localStorage.removeItem('selected_shibir_region');
+  localStorage.removeItem('selected_shibir_prefix');
+  navigate('/');
+}
+  
   // Centralized router management engine replacing handleTabChange
   const handleNavigation = (targetPath) => {
     navigate(targetPath);
@@ -197,9 +204,23 @@ export default function Dashboard() {
               <FaUserShield style={{ marginRight: '4px' }} /> Regional Admin
             </span>
           </div>
-          <button onClick={handleLogout} className={styles.logoutBtn}>
-            <FaSignOutAlt style={{ marginRight: '6px' }} /> Logout Session
-          </button>
+          <button 
+  onClick={handleLogout} 
+  className={styles.logoutBtn}
+  disabled={isLoggingOut} // Prevents double-clicks
+>
+  {isLoggingOut ? (
+    <>
+      <FaSpinner className={styles.spin} style={{ marginRight: '6px' }} /> 
+      Logging out...
+    </>
+  ) : (
+    <>
+      <FaSignOutAlt style={{ marginRight: '6px' }} /> 
+      Logout Session
+    </>
+  )}
+</button>
         </div>
       </aside>
 
@@ -241,7 +262,7 @@ export default function Dashboard() {
             <Route path="roster" element={<RegisteredRoster attendees={attendees} dataFetching={dataFetching} regionScope={regionScope} />} />
             <Route path="add-new" element={<PublicRegister defaultRegion={regionScope !== 'All' ? regionScope : ''} />} />
             {/* Safe fallback catch direction map */}
-            <Route path="*" element={<Navigate to="overview" replace />} />
+            <Route path="*" element={<NotFound  />} />
           </Routes>
 
         </div>
