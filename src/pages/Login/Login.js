@@ -51,7 +51,7 @@ export default function Login() {
         alt="BAPS Aksharderi Logo" 
       />
     </div>
-          <h2 className={styles.title}>Bal Balika Shibir 2026 v2</h2>
+          <h2 className={styles.title}>Bal Balika Shibir 2026</h2>
           <p className={styles.subtitle}>Management System</p>
         </div>
 
