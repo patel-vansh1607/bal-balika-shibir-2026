@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { supabase } from '../../supabaseClient'; 
-import { useMemo } from 'react';
-
+import { supabase } from "../../supabaseClient";
+import { useMemo } from "react";
 
 import {
   FaSearch,
@@ -15,6 +14,7 @@ import {
   FaFileExport,
   FaDownload,
   FaSpinner,
+  FaArchive,
 } from "react-icons/fa";
 
 import styles from "./RegisteredRoster.module.css";
@@ -23,13 +23,15 @@ export default function RegisteredRoster({
   attendees = [],
   dataFetching = false,
   regionScope = "All",
-  userRole
+  userRole,
+  setAttendees,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showArchived, setShowArchived] = useState(false);
 
   const [selectedCenter, setSelectedCenter] = useState("All");
-
+  // Add this to your existing useState definitions
+  const [isProcessing, setIsProcessing] = useState(false);
   const [selectedGender, setSelectedGender] = useState("All"); // 'All' | 'Balak' | 'Balika' | 'Shishu' | 'Shishika'
 
   const [imageErrors, setImageErrors] = useState({});
@@ -37,7 +39,7 @@ export default function RegisteredRoster({
   const [isExporting, setIsExporting] = useState(false);
   const [isDownloadingQR, setIsDownloadingQR] = useState(false);
   const [isDownloadingSingle, setIsDownloadingSingle] = useState(false);
-
+  const [confirmAction, setConfirmAction] = useState(null); // { attendee: object, type: 'archive'|'restore' }
   const [activeQrModalUser, setActiveQrModalUser] = useState(null);
 
   // Derive unique center hubs dynamically based *only* on the current region's dataset
@@ -46,18 +48,38 @@ export default function RegisteredRoster({
     "All",
     ...new Set(attendees.map((a) => a.center).filter(Boolean)),
   ];
-  const toggleArchiveStatus = async (attendee, shouldArchive) => {
+  const initiateArchive = (attendee, shouldArchive) => {
+    setConfirmAction({ attendee, shouldArchive });
+  };
+
+  const executeArchive = async () => {
+    if (!confirmAction) return;
+
+    setIsProcessing(true); // Start the loading spinner
+    const { attendee, shouldArchive } = confirmAction;
+
     try {
       const { error } = await supabase
-        .from('attendees')
+        .from("attendees")
         .update({ is_archived: shouldArchive })
-        .eq('id', attendee.id);
+        .eq("id", attendee.id);
 
       if (error) throw error;
-      alert(`Record ${shouldArchive ? 'archived' : 'restored'} successfully.`);
-      // Note: You may need a way to refresh the parent list here
+
+      // Update local state:
+      // If you want to move them to/from the archived list,
+      // filter them out so they disappear from the current view.
+      setAttendees((prev) => prev.filter((a) => a.id !== attendee.id));
+
+      // Success: Close the modal
+      setConfirmAction(null);
     } catch (err) {
-      console.error("Archive status update failed:", err);
+      console.error("Database update failed:", err);
+      // Replace alert() with a non-blocking notification or
+      // simply close the modal so the user can try again.
+      setConfirmAction(null);
+    } finally {
+      setIsProcessing(false); // Stop the loading spinner regardless of success or failure
     }
   };
   const downloadBatchQR = async () => {
@@ -98,29 +120,37 @@ export default function RegisteredRoster({
     }
   }; // Apply localized sub-filters (Search bar, Mandal select, Center branch select)
 
-const filteredAttendees = useMemo(() => {
-  return attendees.filter((attendee) => {
-    // 1. Sanitization & Normalization
-    const nameSafe = attendee.name?.toLowerCase() || "";
-    const contactSafe = String(attendee.parent_contact || attendee.parentContact || "");
-    const customIdSafe = String(attendee.member_id || attendee.memberId || "").toLowerCase();
-    
-    // 2. Archive status filter
-    const matchesArchiveStatus = attendee.is_archived === showArchived;
+  const filteredAttendees = useMemo(() => {
+    return attendees.filter((attendee) => {
+      // 1. Sanitization & Normalization
+      const nameSafe = attendee.name?.toLowerCase() || "";
+      const contactSafe = String(
+        attendee.parent_contact || attendee.parentContact || "",
+      );
+      const customIdSafe = String(
+        attendee.member_id || attendee.memberId || "",
+      ).toLowerCase();
 
-    // 3. Search match logic
-    const matchesSearch =
-      nameSafe.includes(searchTerm.toLowerCase()) ||
-      contactSafe.includes(searchTerm) ||
-      customIdSafe.includes(searchTerm.toLowerCase());
+      // 2. Archive status filter
+      const matchesArchiveStatus = attendee.is_archived === showArchived;
 
-    // 4. Categorical filters
-    const matchesCenter = selectedCenter === "All" || attendee.center === selectedCenter;
-    const matchesGender = selectedGender === "All" || attendee.gender === selectedGender;
+      // 3. Search match logic
+      const matchesSearch =
+        nameSafe.includes(searchTerm.toLowerCase()) ||
+        contactSafe.includes(searchTerm) ||
+        customIdSafe.includes(searchTerm.toLowerCase());
 
-    return matchesArchiveStatus && matchesSearch && matchesCenter && matchesGender;
-  });
-}, [attendees, searchTerm, selectedCenter, selectedGender, showArchived]);
+      // 4. Categorical filters
+      const matchesCenter =
+        selectedCenter === "All" || attendee.center === selectedCenter;
+      const matchesGender =
+        selectedGender === "All" || attendee.gender === selectedGender;
+
+      return (
+        matchesArchiveStatus && matchesSearch && matchesCenter && matchesGender
+      );
+    });
+  }, [attendees, searchTerm, selectedCenter, selectedGender, showArchived]);
   const exportToCSV = () => {
     if (filteredAttendees.length === 0) {
       alert("No matched dataset found to extract.");
@@ -144,12 +174,12 @@ const filteredAttendees = useMemo(() => {
         headers.join(","),
         ...filteredAttendees.map((row) => {
           const finalId = row.member_id || row.memberId || row.id;
-          
+
           // Fix: Wrap the phone number in ="..." so Excel treats it as text
-// Use \t (tab) before the contact number. 
-// This forces Excel to treat the cell content as text.
-const rawContact = row.parent_contact || row.parentContact || "";
-const finalContact = rawContact ? `\t${rawContact}` : "";
+          // Use \t (tab) before the contact number.
+          // This forces Excel to treat the cell content as text.
+          const rawContact = row.parent_contact || row.parentContact || "";
+          const finalContact = rawContact ? `\t${rawContact}` : "";
           return [
             `"${finalId}"`,
             `"${row.name?.replace(/"/g, '""') || ""}"`,
@@ -182,7 +212,9 @@ const finalContact = rawContact ? `\t${rawContact}` : "";
       setIsExporting(false);
     }
   };
-
+  const toggleArchiveStatus = (attendee, shouldArchive) => {
+    initiateArchive(attendee, shouldArchive);
+  };
   const downloadQRImg = async (memberId, userName) => {
     setIsDownloadingSingle(true); // Start loading animation
 
@@ -241,8 +273,9 @@ const finalContact = rawContact ? `\t${rawContact}` : "";
   const handleImageError = (id) => {
     setImageErrors((prev) => ({ ...prev, [id]: true }));
   };
-const ROLES = { master_admin: 4, super_admin: 3, admin: 2, operator: 1 };
-const hasPermission = (userRole, requiredRole) => (ROLES[userRole] || 0) >= (ROLES[requiredRole] || 0);
+  const ROLES = { master_admin: 4, super_admin: 3, admin: 2, operator: 1 };
+  const hasPermission = (userRole, requiredRole) =>
+    (ROLES[userRole] || 0) >= (ROLES[requiredRole] || 0);
   const getGenderTagClass = (genderCategory) => {
     switch (genderCategory) {
       case "Balak":
@@ -440,7 +473,8 @@ const hasPermission = (userRole, requiredRole) => (ROLES[userRole] || 0) >= (ROL
                   <th>Parent Contact</th>
 
                   <th style={{ textAlign: "center" }}>Identity Pass</th>
-                  <th>Actions</th>
+                  {(userRole === "master_admin" ||
+                    userRole === "super_admin") && <th>Actions</th>}
                 </tr>
               </thead>
 
@@ -538,28 +572,105 @@ const hasPermission = (userRole, requiredRole) => (ROLES[userRole] || 0) >= (ROL
                         </button>
                       </td>
                       <td style={{ textAlign: "center" }}>
-  {/* Archive: Accessible to Master Admin (4) and Super Admin (3) */}
-  {(userRole === 'master_admin' || userRole === 'super_admin') && !attendee.is_archived && (
-    <button 
-      onClick={() => toggleArchiveStatus(attendee, true)}
-      className={styles.actionBtn}
-      style={{ color: 'orange' }}
-    >
-      Archive
-    </button>
-  )}
+                        {/* Archive: Accessible to Admin+ */}
+                        {(userRole === "master_admin" ||
+                          userRole === "super_admin" ||
+                          userRole === "admin") &&
+                          !attendee.is_archived && (
+                            <button
+                              onClick={() =>
+                                toggleArchiveStatus(attendee, true)
+                              }
+                              className={styles.archiveBtn}
+                              title="Archive Record"
+                            >
+                              <FaArchive style={{ fontSize: "12px" }} /> Archive
+                            </button>
+                          )}
 
-  {/* Restore: Accessible ONLY to Master Admin (4) */}
-  {userRole === 'master_admin' && attendee.is_archived && (
-    <button 
-      onClick={() => toggleArchiveStatus(attendee, false)}
-      className={styles.actionBtn}
-      style={{ color: 'green' }}
-    >
-      Restore
-    </button>
-  )}
-</td>
+                        {/* Restore: Accessible ONLY to Master Admin */}
+                        {userRole === "master_admin" &&
+                          attendee.is_archived && (
+                            <button
+                              onClick={() =>
+                                toggleArchiveStatus(attendee, false)
+                              }
+                              className={styles.actionBtn}
+                              style={{ color: "green" }}
+                            >
+                              Restore
+                            </button>
+                          )}
+                      </td>
+                      {confirmAction && (
+                        <div
+                          className={styles.modalOverlay}
+                          onClick={() => setConfirmAction(null)}
+                        >
+                          <div
+                            className={styles.modalCard}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <h3>
+                              Confirm{" "}
+                              {confirmAction.shouldArchive
+                                ? "Archive"
+                                : "Restore"}
+                            </h3>
+                            <p>
+                              Are you sure you want to{" "}
+                              {confirmAction.shouldArchive
+                                ? "archive"
+                                : "restore"}{" "}
+                              <strong>{confirmAction.attendee.name}</strong>?
+                            </p>
+
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "10px",
+                                marginTop: "20px",
+                              }}
+                            >
+                              <button
+                                onClick={() => setConfirmAction(null)}
+                                className={styles.cancelBtn}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={executeArchive}
+                                className={styles.confirmBtn}
+                                disabled={isProcessing} // Prevent double-clicks
+                                style={{
+                                  backgroundColor: confirmAction.shouldArchive
+                                    ? "#d97706"
+                                    : "green",
+                                  opacity: isProcessing ? 0.7 : 1,
+                                  cursor: isProcessing
+                                    ? "not-allowed"
+                                    : "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: "8px",
+                                }}
+                              >
+                                {isProcessing ? (
+                                  <>
+                                    <FaSpinner className={styles.spin} />{" "}
+                                    Processing...
+                                  </>
+                                ) : confirmAction.shouldArchive ? (
+                                  "Confirm Archive"
+                                ) : (
+                                  "Confirm Restore"
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </tr>
                   );
                 })}

@@ -273,7 +273,7 @@ const toggleArchiveStatus = async (attendee, status) => {
             <Routes>
               <Route path="overview" element={<OverviewMetrics attendees={attendees} dataFetching={dataFetching} />} />
               <Route path="scanner" element={<CameraScanner regionScope={regionScope} prefixScope={prefixScope} />} />
-              <Route path="roster" element={<RegisteredRoster attendees={attendees} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} />} />
+              <Route path="roster" element={<RegisteredRoster attendees={attendees} setAttendees={setAttendees} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} />} />
               <Route path="add-new" element={<PublicRegister defaultRegion={regionScope !== 'All' ? regionScope : ''} />} />
               
               <Route 
