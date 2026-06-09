@@ -125,15 +125,19 @@ export default function RegisteredRoster({
         headers.join(","),
         ...filteredAttendees.map((row) => {
           const finalId = row.member_id || row.memberId || row.id;
-          const finalContact = row.parent_contact || row.parentContact || "";
-
+          
+          // Fix: Wrap the phone number in ="..." so Excel treats it as text
+// Use \t (tab) before the contact number. 
+// This forces Excel to treat the cell content as text.
+const rawContact = row.parent_contact || row.parentContact || "";
+const finalContact = rawContact ? `\t${rawContact}` : "";
           return [
             `"${finalId}"`,
             `"${row.name?.replace(/"/g, '""') || ""}"`,
             `"${row.gender || "Balak"}"`,
             `"${row.age}"`,
             `"${row.center}"`,
-            `"${finalContact}"`,
+            `"${finalContact}"`, // This now includes the Excel-formatting trick
             `"${row.photo_url || row.photoUrl || ""}"`,
           ].join(",");
         }),
