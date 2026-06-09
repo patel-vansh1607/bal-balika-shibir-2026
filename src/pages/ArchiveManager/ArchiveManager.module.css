@@ -1,0 +1,25 @@
+.archiveTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.archiveTable th, .archiveTable td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.archiveTable th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.archiveTable tr:hover {
+  background-color: #f1f1f1;
+}

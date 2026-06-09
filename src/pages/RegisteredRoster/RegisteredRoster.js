@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import { supabase } from '../../supabaseClient'; 
+import { useMemo } from 'react';
+
 
 import {
   FaSearch,
@@ -20,8 +23,10 @@ export default function RegisteredRoster({
   attendees = [],
   dataFetching = false,
   regionScope = "All",
+  userRole
 }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
 
   const [selectedCenter, setSelectedCenter] = useState("All");
 
@@ -41,6 +46,20 @@ export default function RegisteredRoster({
     "All",
     ...new Set(attendees.map((a) => a.center).filter(Boolean)),
   ];
+  const toggleArchiveStatus = async (attendee, shouldArchive) => {
+    try {
+      const { error } = await supabase
+        .from('attendees')
+        .update({ is_archived: shouldArchive })
+        .eq('id', attendee.id);
+
+      if (error) throw error;
+      alert(`Record ${shouldArchive ? 'archived' : 'restored'} successfully.`);
+      // Note: You may need a way to refresh the parent list here
+    } catch (err) {
+      console.error("Archive status update failed:", err);
+    }
+  };
   const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;
 
@@ -79,29 +98,29 @@ export default function RegisteredRoster({
     }
   }; // Apply localized sub-filters (Search bar, Mandal select, Center branch select)
 
-  const filteredAttendees = attendees.filter((attendee) => {
-    // Robust checks handling both snake_case and camelCase from structural payloads
+const filteredAttendees = useMemo(() => {
+  return attendees.filter((attendee) => {
+    // 1. Sanitization & Normalization
+    const nameSafe = attendee.name?.toLowerCase() || "";
+    const contactSafe = String(attendee.parent_contact || attendee.parentContact || "");
+    const customIdSafe = String(attendee.member_id || attendee.memberId || "").toLowerCase();
+    
+    // 2. Archive status filter
+    const matchesArchiveStatus = attendee.is_archived === showArchived;
 
-    const nameSafe = attendee.name ? attendee.name.toLowerCase() : "";
-
-    const contactSafe = attendee.parent_contact || attendee.parentContact || "";
-
-    const customIdSafe = attendee.member_id || attendee.memberId || "";
-
+    // 3. Search match logic
     const matchesSearch =
       nameSafe.includes(searchTerm.toLowerCase()) ||
-      String(contactSafe).includes(searchTerm) ||
-      String(customIdSafe).toLowerCase().includes(searchTerm.toLowerCase());
+      contactSafe.includes(searchTerm) ||
+      customIdSafe.includes(searchTerm.toLowerCase());
 
-    const matchesCenter =
-      selectedCenter === "All" || attendee.center === selectedCenter;
+    // 4. Categorical filters
+    const matchesCenter = selectedCenter === "All" || attendee.center === selectedCenter;
+    const matchesGender = selectedGender === "All" || attendee.gender === selectedGender;
 
-    const matchesGender =
-      selectedGender === "All" || attendee.gender === selectedGender;
-
-    return matchesSearch && matchesCenter && matchesGender;
+    return matchesArchiveStatus && matchesSearch && matchesCenter && matchesGender;
   });
-
+}, [attendees, searchTerm, selectedCenter, selectedGender, showArchived]);
   const exportToCSV = () => {
     if (filteredAttendees.length === 0) {
       alert("No matched dataset found to extract.");
@@ -222,7 +241,8 @@ const finalContact = rawContact ? `\t${rawContact}` : "";
   const handleImageError = (id) => {
     setImageErrors((prev) => ({ ...prev, [id]: true }));
   };
-
+const ROLES = { master_admin: 4, super_admin: 3, admin: 2, operator: 1 };
+const hasPermission = (userRole, requiredRole) => (ROLES[userRole] || 0) >= (ROLES[requiredRole] || 0);
   const getGenderTagClass = (genderCategory) => {
     switch (genderCategory) {
       case "Balak":
@@ -420,6 +440,7 @@ const finalContact = rawContact ? `\t${rawContact}` : "";
                   <th>Parent Contact</th>
 
                   <th style={{ textAlign: "center" }}>Identity Pass</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
 
@@ -516,6 +537,29 @@ const finalContact = rawContact ? `\t${rawContact}` : "";
                           <FaQrcode style={{ fontSize: "13px" }} /> View Pass
                         </button>
                       </td>
+                      <td style={{ textAlign: "center" }}>
+  {/* Archive: Accessible to Master Admin (4) and Super Admin (3) */}
+  {(userRole === 'master_admin' || userRole === 'super_admin') && !attendee.is_archived && (
+    <button 
+      onClick={() => toggleArchiveStatus(attendee, true)}
+      className={styles.actionBtn}
+      style={{ color: 'orange' }}
+    >
+      Archive
+    </button>
+  )}
+
+  {/* Restore: Accessible ONLY to Master Admin (4) */}
+  {userRole === 'master_admin' && attendee.is_archived && (
+    <button 
+      onClick={() => toggleArchiveStatus(attendee, false)}
+      className={styles.actionBtn}
+      style={{ color: 'green' }}
+    >
+      Restore
+    </button>
+  )}
+</td>
                     </tr>
                   );
                 })}

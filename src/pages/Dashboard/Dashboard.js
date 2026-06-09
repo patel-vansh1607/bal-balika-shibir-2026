@@ -1,129 +1,160 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Routes, Route, } from 'react-router-dom';
+import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import PublicRegister from '../PublicRegister/PublicRegister'; 
 import OverviewMetrics from '../OverviewMetrics/OverviewMetrics'; 
 import CameraScanner from '../CameraScanner/CameraScanner'; 
 import RegisteredRoster from '../RegisteredRoster/RegisteredRoster';
+import NotFound from '../NotFound/NotFound';
 import styles from './Dashboard.module.css';
+import ArchiveManager from '../ArchiveManager/ArchiveManager';
 
 import { 
-  FaChartBar, 
-  FaCamera, 
-  FaSignOutAlt, 
-  FaUserShield,
-  FaBars,
-  FaTimes,
-  FaUserPlus,
-  FaUsers,
-  FaSpinner,
-  FaArrowLeft,
+  FaChartBar, FaCamera, FaSignOutAlt, FaUserShield, FaBars,
+  FaTimes, FaUserPlus, FaUsers, FaSpinner, FaArrowLeft,FaArchive
 } from 'react-icons/fa';
-import NotFound from '../NotFound/NotFound';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const location = useLocation(); // Used to read URL paths directly for CSS mapping
+  const location = useLocation();
+
+  // 1. Unified State Declarations
   const [loading, setLoading] = useState(true);
   const [dataFetching, setDataFetching] = useState(true);
   const [userEmail, setUserEmail] = useState('');
+  const [userRole, setUserRole] = useState(null); 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  
-  // Real-time Data Store Stream
   const [attendees, setAttendees] = useState([]);
-  
-  // Regional Partition Isolation Scope States
   const [regionScope, setRegionScope] = useState('All');
   const [prefixScope, setPrefixScope] = useState('MTRC-');
 
-  // 1. Session & Storage Scope Verification Engine
+  // 2. Session & Scope Verification Engine
   useEffect(() => {
     const checkUserSession = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) {
+      try {
+        setLoading(true);
+        // Get session first
+        const { data: { session }, error: authError } = await supabase.auth.getSession();
+        
+        if (authError || !session) {
+          navigate('/login');
+          return;
+        }
+
+        // Fetch Profile & Role
+        const { data: profile, error } = await supabase
+  .from('user_roles')
+  .select('role')
+  .eq('id', session.user.id) // Corrected from 'user_id' to 'id'
+  .single();
+
+if (profile) {
+  setUserRole(profile.role); // Corrected from 'profile.user_roles.role_name'
+  setUserEmail(session.user.email);
+} else {
+  console.error("Role fetch error:", error);
+}
+
+        const ROLES = {
+  master_admin: 4,
+  super_admin: 3,
+  admin: 2,
+  operator: 1
+};
+
+// Use this helper function to check permissions
+const hasPermission = (userRole, requiredRole) => {
+  return (ROLES[userRole] || 0) >= (ROLES[requiredRole] || 0);
+};
+        const cachedRegion = localStorage.getItem('selected_shibir_region');
+        if (!cachedRegion) {
+          navigate('/select-region');
+          return;
+        }
+
+        setRegionScope(cachedRegion);
+        setPrefixScope(localStorage.getItem('selected_shibir_prefix') || 'MTRC-');
+      } catch (err) {
+        console.error("Critical Auth/Profile fetch failure:", err);
         navigate('/login');
-        return;
+      } finally {
+        setLoading(false);
       }
-      
-      setUserEmail(user.email);
-
-      // Extract structural boundaries established inside Data Partition Gateway
-      const cachedRegion = localStorage.getItem('selected_shibir_region');
-      const cachedPrefix = localStorage.getItem('selected_shibir_prefix');
-
-      if (!cachedRegion) {
-        // Redirection fallback if partition tokens are missing
-        navigate('/select-region');
-        return;
-      }
-
-      setRegionScope(cachedRegion);
-      setPrefixScope(cachedPrefix || 'MTRC-');
-      setLoading(false);
     };
 
     checkUserSession();
   }, [navigate]);
 
-  // 2. Isolated Supabase Database Data Stream Fetcher
-  useEffect(() => {
-    if (loading) return;
+useEffect(() => {
+  if (loading || !regionScope) return;
+  fetchIsolatedDataset();
+}, [loading, regionScope]);
+const fetchIsolatedDataset = async () => {
+  try {
+    setDataFetching(true);
+    let query = supabase.from('attendees').select('*');
+    
+    // If you want to see all (including archived) in the manager, 
+    // adjust logic to handle visibility here
+    if (regionScope !== 'All') {
+      query = query.eq('region', regionScope);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) throw error;
+    setAttendees(data || []);
+  } catch (err) {
+    console.error('Data fetch failure:', err.message);
+  } finally {
+    setDataFetching(false);
+  }
+};
 
-    const fetchIsolatedDataset = async () => {
-      try {
-        setDataFetching(true);
-        
-        // Base dynamic builder query pipeline
-        let query = supabase.from('attendees').select('*');
 
-        // Apply row containment filters if scope isn't set to "All" global clearance
-        if (regionScope !== 'All') {
-          query = query.eq('region', regionScope);
-        }
+  // Handlers
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await supabase.auth.signOut();
+    localStorage.removeItem('selected_shibir_region');
+    localStorage.removeItem('selected_shibir_prefix');
+    navigate('/');
+  };
+const toggleArchiveStatus = async (attendee, status) => {
+  try {
+    const { error } = await supabase
+      .from('attendees')
+      .update({ is_archived: status })
+      .eq('id', attendee.id);
 
-        const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) throw error;
 
-        if (error) throw error;
-        setAttendees(data || []);
-      } catch (err) {
-        console.error('Database payload stream mapping failure:', err.message);
-      } finally {
-        setDataFetching(false);
-      }
-    };
+    // Refresh the local state so the UI updates automatically
+    // You can call your existing fetchIsolatedDataset here
+    // Note: If fetchIsolatedDataset is inside a useEffect, 
+    // it's better to make it a standalone function you can call.
+    setAttendees(prev => prev.filter(item => item.id !== attendee.id));
+    
+  } catch (err) {
+    console.error("Error toggling archive status:", err.message);
+  }
+};useEffect(() => {
+  const channel = supabase
+    .channel('schema-db-changes')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'attendees' }, (payload) => {
+      // Refresh the data whenever an update happens
+      fetchIsolatedDataset();
+    })
+    .subscribe();
 
-    fetchIsolatedDataset();
-  }, [loading, regionScope]);
-
-const handleLogout = async () => {
-  setIsLoggingOut(true); // Trigger loading state
-  
-  // Optional: add a tiny delay so the user actually sees the "Logging out..." text
-  await new Promise(resolve => setTimeout(resolve, 800)); 
-
-  await supabase.auth.signOut();
-  localStorage.removeItem('selected_shibir_region');
-  localStorage.removeItem('selected_shibir_prefix');
-  navigate('/');
-}
-  
-  // Centralized router management engine replacing handleTabChange
+  return () => supabase.removeChannel(channel);
+}, []);
   const handleNavigation = (targetPath) => {
     navigate(targetPath);
     setIsMobileMenuOpen(false);
   };
 
-  if (loading) {
-    return (
-      <div className={styles.loadingWrapper}>
-        <FaSpinner className={styles.spinIcon} />
-        <p style={{ fontFamily: 'var(--font-display)', fontSize: '20px', marginTop: '12px' }}>
-          Loading Portal Settings...
-        </p>
-      </div>
-    );
-  }
+  // 4. Loading State View
 
   return (
     <div className={styles.layout}>
@@ -189,6 +220,14 @@ const handleLogout = async () => {
             >
               <FaUserPlus className={styles.iconMargin} /> Register Attendee
             </button>
+            {(userRole === 'master_admin') && (
+    <button 
+      onClick={() => handleNavigation('/dashboard/archive')} 
+      className={`${styles.navLink} ${location.pathname === '/dashboard/archive' ? styles.navLinkActive : ''}`}
+    >
+      <FaArchive className={styles.iconMargin} /> Archive Manager
+    </button>
+  )}
           </nav>
         </div>
 
@@ -201,8 +240,9 @@ const handleLogout = async () => {
           <div className={styles.userInfoBlock}>
             <span className={styles.userEmailLabel}>{userEmail}</span>
             <span className={styles.userRoleTag}>
-              <FaUserShield style={{ marginRight: '4px' }} /> Regional Admin
-            </span>
+  <FaUserShield style={{ marginRight: '4px' }} /> 
+  {userRole ? userRole.replace('_', ' ').toUpperCase() : 'Loading...'}
+</span>
           </div>
           <button 
   onClick={handleLogout} 
@@ -223,54 +263,34 @@ const handleLogout = async () => {
 </button>
         </div>
       </aside>
-
-      {/* ================= DYNAMIC MAIN WORKSPACE CONTENT AREA ================= */}
-      <div className={styles.mainContainer}>
-        <header className={styles.topHeaderBar}>
-  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-    <button 
-      className={styles.hamburgerBtn} 
-      onClick={() => setIsMobileMenuOpen(true)}
-      aria-label="Open navigation menu"
-    >
-      <FaBars />
-    </button>
-    <h2 className={styles.pageContextTitle}>
-      <Routes>
-        <Route path="overview" element="Performance Overview" />
-        <Route path="scanner" element="Entrance Verification" />
-        <Route path="roster" element="Registered Attendees Base" />
-        <Route path="add-new" element="Register New Attendee" />
-      </Routes>
-    </h2>
-  </div>
-
-  {/* New section keeping your original status logic and adding the link */}
-  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-
-    <span className={styles.systemStatusText}>
-      {dataFetching ? (
-        <span className={styles.syncingIndicator}><FaSpinner className={styles.spin} /> Syncing Data...</span>
-      ) : (
-        <><span className={styles.pulseDot}></span> MTRC</>
-      )}
-    </span>
-  </div>
-</header>
-        <div className={styles.viewWrapper}>
+{/* ================= DYNAMIC MAIN WORKSPACE CONTENT AREA ================= */}
+        <div className={styles.mainContainer}>
+          <header className={styles.topHeaderBar}>
+            {/* ... your header content ... */}
+          </header>
           
-          {/* Sub-routing configuration switch container block */}
-          <Routes>
-            <Route path="overview" element={<OverviewMetrics attendees={attendees} dataFetching={dataFetching} />} />
-            <Route path="scanner" element={<CameraScanner regionScope={regionScope} prefixScope={prefixScope} />} />
-            <Route path="roster" element={<RegisteredRoster attendees={attendees} dataFetching={dataFetching} regionScope={regionScope} />} />
-            <Route path="add-new" element={<PublicRegister defaultRegion={regionScope !== 'All' ? regionScope : ''} />} />
-            {/* Safe fallback catch direction map */}
-            <Route path="*" element={<NotFound  />} />
-          </Routes>
-
-        </div>
-      </div>
+          <div className={styles.viewWrapper}>
+            <Routes>
+              <Route path="overview" element={<OverviewMetrics attendees={attendees} dataFetching={dataFetching} />} />
+              <Route path="scanner" element={<CameraScanner regionScope={regionScope} prefixScope={prefixScope} />} />
+              <Route path="roster" element={<RegisteredRoster attendees={attendees} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} />} />
+              <Route path="add-new" element={<PublicRegister defaultRegion={regionScope !== 'All' ? regionScope : ''} />} />
+              
+              <Route 
+  path="archive" 
+  element={
+    userRole === 'master_admin' ? 
+    <ArchiveManager 
+      attendees={attendees} 
+      toggleArchiveStatus={toggleArchiveStatus} 
+      regionScope={regionScope} 
+    /> : 
+    <NotFound /> // Only master_admin gets the ArchiveManager; others get NotFound
+  } 
+/>
+            </Routes>
+          </div>
+          </div>
     </div>
   );
 }
