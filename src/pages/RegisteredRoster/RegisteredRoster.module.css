@@ -126,7 +126,7 @@
    BUTTON CORES
    ========================================================================== */
 .exportBtn {
-  background-color: #B96D76;
+  background-color: #10793F;
   color: #ffffff;
   font-family: var(--font-sans);
   font-weight: 600;
@@ -138,8 +138,15 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: opacity 0.2s ease;
+   transition: all 0.2s ease;
 }
+.exportBtn:hover{
+  border: 2px solid #10793F; /* Set width, style, and color in one line */
+  background-color: #ffffff;
+  color: #10793F;
+  cursor: pointer;
+}
+
 .qrBtn {
   background-color: #6366F1;
   color: #ffffff;
@@ -153,7 +160,13 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: opacity 0.2s ease;
+   transition: all 0.2s ease;
+}
+.qrBtn:hover {
+  border: 2px solid #6366F1; /* Set width, style, and color in one line */
+  background-color: #ffffff;
+  color: #6366F1;
+  cursor: pointer;
 }
 .refreshBtn {
   display: flex;
