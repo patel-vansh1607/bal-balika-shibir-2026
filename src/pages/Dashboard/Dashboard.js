@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
+import { useNavigate, useLocation, Routes, Route, } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import PublicRegister from '../PublicRegister/PublicRegister'; 
 import OverviewMetrics from '../OverviewMetrics/OverviewMetrics'; 
@@ -17,7 +17,7 @@ import {
   FaUserPlus,
   FaUsers,
   FaSpinner,
-  FaArrowLeft
+  FaArrowLeft,
 } from 'react-icons/fa';
 import NotFound from '../NotFound/NotFound';
 
@@ -227,32 +227,36 @@ const handleLogout = async () => {
       {/* ================= DYNAMIC MAIN WORKSPACE CONTENT AREA ================= */}
       <div className={styles.mainContainer}>
         <header className={styles.topHeaderBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button 
-              className={styles.hamburgerBtn} 
-              onClick={() => setIsMobileMenuOpen(true)}
-              aria-label="Open navigation menu"
-            >
-              <FaBars />
-            </button>
-            <h2 className={styles.pageContextTitle}>
-              <Routes>
-                <Route path="overview" element="Performance Overview" />
-                <Route path="scanner" element="Entrance Verification" />
-                <Route path="roster" element="Registered Attendees Base" />
-                <Route path="add-new" element="Register New Attendee" />
-              </Routes>
-            </h2>
-          </div>
-          <span className={styles.systemStatusText}>
-            {dataFetching ? (
-              <span className={styles.syncingIndicator}><FaSpinner className={styles.spin} /> Syncing Data...</span>
-            ) : (
-              <><span className={styles.pulseDot}></span> MTRC</>
-            )}
-          </span>
-        </header>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <button 
+      className={styles.hamburgerBtn} 
+      onClick={() => setIsMobileMenuOpen(true)}
+      aria-label="Open navigation menu"
+    >
+      <FaBars />
+    </button>
+    <h2 className={styles.pageContextTitle}>
+      <Routes>
+        <Route path="overview" element="Performance Overview" />
+        <Route path="scanner" element="Entrance Verification" />
+        <Route path="roster" element="Registered Attendees Base" />
+        <Route path="add-new" element="Register New Attendee" />
+      </Routes>
+    </h2>
+  </div>
 
+  {/* New section keeping your original status logic and adding the link */}
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+
+    <span className={styles.systemStatusText}>
+      {dataFetching ? (
+        <span className={styles.syncingIndicator}><FaSpinner className={styles.spin} /> Syncing Data...</span>
+      ) : (
+        <><span className={styles.pulseDot}></span> MTRC</>
+      )}
+    </span>
+  </div>
+</header>
         <div className={styles.viewWrapper}>
           
           {/* Sub-routing configuration switch container block */}

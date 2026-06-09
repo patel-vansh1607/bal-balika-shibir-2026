@@ -39,6 +39,7 @@ export default function PublicRegister() {
   const [formError, setFormError] = useState('');
   const [generatedQRValue, setGeneratedQRValue] = useState('');
   const [finalAttendeeData, setFinalAttendeeData] = useState(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   
   const regionRef = useRef(null);
   const centerRef = useRef(null);
@@ -166,7 +167,10 @@ export default function PublicRegister() {
       setFormError("Please enter a valid Last Name (at least 2 characters).");
       return false;
     }
-
+    if (!acceptedTerms) {
+  setFormError("Action Required: Please accept the Terms and Conditions to proceed with your registration.");
+  return false;
+}
     const parsedAge = parseInt(age);
     if (isNaN(parsedAge) || parsedAge < 3 || parsedAge > 18) {
       setFormError('Invalid Age. Shibir registration is strictly limited to children aged between 3 and 18.');
@@ -602,7 +606,32 @@ export default function PublicRegister() {
                       <span className={styles.fileHint}>Required: Size must be under 2.5MB (JPG, PNG, WEBP)</span>
                     </div>
                   </div>
+<div className={styles.termsSection}>
+  <div className={styles.checkboxWrapper}>
+    <label className={styles.termsLabel} style={{ 
+        color: (!acceptedTerms && formError) ? '#d93025' : '#202124',
+        fontWeight: (!acceptedTerms && formError) ? 'bold' : 'normal'
+      }}>
+      <input 
+        type="checkbox" 
+        checked={acceptedTerms} 
+        onChange={(e) => setAcceptedTerms(e.target.checked)} 
+      />
+      <span>I understand and accept the registration terms *</span>
+    </label>
+  </div>
 
+  <div className={styles.termsDisplayBox}>
+    <p className={styles.termsHeading}>Terms and Conditions:</p>
+    <ul className={styles.termsList}>
+      <li>Registration is open to children aged 3 to 18 years only.</li>
+      <li>A clear, recent passport-style photograph is required for identification.</li>
+      <li>All information provided must be accurate; incorrect details may delay registration.</li>
+      <li>Your data is used solely for organizing the Bal-Balika Shibir event.</li>
+      <li>By registering, you consent to receive communication regarding Shibir updates.</li>
+    </ul>
+  </div>
+</div>
                 </div>
 
                 <button type="submit" className={styles.submitBtn} disabled={loading}>
@@ -612,9 +641,17 @@ export default function PublicRegister() {
             </>
           )}
 
-          <div style={{ display: 'none' }} ref={qrRef}>
-            {generatedQRValue && <QRCodeSVG value={generatedQRValue} size={256} level="H" includeMargin={true} />}
-          </div>
+        <div style={{ display: 'none' }} ref={qrRef}>
+  {generatedQRValue && (
+    <QRCodeSVG 
+      value={generatedQRValue} 
+      size={256} 
+      level="H" 
+      includeMargin={true}
+      fgColor="#1a73e8" // <--- Change this to your desired color (e.g., #d93025 for red)
+    />
+  )}
+</div>
         </div>
       </div>
     </div>

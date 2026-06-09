@@ -48,8 +48,10 @@ const downloadBatchQR = async () => {
     const id = attendee.member_id || attendee.memberId || attendee.id;
     const name = attendee.name.replace(/\s+/g, '_');
     
-    // Fetch image from the QR API
-    const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(id)}&color=8a151b`);
+    // Updated: Added &format=png and &t=${Date.now()} to ensure the correct color and fresh fetching
+    const response = await fetch(
+      `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(id)}&color=0000000&format=png&t=${Date.now()}`
+    );
     const blob = await response.blob();
     
     // Add to zip
@@ -59,8 +61,7 @@ const downloadBatchQR = async () => {
   // Generate and trigger download
   const content = await zip.generateAsync({ type: 'blob' });
   saveAs(content, `Batch_QR_${regionScope}_${new Date().toISOString().slice(0,10)}.zip`);
-};
-    // Apply localized sub-filters (Search bar, Mandal select, Center branch select)
+};    // Apply localized sub-filters (Search bar, Mandal select, Center branch select)
 
     const filteredAttendees = attendees.filter((attendee) => {
       // Robust checks handling both snake_case and camelCase from structural payloads
@@ -152,8 +153,7 @@ const downloadBatchQR = async () => {
       try {
         // Encode using the verified country format string value for scanning accuracy
 
-        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(memberId)}&color=8a151b`;
-
+const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(memberId)}&color=000000&format=png&t=${Date.now()}`;
         const response = await fetch(qrApiUrl);
 
         const blob = await response.blob();
@@ -516,7 +516,7 @@ const downloadBatchQR = async () => {
 
               <div className={styles.qrContainer}>
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(activeQrModalUser.member_id || activeQrModalUser.memberId || activeQrModalUser.id)}&color=8a151b`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(activeQrModalUser.member_id || activeQrModalUser.memberId || activeQrModalUser.id)}&color=000000`}
                   alt="Verification Token Map"
                   className={styles.qrImage}
                 />
