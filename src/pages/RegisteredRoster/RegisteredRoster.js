@@ -27,8 +27,7 @@ export default function RegisteredRoster({
   setAttendees,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
-
+const showArchived = false;
   const [selectedCenter, setSelectedCenter] = useState("All");
   // Add this to your existing useState definitions
   const [isProcessing, setIsProcessing] = useState(false);
@@ -276,6 +275,7 @@ export default function RegisteredRoster({
   const ROLES = { master_admin: 4, super_admin: 3, admin: 2, operator: 1 };
   const hasPermission = (userRole, requiredRole) =>
     (ROLES[userRole] || 0) >= (ROLES[requiredRole] || 0);
+  console.log("Permissions system initialized:", !!hasPermission);
   const getGenderTagClass = (genderCategory) => {
     switch (genderCategory) {
       case "Balak":
