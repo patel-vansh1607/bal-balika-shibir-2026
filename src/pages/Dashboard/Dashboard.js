@@ -28,6 +28,8 @@ export default function Dashboard() {
   const [attendees, setAttendees] = useState([]);
   const [regionScope, setRegionScope] = useState('All');
   const [prefixScope, setPrefixScope] = useState('MTRC-');
+  const toggleMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+
 
   // 2. Session & Scope Verification Engine
   useEffect(() => {
@@ -158,16 +160,7 @@ const toggleArchiveStatus = async (attendee, status) => {
 
   return (
     <div className={styles.layout}>
-      
-      {/* Mobile Backdrop Overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className={styles.mobileOverlay} 
-          onClick={() => setIsMobileMenuOpen(false)} 
-        />
-      )}
-
-      {/* ================= SIDEBAR MENU COMPONENT ================= */}
+            {/* ================= SIDEBAR MENU COMPONENT ================= */}
       <aside className={`${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarTop}>
           <div className={styles.brandFrame}>
@@ -266,7 +259,7 @@ const toggleArchiveStatus = async (attendee, status) => {
 {/* ================= DYNAMIC MAIN WORKSPACE CONTENT AREA ================= */}
         <div className={styles.mainContainer}>
           <header className={styles.topHeaderBar}>
-            {/* ... your header content ... */}
+            hey
           </header>
           
           <div className={styles.viewWrapper}>
