@@ -3,6 +3,8 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { supabase } from "../../supabaseClient";
 import { useMemo } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 import {
   FaSearch,
@@ -18,6 +20,7 @@ import {
 } from "react-icons/fa";
 
 import styles from "./RegisteredRoster.module.css";
+jsPDF.autoTable = autoTable;
 
 export default function RegisteredRoster({
   attendees = [],
@@ -50,8 +53,164 @@ const showArchived = false;
   const initiateArchive = (attendee, shouldArchive) => {
     setConfirmAction({ attendee, shouldArchive });
   };
+const exportToPDF = async () => {
+  // 1. Filter out archived records immediately so we only deal with active ones
+  const activeAttendees = attendees.filter(attendee => !attendee?.is_archived);
 
-  const executeArchive = async () => {
+  // Guard clause if no active records exist
+  if (activeAttendees.length === 0) {
+    alert("No active records available to export.");
+    return;
+  }
+
+  setIsExporting(true);
+
+  try {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4"
+    });
+
+    // Hex mapping from your design framework
+    const themeColors = {
+      bgMain: "#fcfbfa",       // Soft cream
+      bgCard: "#ffffff",       // Card white
+      textMain: "#2d2926",     // Deep charcoal
+      textMuted: "#6c635c",    // Warm gray-brown
+      accentPrimary: "#8a151b",// Deep Crimson Maroon
+      accentSoft: "#f4ece6",   // Soft beige/terracotta tint
+      borderLight: "#e6dfd9",  // Muted organic border
+    };
+
+    // Set background sheet bleed color
+    doc.setFillColor(themeColors.bgMain);
+    doc.rect(0, 0, 210, 297, "F");
+
+    // --- PDF HEADER DESIGN ---
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(themeColors.accentPrimary);
+    doc.text("Making the Right Choices", 14, 22);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(themeColors.textMuted);
+    doc.text(`Region: ${regionScope || "All"}`, 14, 29);
+
+    // Decorative Accent Line using organic border configuration
+    doc.setDrawColor(themeColors.borderLight);
+    doc.setLineWidth(0.8);
+    doc.line(14, 33, 196, 33);
+
+    // --- SAFE DATA MAPPING (ONLY IS_ARCHIVED === FALSE) ---
+    const tableHeaders = [["SR.", "Full Name", "Gender", "Region", "Status", "Registration Date"]];
+    
+    const tableRows = activeAttendees.map((attendee, index) => {
+      const fullName = attendee?.full_name || attendee?.name || "N/A";
+      const gender = attendee?.gender ? String(attendee.gender).toUpperCase() : "N/A";
+      const region = attendee?.region || "N/A";
+      const status = "Active"; 
+      
+      let regDate = "N/A";
+      if (attendee?.created_at) {
+        try {
+          regDate = new Date(attendee.created_at).toLocaleDateString();
+        } catch (dateErr) {
+          regDate = String(attendee.created_at).split('T')[0] || "N/A";
+        }
+      }
+
+      return [index + 1, fullName, gender, region, status, regDate];
+    });
+
+    // --- BUILD THE TABLE LAYOUT (Emulating .data-table rules) ---
+    autoTable(doc, {
+      startY: 38,
+      head: tableHeaders,
+      body: tableRows,
+      theme: "plain", // We provide precise structural fill rules manually instead
+      headStyles: {
+        fillColor: themeColors.accentSoft,
+        textColor: themeColors.textMuted,
+        fontStyle: "bold",
+        fontSize: 10,
+        halign: "left",
+        valign: "middle",
+        lineWidth: { bottom: 2 },
+        lineColor: themeColors.borderLight
+      },
+      bodyStyles: {
+        fillColor: themeColors.bgCard,
+        fontSize: 9,
+        textColor: themeColors.textMain,
+        valign: "middle",
+        lineWidth: { bottom: 1 },
+        lineColor: themeColors.borderLight
+      },
+      alternateRowStyles: {
+        fillColor: themeColors.bgMain
+      },
+      columnStyles: {
+        0: { cellWidth: 12, halign: "center" }, 
+        2: { cellWidth: 20 },                  
+        3: { cellWidth: 35 },                  
+        4: { cellWidth: 25 },                  
+        5: { cellWidth: 35 }                   
+      },
+      margin: { top: 38, left: 14, right: 14, bottom: 35 },
+      didDrawPage: (data) => {
+        const pageCount = doc.internal.getNumberOfPages();
+        const centerX = 105; // Base horizontal coordinate matching precise page splits
+        
+        // --- 1. METADATA SECTION (CENTERED AT THE BOTTOM) ---
+        let todayStr = "";
+        try {
+          todayStr = new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+        } catch (e) {
+          todayStr = new Date().toISOString().split('T')[0];
+        }
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(themeColors.textMuted);
+        
+        // Draw the metadata strings stacked cleanly right above the system footer
+        doc.text(`Generated: ${todayStr}`, centerX, 270, { align: "center" });
+        doc.text(`Generated By: ${userRole || "System Administrator"}`, centerX, 275, { align: "center" });
+
+        // --- 2. SYSTEM FOOTER LAYOUT (BOTTOM EDGE) ---
+        doc.setDrawColor(themeColors.borderLight);
+        doc.setLineWidth(0.5);
+        doc.line(14, 282, 196, 282); // Fine border above footer
+
+        doc.setTextColor(themeColors.textMuted); 
+        doc.text("System generated document. Confidential.", 14, 289);
+
+        const pageString = `Page ${data.pageNumber} of ${pageCount}`;
+        doc.text(pageString, 196, 289, { align: "right" });
+      }
+    });
+
+    // Save File safely
+    const cleanScope = String(regionScope || "All").replace(/[^a-z0-9]/gi, '_');
+    const filename = `Roster_Report_${cleanScope}_${new Date().toISOString().slice(0,10)}.pdf`;
+    doc.save(filename);
+
+  } catch (error) {
+    console.error("Failed to generate report PDF:", error);
+    alert(`An error occurred while creating your PDF report: ${error.message || error}`);
+  } finally {
+    setIsExporting(false);
+  }
+};
+ const executeArchive = async () => {
     if (!confirmAction) return;
 
     setIsProcessing(true); // Start the loading spinner
@@ -428,6 +587,17 @@ const showArchived = false;
               )}
               {isDownloadingQR ? " Generating Zip..." : " Download All QR"}
             </button>
+              <div className={styles.btnWrapper}>
+    <span className={styles.comingSoonBadge}>Coming Soon</span>
+    <button
+      onClick={(e) => e.preventDefault()} // Blocks any accidental execution
+      className={`${styles.pdfBtn} ${styles.disabledBtn}`}
+      disabled={true}
+    >
+      <FaFileExport />
+      {" Export to PDF"}
+    </button>
+  </div>
           </div>
         </div>
       </div>

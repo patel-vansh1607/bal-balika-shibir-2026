@@ -523,13 +523,13 @@ export default function PublicRegister() {
                     </div>
 
                     <div className={styles.formGroup} ref={centerRef}>
-                      <label className={styles.label}>Center Hub *</label>
+                      <label className={styles.label}>Center *</label>
                       <div className={styles.searchDropdownContainer}>
                         <div 
                           className={`${styles.customSelectTrigger} ${(!selectedRegion || loading) ? styles.triggerDisabled : ''} ${!selectedCenter ? styles.requiredHighlight : ''}`}
                           onClick={() => selectedRegion && !loading && setIsCenterDropdownOpen(!isCenterDropdownOpen)}
                         >
-                          <span>{selectedCenter || (selectedRegion ? "Select Center Location... *" : "-- Choose Country First --")}</span>
+                          <span>{selectedCenter || (selectedRegion ? "Select Center... *" : "-- Choose Country First --")}</span>
                           <FaChevronDown className={styles.arrowIcon} />
                         </div>
 
@@ -540,7 +540,7 @@ export default function PublicRegister() {
                               <input 
                                 type="text" 
                                 className={styles.dropdownSearchInput}
-                                placeholder="Search center hubs..."
+                                placeholder="Search center..."
                                 value={centerSearchQuery}
                                 onChange={(e) => setCenterSearchQuery(e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
@@ -648,7 +648,7 @@ export default function PublicRegister() {
       size={256} 
       level="H" 
       includeMargin={true}
-      fgColor="#1a73e8" // <--- Change this to your desired color (e.g., #d93025 for red)
+      fgColor="#000000" // <--- Change this to your desired color (e.g., #d93025 for red)
     />
   )}
 </div>
