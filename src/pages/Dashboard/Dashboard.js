@@ -258,9 +258,33 @@ const toggleArchiveStatus = async (attendee, status) => {
       </aside>
 {/* ================= DYNAMIC MAIN WORKSPACE CONTENT AREA ================= */}
         <div className={styles.mainContainer}>
-          <header className={styles.topHeaderBar}>
-            hey
-          </header>
+                 <header className={styles.topHeaderBar}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button 
+              className={styles.hamburgerBtn} 
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Open navigation menu"
+            >
+              <FaBars />
+            </button>
+            <h2 className={styles.pageContextTitle}>
+              <Routes>
+                <Route path="overview" element="Performance Overview" />
+                <Route path="scanner" element="Entrance Verification" />
+                <Route path="roster" element="Registered Attendees Base" />
+                <Route path="add-new" element="Register New Attendee" />
+              </Routes>
+            </h2>
+          </div>
+          <span className={styles.systemStatusText}>
+            {dataFetching ? (
+              <span className={styles.syncingIndicator}><FaSpinner className={styles.spin} /> Syncing Data...</span>
+            ) : (
+              <><span className={styles.pulseDot}></span> MTRC</>
+            )}
+          </span>
+        </header>
+
           
           <div className={styles.viewWrapper}>
             <Routes>
