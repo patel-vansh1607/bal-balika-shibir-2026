@@ -50,7 +50,7 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
         if (sessionErr) throw sessionErr;
         setSessionInfo(currentSession);
 
-        // Resolve target roster count
+        // Resolve target roster baseline
         let scopedRoster = globalAttendeesList || [];
         if (scopedRoster.length === 0 && activeRegion !== "All") {
           let backupQuery = supabase.from("attendees").select("*");
@@ -60,24 +60,34 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
         }
         const rosterCount = scopedRoster.length;
 
-        // Pull corresponding check-in log records
+        // Build an explicit lookup Map of what attendees we expect to trace locally
+        const attendeeLookupMap = new Map(scopedRoster.map(a => [a.id, a]));
+
+        // Pull corresponding check-in log records for this session
         let logsQuery = supabase.from("session_logs").select("*").eq("session_id", sessionId);
-        if (activeRegion !== "All" && activePrefix) {
+        
+        // Optimize querying constraints cleanly without breaking real-time visibility hooks
+        if (activeRegion !== "All" && scopedRoster.length > 0) {
+          const targetIdsArray = scopedRoster.map(a => a.id);
+          logsQuery = logsQuery.in("attendee_id", targetIdsArray);
+        } else if (activeRegion !== "All" && activePrefix) {
           logsQuery = logsQuery.like("attendee_id", `${activePrefix}%`);
         }
+
         const { data: logsData, error: logsErr } = await logsQuery;
         if (logsErr) throw logsErr;
 
+        // Trace explicit check-in tracking identifiers
         const logsCheckedInIds = new Set(logsData.map((log) => log.attendee_id));
 
-        // Cross-reference registry matrix values
-        const parsedRosterStatus = scopedRoster.map((attendee) => {
+        // Generate matrix array structure mapping
+        let parsedRosterStatus = scopedRoster.map((attendee) => {
           const matchingLog = logsData.find((log) => log.attendee_id === attendee.id);
           const hasCheckedIn = logsCheckedInIds.has(attendee.id);
 
           return {
             id: attendee.id,
-            fullName: attendee.full_name || `${attendee.first_name || ""} ${attendee.last_name || ""}`.trim() || "Unknown Attendee",
+            fullName: attendee.name || "Unknown Attendee",
             subgroup: attendee.subgroup || "N/A",
             category: attendee.category || "General",
             checkedIn: hasCheckedIn,
@@ -87,12 +97,33 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
           };
         });
 
+        // 🌟 FAILSAFE SYNC RECONCILIATION BLOCK:
+        // If someone scanned into this session but didn't land inside your filtered attendee list,
+        // we forcefully append them into the dataset dynamically so they reflect on screen instantly!
+        logsData.forEach((log) => {
+          if (!attendeeLookupMap.has(log.attendee_id)) {
+            const alreadyInjected = parsedRosterStatus.some(item => item.id === log.attendee_id);
+            if (!alreadyInjected) {
+              parsedRosterStatus.push({
+                id: log.attendee_id,
+                fullName: log.attendee_name || "Verified External Attendee", 
+                subgroup: "Cross-Region",
+                category: "General",
+                checkedIn: true,
+                checkInTime: new Date(log.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+              });
+            }
+          }
+        });
+
         const presentCount = parsedRosterStatus.filter((item) => item.checkedIn).length;
-        const absentCount = Math.max(0, rosterCount - presentCount);
+        // Balance baseline indicators
+        const adjustedTotalCount = Math.max(rosterCount, parsedRosterStatus.length);
+        const absentCount = Math.max(0, adjustedTotalCount - presentCount);
 
         setAttendanceLogs(parsedRosterStatus);
         setMetrics({
-          totalExpected: rosterCount,
+          totalExpected: adjustedTotalCount,
           present: presentCount,
           absent: absentCount
         });
@@ -167,7 +198,7 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
           <p>Analytical Tracking Segment Scope: <strong>{activeRegion === "All" ? "Global African Database" : activeRegion} Mode</strong></p>
         </div>
         
-        {/* ACTION SCAN BUTTON: Routes directly to the active hardware scanner layout */}
+        {/* ACTION SCAN BUTTON */}
         <button 
           className={styles.actionScanFloatingBtn}
           onClick={() => navigate(`/dashboard/scanner/${sessionId}`)}

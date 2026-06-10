@@ -24,24 +24,31 @@ export default function SessionMasterDashboard({ regionScope, prefixScope, globa
         const targetAttendeePool = globalAttendeesList || [];
         const totalExpectedCount = targetAttendeePool.length;
 
-        // 3. Query all session logs 
+        // Create a lookup set for O(1) checking speed
+        const localAttendeeIds = new Set(targetAttendeePool.map(a => a.id));
+
+        // 3. Query all session logs across the board
         let logsQuery = supabase.from('session_logs').select('session_id, attendee_id');
         
-        // Filter rows on-the-fly using the parent dashboard's current prefix state
-        if (regionScope !== "All" && prefixScope) {
+        // If viewing a specific region, pull logs only for attendees currently in your roster list
+        if (regionScope !== "All" && targetAttendeePool.length > 0) {
+          const attendeeIdsArray = targetAttendeePool.map(a => a.id);
+          // Split queries if list exceeds Supabase in-filter bounds, or pull cleaner via array maps
+          logsQuery = logsQuery.in('attendee_id', attendeeIdsArray);
+        } else if (regionScope !== "All" && prefixScope) {
+          // Fallback backup optimization match structure
           logsQuery = logsQuery.like('attendee_id', `${prefixScope}%`);
         }
         
         const { data: logsPool, error: logsError } = await logsQuery;
         if (logsError) throw logsError;
 
-        const attendeeLookupMap = new Map(targetAttendeePool.map(a => [a.id, a]));
-
-        // 4. Map cross-session tracking blocks
+        // 4. Map cross-session tracking blocks accurately
         const computedSummary = baseSessions.map(session => {
           const matchingLogs = logsPool.filter(log => {
             if (log.session_id !== session.id) return false;
-            return regionScope === "All" ? true : attendeeLookupMap.has(log.attendee_id);
+            // Clear entry if viewing the global scope, otherwise confirm user belongs to current selection profile
+            return regionScope === "All" ? true : localAttendeeIds.has(log.attendee_id);
           });
 
           const present = matchingLogs.length;
@@ -69,6 +76,7 @@ export default function SessionMasterDashboard({ regionScope, prefixScope, globa
       }
     };
 
+    // Only run execution matrices once master data fetches settle cleanly
     if (!isDataFetching) {
       aggregateMasterMatrix();
     }
@@ -82,6 +90,7 @@ export default function SessionMasterDashboard({ regionScope, prefixScope, globa
     );
   }
 
+  // Calculate global summary matrix fallback counts if metrics evaluate out of bounds
   const primarySessionMetrics = sessionsSummary[0] || { total: 0, present: 0, absent: 0 };
 
   return (
