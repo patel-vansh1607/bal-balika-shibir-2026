@@ -43,6 +43,7 @@ const showArchived = false;
   const [isDownloadingSingle, setIsDownloadingSingle] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null); // { attendee: object, type: 'archive'|'restore' }
   const [activeQrModalUser, setActiveQrModalUser] = useState(null);
+  const [isQrLoading, setIsQrLoading] = useState(true);
 
   // Derive unique center hubs dynamically based *only* on the current region's dataset
 
@@ -210,6 +211,10 @@ const showArchived = false;
 //     setIsExporting(false);
 //   }
 // };
+const handleOpenQrModal = (user) => {
+  setActiveQrModalUser(user);
+  setIsQrLoading(true); // <--- Add this so the spinner shows for the new image fetch
+};
  const executeArchive = async () => {
     if (!confirmAction) return;
 
@@ -373,11 +378,12 @@ const showArchived = false;
   const toggleArchiveStatus = (attendee, shouldArchive) => {
     initiateArchive(attendee, shouldArchive);
   };
+  
   const downloadQRImg = async (memberId, userName) => {
     setIsDownloadingSingle(true); // Start loading animation
 
     try {
-      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(memberId)}&color=8a151b&format=png&t=${Date.now()}`;
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(memberId)}&color=000000&format=png&t=${Date.now()}`;
       const response = await fetch(qrApiUrl);
 
       if (!response.ok) throw new Error("Network response was not ok");
@@ -735,10 +741,10 @@ const showArchived = false;
 
                       <td style={{ textAlign: "center" }}>
                         <button
-                          onClick={() => setActiveQrModalUser(attendee)}
+                          onClick={() => handleOpenQrModal(attendee)}
                           className={styles.viewPassBtn}
                         >
-                          <FaQrcode style={{ fontSize: "13px" }} /> View Pass
+                          <FaQrcode style={{ fontSize: "13px" }} /> View QR
                         </button>
                       </td>
                       <td style={{ textAlign: "center" }}>
@@ -872,13 +878,24 @@ const showArchived = false;
 
             <p className={styles.modalSubtitle}>BAL-BALIKA SHIBIR 2026</p>
 
-            <div className={styles.qrContainer}>
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(activeQrModalUser.member_id || activeQrModalUser.memberId || activeQrModalUser.id)}&color=000000`}
-                alt="Verification Token Map"
-                className={styles.qrImage}
-              />
-            </div>
+           <div className={styles.qrContainer}>
+  {/* Show loading spinner if image is still fetching */}
+  {isQrLoading && (
+    <div className={styles.qrLoaderWrapper}>
+      <FaSpinner className={styles.spin} />
+      <span className={styles.loaderText}>Generating QR...</span>
+    </div>
+  )}
+
+  <img
+    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+      activeQrModalUser?.member_id || activeQrModalUser?.memberId || activeQrModalUser?.id || ""
+    )}&color=000000`}
+    alt="Verification Token Map"
+    className={`${styles.qrImage} ${isQrLoading ? styles.hidden : ""}`}
+    onLoad={() => setIsQrLoading(false)} // Turns off loading spinner immediately when image bytes arrive
+  />
+</div>
 
             <div className={styles.modalInfoBox}>
               <div

@@ -400,20 +400,6 @@
   font-weight: 600;
 }
 
-.qrContainer {
-  background-color: var(--bg-main);
-  border: 1px solid var(--border-light);
-  padding: 16px;
-  border-radius: 12px;
-  display: inline-block;
-  margin-bottom: 20px;
-}
-
-.qrImage {
-  display: block;
-  width: 160px;
-  height: 160px;
-}
 
 .modalInfoBox {
   background-color: var(--bg-main);
@@ -421,6 +407,69 @@
   border-radius: 10px;
   padding: 14px;
   margin-bottom: 16px;
+}.qrContainer {
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-light);
+  padding: 16px;
+  border-radius: 12px;
+  display: inline-block;
+  margin-bottom: 20px;
+  position: relative; /* Added to position the loader correctly inside your padding footprint */
+}
+
+.qrImage {
+  display: block;
+  width: 160px;
+  height: 160px;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* --- ADDED LOADING STATE STYLES (PRESERVING ALL EXISTING ABOVE) --- */
+
+/* Absolute loader box matches the exact 160x160 dimensions of your qrImage */
+.qrLoaderWrapper {
+  position: absolute;
+  top: 16px;   /* Matches your container padding exactly */
+  left: 16px;  /* Matches your container padding exactly */
+  width: 160px;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: var(--bg-main);
+  border-radius: 8px;
+  z-index: 5;
+}
+
+/* Spinner rotation animation layout styling */
+.spin {
+  font-size: 22px;
+  color: #8a151b; /* Theme Accent Maroon */
+  animation: rotate 1s linear infinite;
+}
+
+/* Loader text description styling */
+.loaderText {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6c635c;
+}
+
+/* Hides the image layout cleanly while background bytes populate */
+.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .modalAvatarImg {
@@ -601,7 +650,6 @@ BUTTON CAN DELETE LATER */
 .btnWrapper {
   position: relative;
   display: block;
-  width: 100%;
 }
 
 /* 2. The Badge is centered using 50% left relative to the full-width wrapper */
@@ -651,3 +699,71 @@ BUTTON CAN DELETE LATER */
 }
 /* 
 BUTTON CAN DELETE LATER */
+
+.modalDownloadBtn {
+  background-color: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%; /* Keeps it full-width inside your modal block */
+  white-space: nowrap;
+  
+  /* Smooth hardware-accelerated transitions */
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+/* Hover state - Clean deep crimson transition with a nice pop shadow */
+.modalDownloadBtn:hover:not(:disabled) {
+  background-color: #ffffff; /* Elegant deeper maroon variant */
+  border-color: #721015;
+  color: #721015;
+  box-shadow: 0 4px 12px rgba(138, 21, 27, 0.25);
+}
+
+/* Active click state - Tactile pressing down feedback scaling */
+.modalDownloadBtn:active:not(:disabled) {
+  transform: scale(0.98);
+    background-color: #ffffff; /* Elegant deeper maroon variant */
+  border-color: #721015;
+  color: #721015;
+  box-shadow: 0 2px 4px rgba(138, 21, 27, 0.15);
+}
+
+/* Disabled/Downloading state styling - prevents multiple execution triggers */
+.modalDownloadBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Keyboard navigation accessibility layout focus ring */
+.modalDownloadBtn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Spinner component animation (reuses the rotation rules) */
+.spin {
+  animation: rotate 1s linear infinite;
+  font-size: 13px;
+  color: #721015
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
