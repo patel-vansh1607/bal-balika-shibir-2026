@@ -11,7 +11,7 @@ import {
 import { supabase } from '../../supabaseClient'; 
 import styles from './CameraScanner.module.css';
 
-export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC-' }) {
+export default function CameraScanner({ sessionId = null, regionScope = 'All', prefixScope = 'MTRC-' }) {
   const [scannerLog, setScannerLog] = useState([]);
   const [scanResult, setScanResult] = useState(null); 
   const [isProcessing, setIsProcessing] = useState(false); 
@@ -213,8 +213,25 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
             return;
           }
 
-          // Step 4: Handle duplicate check-ins
-          if (attendeeRecord.status === 'Checked In') {
+          // Step 4: Handle duplicate check-ins based on session configuration mode
+          let isAlreadyCheckedIn = false;
+
+          if (sessionId) {
+            // --- Relational Session Mode ---
+            const { data: existingLog } = await supabase
+              .from('session_logs')
+              .select('*')
+              .eq('session_id', sessionId)
+              .eq('attendee_id', attendeeRecord.id)
+              .maybeSingle();
+            
+            if (existingLog) isAlreadyCheckedIn = true;
+          } else {
+            // --- Legacy General Mode Fallback ---
+            if (attendeeRecord.status === 'Checked In') isAlreadyCheckedIn = true;
+          }
+
+          if (isAlreadyCheckedIn) {
             const warningMsg = `Duplicate Flag: ${attendeeRecord.name} scanned again at verification check.`;
 
             await supabase.from('gate_logs').insert([{
@@ -239,11 +256,23 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
           const successMsg = `Approved Admission: Check-in completed for ${attendeeRecord.name} (${attendeeRecord.center})`;
 
           try {
-            await supabase
-              .from('attendees')
-              .update({ status: 'Checked In' })
-              .eq('id', attendeeRecord.id);
+            if (sessionId) {
+              // Log explicitly into the active session_logs matrix
+              await supabase
+                .from('session_logs')
+                .insert([{
+                  session_id: sessionId,
+                  attendee_id: attendeeRecord.id
+                }]);
+            } else {
+              // Update general fallback flat attendee field 
+              await supabase
+                .from('attendees')
+                .update({ status: 'Checked In' })
+                .eq('id', attendeeRecord.id);
+            }
 
+            // Always write an audit trail record out to gate_logs
             await supabase.from('gate_logs').insert([{
               scanned_id: scannedId,
               status: 'success',
@@ -286,7 +315,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
     } finally {
       isStartingEngine.current = false;
     }
-  }, [stopCameraEngine, onScanFailure, regionScope]); // 🔥 FIXED: Unused prefixScope hook dependency removed completely
+  }, [stopCameraEngine, onScanFailure, regionScope, sessionId]);
 
   useEffect(() => {
     async function initScannerSession() {
@@ -410,7 +439,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
                     {scanResult.message}
                   </h4>
                   <p style={{ margin: '0', color: currentTheme.subtext, fontSize: '13px', lineHeight: '1.4', fontWeight: '500' }}>
-                    {scanResult.customDetail || 'Check In Complete'}
+                    {scanResult.customDetail || (sessionId ? 'Logged to Active Session' : 'Check In Complete')}
                   </p>
                 </div>
               </div>
@@ -451,7 +480,7 @@ export default function CameraScanner({ regionScope = 'All', prefixScope = 'MTRC
               style={{
                 width: '100%', padding: '14px', background: '#2d2926', color: '#fff',
                 border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                display: 'flex', alignItems: 'center', justifycontent: 'center', gap: '8px',
                 cursor: 'pointer', marginTop: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
               }}
             >

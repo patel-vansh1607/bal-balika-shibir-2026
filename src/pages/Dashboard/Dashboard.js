@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation, Routes, Route } from "react-router-dom";
+import { useNavigate, useLocation, Routes, Route, useParams } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 import PublicRegister from "../PublicRegister/PublicRegister";
 import OverviewMetrics from "../OverviewMetrics/OverviewMetrics";
@@ -8,6 +8,9 @@ import RegisteredRoster from "../RegisteredRoster/RegisteredRoster";
 import NotFound from "../NotFound/NotFound";
 import styles from "./Dashboard.module.css";
 import ArchiveManager from "../ArchiveManager/ArchiveManager";
+import SessionMasterDashboard from "../SessionMasterDashboard/SessionMasterDashboard";
+import AddSession from "../AddSession/AddSession";
+import Sessions from "../../Sessions/Sessions";
 
 import {
   FaChartBar,
@@ -26,7 +29,17 @@ import {
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-
+function CameraRouteWrapper({ regionScope, prefixScope }) {
+  const { sessionId } = useParams();
+  
+  return (
+    <CameraScanner
+      sessionId={sessionId}
+      regionScope={regionScope}
+      prefixScope={prefixScope}
+    />
+  );
+} 
   // 1. Unified State Declarations
   const [loading, setLoading] = useState(true);
   const [dataFetching, setDataFetching] = useState(true);
@@ -252,6 +265,24 @@ useEffect(() => {
                 <FaArchive className={styles.iconMargin} /> Archive Manager
               </button>
             )}
+            <button
+            onClick={() => handleNavigation("/dashboard/session/master")}
+            className={`${styles.navLink} ${location.pathname === "/dashboard/session/master" ? styles.navLinkActive : ""}`}
+          >
+            <FaChartBar className={styles.iconMargin} /> Session Master
+          </button>
+                      <button
+            onClick={() => handleNavigation("/dashboard/session/add-session")}
+            className={`${styles.navLink} ${location.pathname === "/dashboard/session/add-session" ? styles.navLinkActive : ""}`}
+          >
+            <FaChartBar className={styles.iconMargin} /> Add Session
+          </button>
+                                <button
+            onClick={() => handleNavigation("/dashboard/session/attendance")}
+            className={`${styles.navLink} ${location.pathname === "/dashboard/session/attendance" ? styles.navLinkActive : ""}`}
+          >
+            <FaChartBar className={styles.iconMargin} /> Sessions Attendance
+          </button>
           </nav>
         </div>
 
@@ -312,6 +343,9 @@ useEffect(() => {
                 <Route path="scanner" element="Entrance Verification" />
                 <Route path="roster" element="Registered Attendees Base" />
                 <Route path="add-new" element="Register New Attendee" />
+                <Route path="session/master" element="Session Master Matrix" />
+                <Route path="session/add-session" element="Add Session" />
+                <Route path="session/attendance" element="Sessions Attendance" />
               </Routes>
             </h2>
           </div>
@@ -339,15 +373,24 @@ useEffect(() => {
                 />
               }
             />
-            <Route
-              path="scanner"
-              element={
-                <CameraScanner
-                  regionScope={regionScope}
-                  prefixScope={prefixScope}
-                />
-              }
-            />
+<Route
+  path="scanner"
+  element={
+    <CameraScanner
+      regionScope={regionScope}
+      prefixScope={prefixScope}
+    />
+  }
+/>
+<Route
+  path="scanner/:sessionId"
+  element={
+    <CameraRouteWrapper 
+      regionScope={regionScope} 
+      prefixScope={prefixScope} 
+    />
+  }
+/>
             <Route
               path="roster"
               element={
@@ -383,6 +426,41 @@ useEffect(() => {
                 ) // Only master_admin gets the ArchiveManager; others get NotFound
               }
             />
+<Route
+  path="session/master"
+  element={
+    <SessionMasterDashboard 
+      regionScope={regionScope} 
+      prefixScope={prefixScope}
+      globalAttendeesList={attendees}
+      isDataFetching={dataFetching}
+    />
+  }
+/>
+<Route
+  path="session/attendance/:sessionId"
+  element={
+    <Sessions 
+      regionScope={regionScope} 
+      prefixScope={prefixScope}
+      globalAttendeesList={attendees} 
+      isDataFetching={dataFetching} // <-- Ensure this is passed!
+    />
+  }
+/>
+            <Route
+      path="session/add-session"
+      element={
+        <AddSession />
+      }
+    />
+    <Route
+      path="session/attendance"
+      element={
+        <Sessions />
+      }
+    />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </div>
       </div>

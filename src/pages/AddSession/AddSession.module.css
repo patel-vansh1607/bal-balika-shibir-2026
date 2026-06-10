@@ -1,0 +1,121 @@
+.formContainer {
+  background-color: #ffffff;
+  padding: 24px;
+  border-radius: 10px;
+  border: 1px solid #e6dfd9;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.formHeader h2 {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  color: #2d2926;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.formHeader p {
+  margin: 0 0 24px 0;
+  color: #6c635c;
+  font-size: 13px;
+}
+
+.sessionForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inputGroup label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a433e;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inputGroup input {
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #e6dfd9;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.inputGroup input:focus {
+  border-color: #8a151b;
+}
+
+/* Grayed out layout for the auto-assigned slot */
+.disabledInput {
+  background-color: #f4ece6;
+  color: #6c635c;
+  font-weight: 700;
+  border-color: #dcd3cb !important;
+  cursor: not-allowed;
+}
+
+.submitBtn {
+  background-color: #8a151b;
+  color: #ffffff;
+  border: none;
+  padding: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+  margin-top: 8px;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background-color: #721015;
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+.alertSuccess { background-color: #e6f4ea; color: #137333; border: 1px solid #c3e6cb; }
+.alertError { background-color: #fce8e6; color: #c5221f; border: 1px solid #f5c6cb; }
+
+.spin { animation: rotate 1s linear infinite; }
+@keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Mobile Breakdown Responsiveness adjustments */
+@media (max-width: 520px) {
+  .formRow {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
