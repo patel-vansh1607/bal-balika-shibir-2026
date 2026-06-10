@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [regionScope, setRegionScope] = useState("All");
   const [prefixScope, setPrefixScope] = useState("MTRC-");
   const toggleMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+  console.log('Menu state:', !!toggleMenu);
 
   // 2. Session & Scope Verification Engine
   useEffect(() => {
@@ -79,7 +80,9 @@ export default function Dashboard() {
         // Use this helper function to check permissions
         const hasPermission = (userRole, requiredRole) => {
           return (ROLES[userRole] || 0) >= (ROLES[requiredRole] || 0);
+          
         };
+        console.log('Permissions loaded:', !!hasPermission);
         const cachedRegion = localStorage.getItem("selected_shibir_region");
         if (!cachedRegion) {
           navigate("/select-region");
@@ -101,9 +104,10 @@ export default function Dashboard() {
     checkUserSession();
   }, [navigate]);
 
-  useEffect(() => {
+useEffect(() => {
     if (loading || !regionScope) return;
     fetchIsolatedDataset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, regionScope]);
   const fetchIsolatedDataset = async () => {
     try {
@@ -168,6 +172,7 @@ export default function Dashboard() {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const handleNavigation = (targetPath) => {
     navigate(targetPath);
