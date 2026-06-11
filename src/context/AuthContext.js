@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "../supabaseClient";
 
 const AuthContext = createContext(null);
 
@@ -9,7 +9,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check active sessions
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUser(session.user);
@@ -19,8 +18,9 @@ export function AuthProvider({ children }) {
       }
     });
 
-    // Listen for auth state mutations
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
         setUser(session.user);
         await fetchUserRole(session.user.id);
@@ -37,16 +37,16 @@ export function AuthProvider({ children }) {
   const fetchUserRole = async (userId) => {
     try {
       const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('id', userId)
+        .from("user_roles")
+        .select("role")
+        .eq("id", userId)
         .single();
 
       if (error) throw error;
-      setUserRole(data?.role || 'operator'); // Fallback protection metric
+      setUserRole(data?.role || "operator");
     } catch (err) {
       console.error("Error checking role mapping scope:", err.message);
-      setUserRole('operator'); 
+      setUserRole("operator");
     } finally {
       setLoading(false);
     }
