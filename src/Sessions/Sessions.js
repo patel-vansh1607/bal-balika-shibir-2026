@@ -173,6 +173,7 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
           </div> 
         </div>
 
+
         <div className={styles.selectionGridList}>
           {sessionsList.map((session, index) => (
             <div key={session.id} className={styles.gateSelectionCard}>
