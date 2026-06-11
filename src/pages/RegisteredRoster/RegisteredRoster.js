@@ -30,22 +30,18 @@ export default function RegisteredRoster({
   setAttendees,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
-const showArchived = false;
+  const showArchived = false;
   const [selectedCenter, setSelectedCenter] = useState("All");
-  // Add this to your existing useState definitions
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedGender, setSelectedGender] = useState("All"); // 'All' | 'Balak' | 'Balika' | 'Shishu' | 'Shishika'
+  const [selectedGender, setSelectedGender] = useState("All");
 
   const [imageErrors, setImageErrors] = useState({});
-  // Add these to your state
   const [isExporting, setIsExporting] = useState(false);
   const [isDownloadingQR, setIsDownloadingQR] = useState(false);
   const [isDownloadingSingle, setIsDownloadingSingle] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null); // { attendee: object, type: 'archive'|'restore' }
+  const [confirmAction, setConfirmAction] = useState(null);
   const [activeQrModalUser, setActiveQrModalUser] = useState(null);
   const [isQrLoading, setIsQrLoading] = useState(true);
-
-  // Derive unique center hubs dynamically based *only* on the current region's dataset
 
   const centersList = [
     "All",
@@ -54,171 +50,171 @@ const showArchived = false;
   const initiateArchive = (attendee, shouldArchive) => {
     setConfirmAction({ attendee, shouldArchive });
   };
-// const exportToPDF = async () => {
-//   // 1. Filter out archived records immediately so we only deal with active ones
-//   const activeAttendees = attendees.filter(attendee => !attendee?.is_archived);
+  // const exportToPDF = async () => {
+  //   // 1. Filter out archived records immediately so we only deal with active ones
+  //   const activeAttendees = attendees.filter(attendee => !attendee?.is_archived);
 
-//   // Guard clause if no active records exist
-//   if (activeAttendees.length === 0) {
-//     alert("No active records available to export.");
-//     return;
-//   }
+  //   // Guard clause if no active records exist
+  //   if (activeAttendees.length === 0) {
+  //     alert("No active records available to export.");
+  //     return;
+  //   }
 
-//   setIsExporting(true);
+  //   setIsExporting(true);
 
-//   try {
-//     const doc = new jsPDF({
-//       orientation: "portrait",
-//       unit: "mm",
-//       format: "a4"
-//     });
+  //   try {
+  //     const doc = new jsPDF({
+  //       orientation: "portrait",
+  //       unit: "mm",
+  //       format: "a4"
+  //     });
 
-//     // Hex mapping from your design framework
-//     const themeColors = {
-//       bgMain: "#fcfbfa",       // Soft cream
-//       bgCard: "#ffffff",       // Card white
-//       textMain: "#2d2926",     // Deep charcoal
-//       textMuted: "#6c635c",    // Warm gray-brown
-//       accentPrimary: "#8a151b",// Deep Crimson Maroon
-//       accentSoft: "#f4ece6",   // Soft beige/terracotta tint
-//       borderLight: "#e6dfd9",  // Muted organic border
-//     };
+  //     // Hex mapping from your design framework
+  //     const themeColors = {
+  //       bgMain: "#fcfbfa",       // Soft cream
+  //       bgCard: "#ffffff",       // Card white
+  //       textMain: "#2d2926",     // Deep charcoal
+  //       textMuted: "#6c635c",    // Warm gray-brown
+  //       accentPrimary: "#8a151b",// Deep Crimson Maroon
+  //       accentSoft: "#f4ece6",   // Soft beige/terracotta tint
+  //       borderLight: "#e6dfd9",  // Muted organic border
+  //     };
 
-//     // Set background sheet bleed color
-//     doc.setFillColor(themeColors.bgMain);
-//     doc.rect(0, 0, 210, 297, "F");
+  //     // Set background sheet bleed color
+  //     doc.setFillColor(themeColors.bgMain);
+  //     doc.rect(0, 0, 210, 297, "F");
 
-//     // --- PDF HEADER DESIGN ---
-//     doc.setFont("helvetica", "bold");
-//     doc.setFontSize(22);
-//     doc.setTextColor(themeColors.accentPrimary);
-//     doc.text("Making the Right Choices", 14, 22);
+  //     // --- PDF HEADER DESIGN ---
+  //     doc.setFont("helvetica", "bold");
+  //     doc.setFontSize(22);
+  //     doc.setTextColor(themeColors.accentPrimary);
+  //     doc.text("Making the Right Choices", 14, 22);
 
-//     doc.setFont("helvetica", "normal");
-//     doc.setFontSize(10);
-//     doc.setTextColor(themeColors.textMuted);
-//     doc.text(`Region: ${regionScope || "All"}`, 14, 29);
+  //     doc.setFont("helvetica", "normal");
+  //     doc.setFontSize(10);
+  //     doc.setTextColor(themeColors.textMuted);
+  //     doc.text(`Region: ${regionScope || "All"}`, 14, 29);
 
-//     // Decorative Accent Line using organic border configuration
-//     doc.setDrawColor(themeColors.borderLight);
-//     doc.setLineWidth(0.8);
-//     doc.line(14, 33, 196, 33);
+  //     // Decorative Accent Line using organic border configuration
+  //     doc.setDrawColor(themeColors.borderLight);
+  //     doc.setLineWidth(0.8);
+  //     doc.line(14, 33, 196, 33);
 
-//     // --- SAFE DATA MAPPING (ONLY IS_ARCHIVED === FALSE) ---
-//     const tableHeaders = [["SR.", "Full Name", "Gender", "Region", "Status", "Registration Date"]];
-    
-//     const tableRows = activeAttendees.map((attendee, index) => {
-//       const fullName = attendee?.full_name || attendee?.name || "N/A";
-//       const gender = attendee?.gender ? String(attendee.gender).toUpperCase() : "N/A";
-//       const region = attendee?.region || "N/A";
-//       const status = "Active"; 
-      
-//       let regDate = "N/A";
-//       if (attendee?.created_at) {
-//         try {
-//           regDate = new Date(attendee.created_at).toLocaleDateString();
-//         } catch (dateErr) {
-//           regDate = String(attendee.created_at).split('T')[0] || "N/A";
-//         }
-//       }
+  //     // --- SAFE DATA MAPPING (ONLY IS_ARCHIVED === FALSE) ---
+  //     const tableHeaders = [["SR.", "Full Name", "Gender", "Region", "Status", "Registration Date"]];
 
-//       return [index + 1, fullName, gender, region, status, regDate];
-//     });
+  //     const tableRows = activeAttendees.map((attendee, index) => {
+  //       const fullName = attendee?.full_name || attendee?.name || "N/A";
+  //       const gender = attendee?.gender ? String(attendee.gender).toUpperCase() : "N/A";
+  //       const region = attendee?.region || "N/A";
+  //       const status = "Active";
 
-//     // --- BUILD THE TABLE LAYOUT (Emulating .data-table rules) ---
-//     autoTable(doc, {
-//       startY: 38,
-//       head: tableHeaders,
-//       body: tableRows,
-//       theme: "plain", // We provide precise structural fill rules manually instead
-//       headStyles: {
-//         fillColor: themeColors.accentSoft,
-//         textColor: themeColors.textMuted,
-//         fontStyle: "bold",
-//         fontSize: 10,
-//         halign: "left",
-//         valign: "middle",
-//         lineWidth: { bottom: 2 },
-//         lineColor: themeColors.borderLight
-//       },
-//       bodyStyles: {
-//         fillColor: themeColors.bgCard,
-//         fontSize: 9,
-//         textColor: themeColors.textMain,
-//         valign: "middle",
-//         lineWidth: { bottom: 1 },
-//         lineColor: themeColors.borderLight
-//       },
-//       alternateRowStyles: {
-//         fillColor: themeColors.bgMain
-//       },
-//       columnStyles: {
-//         0: { cellWidth: 12, halign: "center" }, 
-//         2: { cellWidth: 20 },                  
-//         3: { cellWidth: 35 },                  
-//         4: { cellWidth: 25 },                  
-//         5: { cellWidth: 35 }                   
-//       },
-//       margin: { top: 38, left: 14, right: 14, bottom: 35 },
-//       didDrawPage: (data) => {
-//         const pageCount = doc.internal.getNumberOfPages();
-//         const centerX = 105; // Base horizontal coordinate matching precise page splits
-        
-//         // --- 1. METADATA SECTION (CENTERED AT THE BOTTOM) ---
-//         let todayStr = "";
-//         try {
-//           todayStr = new Date().toLocaleDateString("en-US", {
-//             year: "numeric",
-//             month: "long",
-//             day: "numeric",
-//             hour: "2-digit",
-//             minute: "2-digit"
-//           });
-//         } catch (e) {
-//           todayStr = new Date().toISOString().split('T')[0];
-//         }
+  //       let regDate = "N/A";
+  //       if (attendee?.created_at) {
+  //         try {
+  //           regDate = new Date(attendee.created_at).toLocaleDateString();
+  //         } catch (dateErr) {
+  //           regDate = String(attendee.created_at).split('T')[0] || "N/A";
+  //         }
+  //       }
 
-//         doc.setFont("helvetica", "normal");
-//         doc.setFontSize(9);
-//         doc.setTextColor(themeColors.textMuted);
-        
-//         // Draw the metadata strings stacked cleanly right above the system footer
-//         doc.text(`Generated: ${todayStr}`, centerX, 270, { align: "center" });
-//         doc.text(`Generated By: ${userRole || "System Administrator"}`, centerX, 275, { align: "center" });
+  //       return [index + 1, fullName, gender, region, status, regDate];
+  //     });
 
-//         // --- 2. SYSTEM FOOTER LAYOUT (BOTTOM EDGE) ---
-//         doc.setDrawColor(themeColors.borderLight);
-//         doc.setLineWidth(0.5);
-//         doc.line(14, 282, 196, 282); // Fine border above footer
+  //     // --- BUILD THE TABLE LAYOUT (Emulating .data-table rules) ---
+  //     autoTable(doc, {
+  //       startY: 38,
+  //       head: tableHeaders,
+  //       body: tableRows,
+  //       theme: "plain", // We provide precise structural fill rules manually instead
+  //       headStyles: {
+  //         fillColor: themeColors.accentSoft,
+  //         textColor: themeColors.textMuted,
+  //         fontStyle: "bold",
+  //         fontSize: 10,
+  //         halign: "left",
+  //         valign: "middle",
+  //         lineWidth: { bottom: 2 },
+  //         lineColor: themeColors.borderLight
+  //       },
+  //       bodyStyles: {
+  //         fillColor: themeColors.bgCard,
+  //         fontSize: 9,
+  //         textColor: themeColors.textMain,
+  //         valign: "middle",
+  //         lineWidth: { bottom: 1 },
+  //         lineColor: themeColors.borderLight
+  //       },
+  //       alternateRowStyles: {
+  //         fillColor: themeColors.bgMain
+  //       },
+  //       columnStyles: {
+  //         0: { cellWidth: 12, halign: "center" },
+  //         2: { cellWidth: 20 },
+  //         3: { cellWidth: 35 },
+  //         4: { cellWidth: 25 },
+  //         5: { cellWidth: 35 }
+  //       },
+  //       margin: { top: 38, left: 14, right: 14, bottom: 35 },
+  //       didDrawPage: (data) => {
+  //         const pageCount = doc.internal.getNumberOfPages();
+  //         const centerX = 105; // Base horizontal coordinate matching precise page splits
 
-//         doc.setTextColor(themeColors.textMuted); 
-//         doc.text("System generated document. Confidential.", 14, 289);
+  //         // --- 1. METADATA SECTION (CENTERED AT THE BOTTOM) ---
+  //         let todayStr = "";
+  //         try {
+  //           todayStr = new Date().toLocaleDateString("en-US", {
+  //             year: "numeric",
+  //             month: "long",
+  //             day: "numeric",
+  //             hour: "2-digit",
+  //             minute: "2-digit"
+  //           });
+  //         } catch (e) {
+  //           todayStr = new Date().toISOString().split('T')[0];
+  //         }
 
-//         const pageString = `Page ${data.pageNumber} of ${pageCount}`;
-//         doc.text(pageString, 196, 289, { align: "right" });
-//       }
-//     });
+  //         doc.setFont("helvetica", "normal");
+  //         doc.setFontSize(9);
+  //         doc.setTextColor(themeColors.textMuted);
 
-//     // Save File safely
-//     const cleanScope = String(regionScope || "All").replace(/[^a-z0-9]/gi, '_');
-//     const filename = `Roster_Report_${cleanScope}_${new Date().toISOString().slice(0,10)}.pdf`;
-//     doc.save(filename);
+  //         // Draw the metadata strings stacked cleanly right above the system footer
+  //         doc.text(`Generated: ${todayStr}`, centerX, 270, { align: "center" });
+  //         doc.text(`Generated By: ${userRole || "System Administrator"}`, centerX, 275, { align: "center" });
 
-//   } catch (error) {
-//     console.error("Failed to generate report PDF:", error);
-//     alert(`An error occurred while creating your PDF report: ${error.message || error}`);
-//   } finally {
-//     setIsExporting(false);
-//   }
-// };
-const handleOpenQrModal = (user) => {
-  setActiveQrModalUser(user);
-  setIsQrLoading(true); // <--- Add this so the spinner shows for the new image fetch
-};
- const executeArchive = async () => {
+  //         // --- 2. SYSTEM FOOTER LAYOUT (BOTTOM EDGE) ---
+  //         doc.setDrawColor(themeColors.borderLight);
+  //         doc.setLineWidth(0.5);
+  //         doc.line(14, 282, 196, 282); // Fine border above footer
+
+  //         doc.setTextColor(themeColors.textMuted);
+  //         doc.text("System generated document. Confidential.", 14, 289);
+
+  //         const pageString = `Page ${data.pageNumber} of ${pageCount}`;
+  //         doc.text(pageString, 196, 289, { align: "right" });
+  //       }
+  //     });
+
+  //     // Save File safely
+  //     const cleanScope = String(regionScope || "All").replace(/[^a-z0-9]/gi, '_');
+  //     const filename = `Roster_Report_${cleanScope}_${new Date().toISOString().slice(0,10)}.pdf`;
+  //     doc.save(filename);
+
+  //   } catch (error) {
+  //     console.error("Failed to generate report PDF:", error);
+  //     alert(`An error occurred while creating your PDF report: ${error.message || error}`);
+  //   } finally {
+  //     setIsExporting(false);
+  //   }
+  // };
+  const handleOpenQrModal = (user) => {
+    setActiveQrModalUser(user);
+    setIsQrLoading(true);
+  };
+  const executeArchive = async () => {
     if (!confirmAction) return;
 
-    setIsProcessing(true); // Start the loading spinner
+    setIsProcessing(true);
     const { attendee, shouldArchive } = confirmAction;
 
     try {
@@ -229,47 +225,38 @@ const handleOpenQrModal = (user) => {
 
       if (error) throw error;
 
-      // Update local state:
-      // If you want to move them to/from the archived list,
-      // filter them out so they disappear from the current view.
       setAttendees((prev) => prev.filter((a) => a.id !== attendee.id));
 
-      // Success: Close the modal
       setConfirmAction(null);
     } catch (err) {
       console.error("Database update failed:", err);
-      // Replace alert() with a non-blocking notification or
-      // simply close the modal so the user can try again.
+
       setConfirmAction(null);
     } finally {
-      setIsProcessing(false); // Stop the loading spinner regardless of success or failure
+      setIsProcessing(false);
     }
   };
   const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;
 
-    setIsDownloadingQR(true); // Start loading state
+    setIsDownloadingQR(true);
 
     try {
       const zip = new JSZip();
       const folder = zip.folder(`QR_Codes_${regionScope}`);
 
-      // Loop through filtered list
       for (const attendee of filteredAttendees) {
         const id = attendee.member_id || attendee.memberId || attendee.id;
         const name = (attendee.name || "Attendee").replace(/\s+/g, "_");
 
-        // Use 6-character hex (e.g., 8a151b or 000000)
         const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(id)}&color=000000&format=png&t=${Date.now()}`;
 
         const response = await fetch(url);
         const blob = await response.blob();
 
-        // Add to zip
         folder.file(`${id}_${name}.png`, blob);
       }
 
-      // Generate and trigger download
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(
         content,
@@ -279,13 +266,12 @@ const handleOpenQrModal = (user) => {
       console.error("Batch download failed", error);
       alert("Failed to generate ZIP file. Please try again.");
     } finally {
-      setIsDownloadingQR(false); // Stop loading state regardless of success/fail
+      setIsDownloadingQR(false);
     }
-  }; // Apply localized sub-filters (Search bar, Mandal select, Center branch select)
+  };
 
   const filteredAttendees = useMemo(() => {
     return attendees.filter((attendee) => {
-      // 1. Sanitization & Normalization
       const nameSafe = attendee.name?.toLowerCase() || "";
       const contactSafe = String(
         attendee.parent_contact || attendee.parentContact || "",
@@ -294,16 +280,13 @@ const handleOpenQrModal = (user) => {
         attendee.member_id || attendee.memberId || "",
       ).toLowerCase();
 
-      // 2. Archive status filter
       const matchesArchiveStatus = attendee.is_archived === showArchived;
 
-      // 3. Search match logic
       const matchesSearch =
         nameSafe.includes(searchTerm.toLowerCase()) ||
         contactSafe.includes(searchTerm) ||
         customIdSafe.includes(searchTerm.toLowerCase());
 
-      // 4. Categorical filters
       const matchesCenter =
         selectedCenter === "All" || attendee.center === selectedCenter;
       const matchesGender =
@@ -338,9 +321,6 @@ const handleOpenQrModal = (user) => {
         ...filteredAttendees.map((row) => {
           const finalId = row.member_id || row.memberId || row.id;
 
-          // Fix: Wrap the phone number in ="..." so Excel treats it as text
-          // Use \t (tab) before the contact number.
-          // This forces Excel to treat the cell content as text.
           const rawContact = row.parent_contact || row.parentContact || "";
           const finalContact = rawContact ? `\t${rawContact}` : "";
           return [
@@ -349,7 +329,7 @@ const handleOpenQrModal = (user) => {
             `"${row.gender || "Balak"}"`,
             `"${row.age}"`,
             `"${row.center}"`,
-            `"${finalContact}"`, // This now includes the Excel-formatting trick
+            `"${finalContact}"`,
             `"${row.photo_url || row.photoUrl || ""}"`,
           ].join(",");
         }),
@@ -371,16 +351,15 @@ const handleOpenQrModal = (user) => {
     } catch (error) {
       console.error("Export failed", error);
     } finally {
-      // This runs immediately after the code above finishes
       setIsExporting(false);
     }
   };
   const toggleArchiveStatus = (attendee, shouldArchive) => {
     initiateArchive(attendee, shouldArchive);
   };
-  
+
   const downloadQRImg = async (memberId, userName) => {
-    setIsDownloadingSingle(true); // Start loading animation
+    setIsDownloadingSingle(true);
 
     try {
       const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(memberId)}&color=000000&format=png&t=${Date.now()}`;
@@ -404,7 +383,7 @@ const handleOpenQrModal = (user) => {
       console.error("Download error:", err);
       alert("Failed to initiate QR asset media fetch download.");
     } finally {
-      setIsDownloadingSingle(false); // Stop loading animation
+      setIsDownloadingSingle(false);
     }
   };
   const getAvatarUrl = (photoPath) => {
@@ -593,17 +572,17 @@ const handleOpenQrModal = (user) => {
               )}
               {isDownloadingQR ? " Generating Zip..." : " Download All QR"}
             </button>
-              <div className={styles.btnWrapper}>
-    <span className={styles.comingSoonBadge}>Coming Soon</span>
-    <button
-      onClick={(e) => e.preventDefault()} // Blocks any accidental execution
-      className={`${styles.pdfBtn} ${styles.disabledBtn}`}
-      disabled={true}
-    >
-      <FaFileExport />
-      {" Export to PDF"}
-    </button>
-  </div>
+            <div className={styles.btnWrapper}>
+              <span className={styles.comingSoonBadge}>Coming Soon</span>
+              <button
+                onClick={(e) => e.preventDefault()}
+                className={`${styles.pdfBtn} ${styles.disabledBtn}`}
+                disabled={true}
+              >
+                <FaFileExport />
+                {" Export to PDF"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -661,8 +640,6 @@ const handleOpenQrModal = (user) => {
                   );
 
                   const hasImageError = imageErrors[attendee.id];
-
-                  // Unified token identifier fallback logic
 
                   const systemIdCode =
                     attendee.member_id ||
@@ -817,7 +794,7 @@ const handleOpenQrModal = (user) => {
                               <button
                                 onClick={executeArchive}
                                 className={styles.confirmBtn}
-                                disabled={isProcessing} // Prevent double-clicks
+                                disabled={isProcessing}
                                 style={{
                                   backgroundColor: confirmAction.shouldArchive
                                     ? "#d97706"
@@ -878,24 +855,27 @@ const handleOpenQrModal = (user) => {
 
             <p className={styles.modalSubtitle}>BAL-BALIKA SHIBIR 2026</p>
 
-           <div className={styles.qrContainer}>
-  {/* Show loading spinner if image is still fetching */}
-  {isQrLoading && (
-    <div className={styles.qrLoaderWrapper}>
-      <FaSpinner className={styles.spin} />
-      <span className={styles.loaderText}>Generating QR...</span>
-    </div>
-  )}
+            <div className={styles.qrContainer}>
+              {/* Show loading spinner if image is still fetching */}
+              {isQrLoading && (
+                <div className={styles.qrLoaderWrapper}>
+                  <FaSpinner className={styles.spin} />
+                  <span className={styles.loaderText}>Generating QR...</span>
+                </div>
+              )}
 
-  <img
-    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-      activeQrModalUser?.member_id || activeQrModalUser?.memberId || activeQrModalUser?.id || ""
-    )}&color=000000`}
-    alt="Verification Token Map"
-    className={`${styles.qrImage} ${isQrLoading ? styles.hidden : ""}`}
-    onLoad={() => setIsQrLoading(false)} // Turns off loading spinner immediately when image bytes arrive
-  />
-</div>
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                  activeQrModalUser?.member_id ||
+                    activeQrModalUser?.memberId ||
+                    activeQrModalUser?.id ||
+                    "",
+                )}&color=000000`}
+                alt="Verification Token Map"
+                className={`${styles.qrImage} ${isQrLoading ? styles.hidden : ""}`}
+                onLoad={() => setIsQrLoading(false)}
+              />
+            </div>
 
             <div className={styles.modalInfoBox}>
               <div
