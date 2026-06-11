@@ -18,7 +18,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Authenticate against your Supabase project instance
+      // 1. Authenticate against your Supabase project instance
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password,
@@ -27,7 +27,26 @@ export default function Login() {
       if (error) {
         setErrorMsg(error.message);
         setLoading(false);
-      } else if (data?.user) {
+        return;
+      } 
+      
+      if (data?.user) {
+        // 2. Query your specific user profiles table to fetch their role attribute
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles') // Adjust table name here if yours is 'users' or 'user_roles'
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Profile role fetching issue:", profileError.message);
+          // Fallback line: defaults to operator or empty so the app doesn't crash completely
+          localStorage.setItem('user_role', 'operator');
+        } else if (profile?.role) {
+          // 3. Persist the database string configuration role locally
+          localStorage.setItem('user_role', profile.role);
+        }
+
         // Route them directly to the region partition gateway
         navigate('/select-region');
       }
@@ -43,14 +62,14 @@ export default function Login() {
         
         {/* Portal Branding Header */}
         <div className={styles.headerGroup}>
-<div className={styles.container}>
-      {/* Replaced FaShieldAlt with the custom logo image */}
-      <img 
-        src="https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780507737/BAPS_Aksharderi_Transperent_PNG_o9ldiv.png" 
-        className={styles.shieldIcon} 
-        alt="BAPS Aksharderi Logo" 
-      />
-    </div>
+          <div className={styles.container}>
+            {/* Replaced FaShieldAlt with the custom logo image */}
+            <img 
+              src="https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780507737/BAPS_Aksharderi_Transperent_PNG_o9ldiv.png" 
+              className={styles.shieldIcon} 
+              alt="BAPS Aksharderi Logo" 
+            />
+          </div>
           <h2 className={styles.title}>Bal Balika Shibir 2026</h2>
           <p className={styles.subtitle}>Management System</p>
         </div>
@@ -122,11 +141,6 @@ export default function Login() {
           </button>
 
         </form>
-
-        {/* System Information Footer */}
-        {/* <div className={styles.loginFooter}>
-          Authorized Personnel Only • Secure Session Guard active
-        </div> */}
 
       </div>
     </div>

@@ -8,7 +8,7 @@ import styles from './SelectRegion.module.css';
 export default function SelectRegion() {
   const navigate = useNavigate();
   const [hoveredRegion, setHoveredRegion] = useState(null);
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
 
   const regions = [
@@ -25,20 +25,29 @@ export default function SelectRegion() {
   const handleRegionSelect = (region) => {
     localStorage.setItem('selected_shibir_region', region.id);
     localStorage.setItem('selected_shibir_prefix', region.idPrefix);
-    navigate('/dashboard/overview');
+    
+    // Check user role from localStorage (Make sure you set this on login!)
+    const savedRole = localStorage.getItem('user_role');
+    
+    if (savedRole === 'operator') {
+      navigate('/dashboard/session/attendance');
+    } else {
+      navigate('/dashboard/overview');
+    }
   };
 
-const handleLogout = async () => {
-  setIsLoggingOut(true); // Trigger loading state
-  
-  // Optional: add a tiny delay so the user actually sees the "Logging out..." text
-  await new Promise(resolve => setTimeout(resolve, 800)); 
+  const handleLogout = async () => {
+    setIsLoggingOut(true); // Trigger loading state
+    
+    // Optional: add a tiny delay so the user actually sees the "Logging out..." text
+    await new Promise(resolve => setTimeout(resolve, 800)); 
 
-  await supabase.auth.signOut();
-  localStorage.removeItem('selected_shibir_region');
-  localStorage.removeItem('selected_shibir_prefix');
-  navigate('/');
-}
+    await supabase.auth.signOut();
+    localStorage.removeItem('selected_shibir_region');
+    localStorage.removeItem('selected_shibir_prefix');
+    localStorage.removeItem('user_role'); // Clean up role on log out
+    navigate('/');
+  };
 
 
   return (
@@ -73,22 +82,22 @@ const handleLogout = async () => {
 
         <div className={styles.footerActionRow}>
           <button 
-  onClick={handleLogout} 
-  className={styles.logoutBtn}
-  disabled={isLoggingOut} // Prevents double-clicks
->
-  {isLoggingOut ? (
-    <>
-      <FaSpinner className={styles.spin} style={{ marginRight: '6px' }} /> 
-      Logging out...
-    </>
-  ) : (
-    <>
-      <FaSignOutAlt style={{ marginRight: '6px' }} /> 
-      Logout
-    </>
-  )}
-</button>
+            onClick={handleLogout} 
+            className={styles.logoutBtn}
+            disabled={isLoggingOut} // Prevents double-clicks
+          >
+            {isLoggingOut ? (
+              <>
+                <FaSpinner className={styles.spin} style={{ marginRight: '6px' }} /> 
+                Logging out...
+              </>
+            ) : (
+              <>
+                <FaSignOutAlt style={{ marginRight: '6px' }} /> 
+                Logout
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>
