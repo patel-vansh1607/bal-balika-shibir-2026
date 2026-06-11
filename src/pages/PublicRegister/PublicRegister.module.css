@@ -145,12 +145,7 @@ display: flex;
   transition: all 0.2s ease;
 }
 
-.input:focus, 
-.select:focus {
-  outline: none;
-  border-color: #8a151b;
-  box-shadow: 0 0 0 3px rgba(138, 21, 27, 0.08);
-}
+
 
 .input:disabled, 
 .select:disabled {
@@ -638,3 +633,28 @@ display: flex;
     padding: 10px;
   }
 }
+.inputRequiredError {
+  border: 2px solid #d93025 !important;
+  background-color: #fff8f7 !important;
+}
+
+.label.error {
+  color: #d93025;
+}
+/* 1. Global Reset: Remove all browser blue focus rings */
+input:focus, 
+select:focus, 
+.customSelectTrigger:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 2. Your specific Error Class (Apply this to inputs when there is an error) */
+.inputError {
+  border: 2px solid #d93025 !important;
+  background-color: #fff8f7 !important;
+  outline: none !important;
+}
+.formGroup, .formGroupFull {
+  scroll-margin-top: 150px; 
+}   
