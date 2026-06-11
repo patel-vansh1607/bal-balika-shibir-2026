@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { supabase } from '../../supabaseClient';
+import React, { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { supabase } from "../../supabaseClient";
 
 export default function ProtectedRoute({ children }) {
   const [session, setSession] = useState(null);
@@ -13,8 +13,8 @@ export default function ProtectedRoute({ children }) {
     });
   }, []);
 
-  if (loading) return <div>Loading...</div>; // Or a spinner
+  if (loading) return <div>Loading...</div>;
   if (!session) return <Navigate to="/" replace />;
-  
+
   return children;
 }
