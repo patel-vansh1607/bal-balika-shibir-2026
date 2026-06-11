@@ -14,7 +14,6 @@ import Sessions from "../../Sessions/Sessions";
 import SessionDataDetails from "../SessionDataDetails/SessionDataDetails";
 import {
   FaChartBar,
-  FaCamera,
   FaSignOutAlt,
   FaUserShield,
   FaBars,

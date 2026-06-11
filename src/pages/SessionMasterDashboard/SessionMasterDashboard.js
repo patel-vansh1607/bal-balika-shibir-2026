@@ -4,20 +4,20 @@ import { FaClock, FaChartPie, FaSpinner, FaMapMarkerAlt, FaUsers, FaCheckCircle 
 import { supabase } from '../../supabaseClient';
 import styles from './SessionMasterDashboard.module.css';
 
+// Extracted static configurations above the component to maintain a stable reference pointer
+const REGION_PREFIXES = {
+  "Kenya": "MTRC-KE-",
+  "Uganda": "MTRC-UG-",
+  "Gaborone": "MTRC-GA-",       
+  "Tanzania": "MTRC-TZ-"    
+};
+
 export default function SessionMasterDashboard({ activeRegion }) {
   const navigate = useNavigate();
   const [sessionsSummary, setSessionsSummary] = useState([]);
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [breakdownStats, setBreakdownStats] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // 1. Added Uganda prefix mapping to your core validation matrix
-  const regionPrefixes = {
-    "Kenya": "MTRC-KE-",
-    "Uganda": "MTRC-UG-",
-    "Gaborone": "MTRC-GA-",       
-    "Tanzania": "MTRC-TZ-"    
-  };
 
   const isGlobal = !activeRegion || 
                    activeRegion.trim() === "" || 
@@ -46,7 +46,7 @@ export default function SessionMasterDashboard({ activeRegion }) {
         let attendeesQuery = supabase.from('attendees').select('id, member_id, region, center');
         
         if (!isGlobal) {
-          const activePrefix = regionPrefixes[activeRegion];
+          const activePrefix = REGION_PREFIXES[activeRegion];
           if (activePrefix) {
             attendeesQuery = attendeesQuery.like('member_id', `${activePrefix}%`);
           }

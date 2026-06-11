@@ -6,6 +6,14 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable'; 
 import styles from '../SessionMasterDashboard/SessionMasterDashboard.module.css';
 
+// Move static configuration outside to keep object reference stable and fix ESLint warning
+const REGION_PREFIXES = {
+  "Kenya": "MTRC-KE-",
+  "Uganda": "MTRC-UG-",
+  "Gaborone": "MTRC-GA-",       
+  "Tanzania": "MTRC-TZ-"    
+};
+
 export default function SessionDataDetails() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
@@ -21,13 +29,6 @@ export default function SessionDataDetails() {
   const [expectedCount, setExpectedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
-
-  const regionPrefixes = {
-    "Kenya": "MTRC-KE-",
-    "Uganda": "MTRC-UG-",
-    "Gaborone": "MTRC-GA-",       
-    "Tanzania": "MTRC-TZ-"    
-  };
 
   const isGlobal = !activeRegion || 
                    activeRegion.trim() === "" || 
@@ -51,7 +52,7 @@ export default function SessionDataDetails() {
 
         // 2. Fetch full baseline active roster object details for cross-referencing absentees
         let rosterQuery = supabase.from('attendees').select('id, member_id, name, region, center');
-        const activePrefix = regionPrefixes[activeRegion];
+        const activePrefix = REGION_PREFIXES[activeRegion];
 
         if (!isGlobal && activePrefix) {
           rosterQuery = rosterQuery.like('member_id', `${activePrefix}%`);
@@ -261,7 +262,7 @@ export default function SessionDataDetails() {
   if (loading) {
     return (
       <div className={styles.loader}>
-        <FaSpinner className={styles.spin} /> Synchronizing Secure Roster Vault Components...
+        <FaSpinner className={styles.spin} /> Loading...
       </div>
     );
   }
@@ -276,7 +277,7 @@ export default function SessionDataDetails() {
           </button>
           <h1 className={styles.detailMainTitle}>{sessionMeta?.title || "Session Activity Hub"}</h1>
           <p className={styles.detailSubtitle}>
-             Region: <strong>{isGlobal ? "Global African Network" : activeRegion}</strong>{/* — Operational Session Tracker ID: <code>{sessionId}</code> */}
+             Region: <strong>{isGlobal ? "Global African Network" : activeRegion}</strong>
           </p>
         </div>
         
