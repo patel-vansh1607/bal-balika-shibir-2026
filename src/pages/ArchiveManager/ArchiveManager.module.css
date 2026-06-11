@@ -1,1 +1,405 @@
-/* DESIGN THE ARCHIVE MANAGER BETTER */
+/* ==========================================================================
+   📦 ARCHIVE MANAGEMENT WORKSPACE STYLES
+   ========================================================================== */
+.rosterContainer {
+  width: 100%;
+  box-sizing: border-box;
+  animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.contentCard {
+  background-color: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-light, #e4e4e7);
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
+  overflow: hidden;
+  width: 100%;
+}
+
+/* --- TOOLBAR AND FILTER ALIGNMENTS --- */
+.toolbarRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid var(--border-light, #e4e4e7);
+  gap: 20px;
+  background-color: var(--bg-card, #ffffff);
+}
+
+.titleArea h2 {
+  font-family: var(--font-display, sans-serif);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-main, #1a1a1a);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.archiveHeaderIcon {
+  color: var(--text-muted, #71717a);
+}
+
+.viewSubtitle {
+  font-size: 13px;
+  color: var(--text-muted, #71717a);
+  margin: 4px 0 0 0;
+}
+
+.searchWrapper {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #71717a);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.inputField {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  font-family: var(--font-sans, sans-serif);
+  font-size: 14px;
+  background-color: var(--bg-main, #f8f9fa);
+  border: 1px solid var(--border-light, #e4e4e7);
+  border-radius: 8px;
+  color: var(--text-main, #1a1a1a);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.inputField:focus {
+  outline: none;
+  border-color: var(--accent-primary, #8a151b);
+  background-color: var(--bg-card, #ffffff);
+  box-shadow: 0 0 0 3px rgba(138, 21, 27, 0.08);
+}
+
+/* ==========================================================================
+   📋 MATRIX DATA TABLE PLATFORM
+   ========================================================================== */
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.dataTable th {
+  background-color: var(--bg-main, #f8f9fa);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #71717a);
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-light, #e4e4e7);
+  white-space: nowrap;
+}
+
+.dataTable td {
+  padding: 16px 24px;
+  font-size: 14px;
+  color: var(--text-main, #1a1a1a);
+  border-bottom: 1px solid var(--border-light, #e4e4e7);
+  white-space: nowrap;
+}
+
+.dataTable tr:last-child td {
+  border-bottom: none;
+}
+
+.dataTable tr:hover td {
+  background-color: var(--bg-main, #f8f9fa);
+}
+
+/* Cell UI Modifiers */
+.monospaceText code {
+  background-color: var(--bg-main, #f8f9fa);
+  border: 1px solid var(--border-light, #e4e4e7);
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  color: var(--accent-primary, #8a151b);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.boldText {
+  font-weight: 600;
+}
+
+.regionTag {
+  background-color: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.emptyTablePlaceholder {
+  text-align: center !important;
+  padding: 48px 24px !important;
+  color: var(--text-muted, #71717a);
+  font-size: 14px;
+}
+
+/* --- THE ACTION CONTROLS BUTTON --- */
+.viewPassBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: var(--bg-main, #f8f9fa);
+  border: 1px solid var(--border-light, #e4e4e7);
+  color: var(--text-main, #1a1a1a);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-family: var(--font-sans, sans-serif);
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewPassBtn:hover {
+  background-color: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+/* ==========================================================================
+   🔒 PORTAL OVERLAY CONFIRMATION MODALS
+   ========================================================================== */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(26, 26, 26, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease-out;
+  padding: 20px;
+}
+
+.modalCard {
+  background-color: var(--bg-card, #ffffff);
+  border-radius: 16px;
+  padding: 28px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+  animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modalHeader h3 {
+  font-family: var(--font-display, sans-serif);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-main, #1a1a1a);
+  margin: 0 0 16px 0;
+  text-align: center;
+}
+
+/* --- INLINE BUTTON CARD MODIFIER --- */
+.modalInlineActionBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-main, #f8f9fa);
+  border: 1px solid var(--border-light, #e4e4e7);
+  padding: 14px 16px;
+  border-radius: 10px;
+  gap: 12px;
+  text-align: left;
+}
+
+.modalInlineActionBox p {
+  font-size: 14px;
+  color: var(--text-main, #1a1a1a);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.inlineTextRestoreBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background-color: #166534;
+  color: #ffffff;
+  border: none;
+  padding: 8px 14px;
+  font-family: var(--font-sans, sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.inlineTextRestoreBtn:hover:not(:disabled) {
+  background-color: #14532d;
+}
+
+.inlineTextRestoreBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modalActionRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+  justify-content: center;
+}
+
+.cancelBtn, .confirmBtn {
+  flex: 1;
+  padding: 12px 18px;
+  font-family: var(--font-sans, sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.cancelBtn {
+  background-color: var(--bg-main, #f8f9fa);
+  border: 1px solid var(--border-light, #e4e4e7);
+  color: var(--text-main, #1a1a1a);
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background-color: #f4f4f5;
+  border-color: #d4d4d8;
+}
+
+.confirmBtn {
+  background-color: #166534;
+  border: none;
+  color: #ffffff;
+}
+
+.confirmBtn:hover:not(:disabled) {
+  background-color: #14532d;
+  box-shadow: 0 4px 12px rgba(22, 101, 52, 0.2);
+}
+
+.cancelBtn:disabled, .confirmBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ==========================================================================
+   ⚡ SYSTEM RE-FLOW MEDIA QUERY ADJUSTMENTS
+   ========================================================================== */
+@media (max-width: 768px) {
+  .toolbarRow {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .searchWrapper {
+    max-width: 100%;
+  }
+
+  .dataTable th, .dataTable td {
+    padding: 14px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .titleArea h2 {
+    font-size: 18px;
+  }
+  
+  .modalInlineActionBox {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .modalActionRow {
+    flex-direction: column-reverse;
+  }
+  
+  .cancelBtn, .confirmBtn {
+    width: 100%;
+  }
+}
+
+/* --- STRUCTURAL ENTRANCE TIMINGS --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* ==========================================================================
+   🔧 FIXES FOR BREAKING APP BAR ICONS & ALIGNMENTS
+   ========================================================================== */
+
+/* Prevents broken character placeholders [x] when icon packages lag during initialization loads */
+.iconFallbackWrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2em;
+  min-height: 1.2em;
+}
+
+/* Ensure table container layout explicitly scales inside the parent contents frame wrapper */
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background-color: var(--bg-card, #ffffff);
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px; /* Forces safety row metrics alignment to never squeeze text out */
+}

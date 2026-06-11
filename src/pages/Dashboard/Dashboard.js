@@ -342,9 +342,11 @@ useEffect(() => {
                 <Route path="scanner/:uuid" element="Mark Attendance" />
                 <Route path="roster" element="Registered Attendees Base" />
                 <Route path="add-new" element="Register New Attendee" />
+                <Route path="archive" element="Archive Manager" />
                 <Route path="session/master" element="Session Master" />
                 <Route path="session/add-session" element="Add Session" />
                 <Route path="session/attendance" element="Sessions Attendance" />
+                <Route path="session/attendance/:uuid" element="Mark Attendance" />
                 <Route path="session/master/data/:sessionId" element="Master Data" />
               </Routes>
             </h2>

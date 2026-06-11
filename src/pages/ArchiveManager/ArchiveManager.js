@@ -1,30 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaUndo, FaSearch, FaArchive, FaSpinner } from 'react-icons/fa';
 import styles from './ArchiveManager.module.css';
 
-export default function ArchiveManager({ attendees, toggleArchiveStatus, userRole }) {
+export default function ArchiveManager({ attendees, toggleArchiveStatus }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [localRecords, setLocalRecords] = useState([]);
 
-  const archivedRecords = attendees.filter(a => 
+  // Keep local view tracking synchronized with parent updates
+  useEffect(() => {
+    if (attendees) {
+      setLocalRecords(attendees);
+    }
+  }, [attendees]);
+
+  // Filter local state records to display only archived ones matching search criteria
+  const archivedRecords = localRecords.filter(a => 
     a.is_archived === true && 
-    (a.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (a.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
      (a.member_id && a.member_id.toString().includes(searchTerm)))
   );
 
   const handleRestore = async () => {
+    if (!confirmAction) return;
     setIsProcessing(true);
-    await toggleArchiveStatus(confirmAction, false); // Pass to parent
-    setIsProcessing(false);
-    setConfirmAction(null);
+
+    try {
+      // 1. Optimistically hide row from the layout list right away
+      setLocalRecords(prev => prev.map(item => 
+        String(item.id).trim() === String(confirmAction.id).trim() 
+          ? { ...item, is_archived: false } 
+          : item
+      ));
+
+      // 2. Exact signature match: Pass the full object, then the boolean flag status
+      await toggleArchiveStatus(confirmAction, false); 
+      
+      setConfirmAction(null);
+    } catch (error) {
+      console.error("Restoration pipeline failed:", error);
+      setLocalRecords(attendees); // Rollback to original props array on database failure
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
     <div className={styles.rosterContainer}>
       <div className={styles.contentCard}>
-        <div className={styles.toolbarRow} style={{ padding: '20px' }}>
-          <h2><FaArchive /> System Archive</h2>
+        <div className={styles.toolbarRow}>
+          <div className={styles.titleArea}>
+            <h2>
+              <span className={styles.iconFallbackWrapper}>
+                <FaArchive className={styles.archiveHeaderIcon} />
+              </span> 
+              System Archive
+            </h2>
+            <p className={styles.viewSubtitle}>Manage and restore previously archived attendee accounts</p>
+          </div>
           <div className={styles.searchWrapper}>
             <FaSearch className={styles.searchIcon} />
             <input 
@@ -43,25 +77,36 @@ export default function ArchiveManager({ attendees, toggleArchiveStatus, userRol
                 <th>Member ID</th>
                 <th>Full Name</th>
                 <th>Region</th>
-                {(userRole === 'master_admin' || userRole === 'super_admin') && <th>Actions</th>}
+                <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {archivedRecords.map(a => (
-                <tr key={a.id}>
-                  <td className={styles.monospaceText}>{a.member_id}</td>
-                  <td className={styles.boldText}>{a.name}</td>
-                  <td>{a.region}</td>
-                  <td>
-                    <button 
-                      onClick={() => setConfirmAction(a)} 
-                      className={styles.viewPassBtn}
-                    >
-                      <FaUndo /> Restore
-                    </button>
+              {archivedRecords.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className={styles.emptyTablePlaceholder}>
+                    No archived record tracks match your search filters.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                archivedRecords.map(a => (
+                  <tr key={a.id}>
+                    <td className={styles.monospaceText}>
+                      <code>{a.member_id || 'N/A'}</code>
+                    </td>
+                    <td className={styles.boldText}>{a.name}</td>
+                    <td><span className={styles.regionTag}>{a.region || 'Global'}</span></td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button 
+                        onClick={() => setConfirmAction(a)} 
+                        className={styles.viewPassBtn}
+                        disabled={isProcessing}
+                      >
+                        <FaUndo /> Restore
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -71,10 +116,23 @@ export default function ArchiveManager({ attendees, toggleArchiveStatus, userRol
       {confirmAction && (
         <div className={styles.modalOverlay} onClick={() => !isProcessing && setConfirmAction(null)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <h3>Confirm Restoration</h3>
-            <p>Restore <strong>{confirmAction.name}</strong> to the active roster?</p>
+            <div className={styles.modalHeader}>
+              <h3>Confirm Restoration</h3>
+              
+              <div className={styles.modalInlineActionBox}>
+                <p>Restore <strong>{confirmAction.name}</strong> to the active registry roster context?</p>
+                <button
+                  onClick={handleRestore}
+                  disabled={isProcessing}
+                  className={styles.inlineTextRestoreBtn}
+                  title="Click to instantly restore record"
+                >
+                  {isProcessing ? <FaSpinner className={styles.spin} /> : <FaUndo />} Restore
+                </button>
+              </div>
+            </div>
             
-            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'center' }}>
+            <div className={styles.modalActionRow}>
               <button 
                 onClick={() => setConfirmAction(null)} 
                 className={styles.cancelBtn}
@@ -86,18 +144,16 @@ export default function ArchiveManager({ attendees, toggleArchiveStatus, userRol
                 onClick={handleRestore} 
                 className={styles.confirmBtn} 
                 disabled={isProcessing}
-                style={{ 
-                  backgroundColor: 'green', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '8px' 
-                }}
               >
                 {isProcessing ? (
                   <>
-                    <FaSpinner className={styles.spin} /> Restoring...
+                    <FaSpinner className={styles.spin} /> Processing...
                   </>
-                ) : 'Confirm Restore'}
+                ) : (
+                  <>
+                    <FaUndo /> Confirm Restore
+                  </>
+                )}
               </button>
             </div>
           </div>

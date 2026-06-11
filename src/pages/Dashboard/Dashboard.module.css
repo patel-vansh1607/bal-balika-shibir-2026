@@ -3,13 +3,14 @@
    ========================================================================== */
 .layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;           /* CRITICAL: Force window box frame to fit layout bounds exactly */
   width: 100%;
   background-color: var(--bg-main);
   font-family: var(--font-sans);
   position: relative;
-  overflow-x: hidden;
+  overflow: hidden;         /* CRITICAL: Disables body scroll layer conflicts */
 }
+
 .mobileTopNav {
   display: none;
 }
@@ -60,9 +61,9 @@
 .sidebarTop {
   display: flex;
   flex-direction: column;
-  gap: 20px; /* Reduced gap slightly to clear room for new domain card */
+  gap: 20px; 
   flex: 1;
-  min-height: 0; /* Critical: Allows flex child elements to shrink and compute overflow */
+  min-height: 0; 
   overflow: hidden;
 }
 
@@ -86,7 +87,7 @@
   text-transform: uppercase;
 }
 
-/* 🆕 Active Data Domain Partition Micro Card */
+/* Active Data Domain Partition Micro Card */
 .scopeIndicatorCard {
   background-color: var(--bg-main);
   border: 1px solid var(--border-light);
@@ -130,19 +131,16 @@
 
 /* Navigation List Options */
 .navigationList {
-display: flex;
+  display: flex;
   flex-direction: column;
-  gap: 4px; /* Matches your spacing pattern */
-  
-  /* --- Scroll Behavior Rules --- */
-  flex: 1;                  /* Allows the navigation list to fill up remaining vertical space */
-  overflow-y: auto;         /* Displays a vertical scrollbar only when items overflow the footprint */
-  padding-right: 4px;       /* Prevents scrollbars from clipping or overlapping your text formatting */
-  
-  /* Optional smooth modern scrollbar look for webkit browsers */
+  gap: 4px; 
+  flex: 1;                  
+  overflow-y: auto;         
+  padding-right: 4px;       
   scrollbar-width: thin;
   scrollbar-color: var(--accent-primary) transparent;
 }
+
 .navigationList::-webkit-scrollbar {
   width: 5px;
 }
@@ -152,9 +150,10 @@ display: flex;
 }
 
 .navigationList::-webkit-scrollbar-thumb {
-  background-color: rgba(138, 21, 27, 0.2); /* Soft match to theme accent color */
+  background-color: rgba(138, 21, 27, 0.2); 
   border-radius: 10px;
 }
+
 .navLink {
   background: none;
   border: none;
@@ -193,7 +192,7 @@ display: flex;
   gap: 12px;
 }
 
-/* 🆕 Quick Route Switchback Partition Button */
+/* Quick Route Switchback Partition Button */
 .switchGatewayBtn {
   display: flex;
   align-items: center;
@@ -250,13 +249,10 @@ display: flex;
   font-weight: 500;
   color: var(--text-muted);
   transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 42px; /* Add this to prevent layout shift */
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 42px; 
 }
 
 .logoutBtn:hover {
@@ -273,21 +269,26 @@ display: flex;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  /* Indent workspace content rightward on desktop away from the fixed sidebar */
+  height: 100vh;           /* CRITICAL: Forces internal viewport tracking calculation matching root */
+  overflow: hidden;         /* Prevent parent wrapper from scrolling globally */
   margin-left: 260px; 
 }
 
 /* Sticky Header Context Bar */
 .topHeaderBar {
+  position: -webkit-sticky; 
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
   background-color: var(--bg-card);
   border-bottom: 1px solid var(--border-light);
   padding: 18px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 90;
+  flex-shrink: 0;           /* CRITICAL: Prevents top header flex scaling collapsing */
 }
 
 .pageContextTitle {
@@ -306,7 +307,7 @@ display: flex;
   gap: 6px;
 }
 
-/* 🆕 Dynamic Syncing Loader Module Colors */
+/* Dynamic Syncing Loader Module Colors */
 .syncingIndicator {
   color: var(--accent-primary);
   display: flex;
@@ -317,9 +318,11 @@ display: flex;
 
 /* Scaled View Wrapping Workspace Container */
 .viewWrapper {
+  flex: 1;
   padding: 32px;
   box-sizing: border-box;
-  flex: 1;
+  overflow-y: auto;         /* CRITICAL: Moves page vertical scrolling inside this container beneath header */
+  -webkit-overflow-scrolling: touch; /* Fast kinetic mobile scrolling feel mechanics */
 }
 
 /* ==========================================================================
@@ -492,14 +495,32 @@ display: flex;
   animation: pulse 2s infinite;
 }
 
-/* --- HIDDEN MOBILE DESKTOP DEFAULTS --- */
-.hamburgerBtn, .closeMenuBtn, .mobileOverlay {
-  display: none;
-}
-
 /* ==========================================================================
    ⚡ RESPONSIVE BREAKPOINTS (MEDIA QUERIES)
    ========================================================================== */
+
+/* --- 1. HARD DESKTOP RESET (Laptops and Large Screens) --- */
+@media (min-width: 993px) {
+  /* Completely vanish all mobile layout elements on laptop screen widths */
+  .mobileHeader,
+  .mobileTopNav,
+  .hamburgerBtn,
+  .closeMenuBtn,
+  .mobileOverlay {
+    display: none !important;
+  }
+  
+  .sidebar {
+    transform: translateX(0) !important;
+    position: fixed;
+  }
+
+  .mainContainer {
+    margin-left: 260px;
+  }
+}
+
+/* --- 2. TABLET & MOBILE VIEWPORTS --- */
 @media (max-width: 992px) {
   .sidebar {
     position: fixed;
@@ -514,22 +535,39 @@ display: flex;
     transform: translateX(0);
   }
 
-  /* Reset main workspace offset on small screen viewport widths */
   .mainContainer {
     margin-left: 0;
   }
 
+  /* Target mobile header safely under 992px */
+  .mobileHeader {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1001;
+  }
+
   .hamburgerBtn {
-    display: inline-flex;
+    display: inline-flex !important; /* Forces layout tracking inside mobile bar context */
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #1a1a1a;
     align-items: center;
     justify-content: center;
-    background: none;
-    border: 1px solid var(--border-light);
-    border-radius: 6px;
-    padding: 10px;
-    cursor: pointer;
-    color: var(--text-main);
-    font-size: 16px;
+    padding: 5px;
+    transition: 0.3s ease;
+  }
+
+  .hamburgerBtn:hover {
+    color: #e67e22;
+    transform: scale(1.1);
   }
 
   .closeMenuBtn {
@@ -565,9 +603,11 @@ display: flex;
   }
 }
 
+/* --- 3. SMALL SMARTPHONES COMPACT SYSTEM --- */
 @media (max-width: 576px) {
-  .pageContextTitle {
-    font-size: 18px;
+  .pageContextTitle,
+  .mobileNavTitle {
+    font-size: 16px;
   }
 
   .systemStatusText {
@@ -591,7 +631,7 @@ display: flex;
 }
 
 /* ==========================================================================
-   Keyframe Animations
+   Keyframe Animations & Global Micro-Modifiers
    ========================================================================== */
 @keyframes spin {
   from { transform: rotate(0deg); }
@@ -603,54 +643,12 @@ display: flex;
   70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
 }
-/* Add this to your CSS module */
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 
 .logoutBtn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-/* Mobile Header */
-.mobileHeader {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 15px 20px;
-  background: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 1001;
-}
-
-/* Hamburger Button */
-.hamburgerBtn {
-  background: transparent;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #1a1a1a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 5px;
-  transition: 0.3s ease;
-}
-
-.hamburgerBtn:hover {
-  color: #e67e22;
-  transform: scale(1.1);
-}
-
-/* Mobile Title */
 .mobileNavTitle {
   font-size: 18px;
   font-weight: 700;
@@ -661,32 +659,7 @@ display: flex;
   text-overflow: ellipsis;
 }
 
-/* Dark Overlay */
-.mobileOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(3px);
-  z-index: 999;
-  animation: fadeIn 0.3s ease;
-}
-
-/* Animation */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Hide Mobile Header on Desktop */
-@media (min-width: 769px) {
-  .mobileHeader {
-    display: none;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

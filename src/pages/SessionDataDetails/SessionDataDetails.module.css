@@ -1,8 +1,217 @@
+.masterContainer {
+  padding: 24px;
+  max-width: 1300px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  box-sizing: border-box;
+}
+
+/* Header Structuring Layout Grid */
+.detailHeaderWrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.headerLeft {
+  flex: 1;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+}
+
+.cleanBackButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid #e6dfd9;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6c635c;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 12px;
+}
+
+.cleanBackButton:hover {
+  background-color: #f5f2ef;
+  color: #2d2926;
+}
+
+.pdfExportButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: opacity 0.2s ease;
+}
+
+.pdfExportButton:hover {
+  opacity: 0.9;
+}
+
+.detailMainTitle {
+  margin: 0 0 6px 0;
+  font-size: 28px;
+  color: #2d2926;
+  font-weight: 700;
+}
+
+.detailSubtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #6c635c;
+}
+
+/* Metric Grid Modules */
+.statsHorizontalGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.metricRowCard {
+  background: #ffffff;
+  border: 1px solid #e6dfd9;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.metricIconBox {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.metricRowCard h3 {
+  margin: 0 0 4px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #2d2926;
+}
+
+.metricRowCard p {
+  margin: 0;
+  font-size: 13px;
+  color: #8c827a;
+  font-weight: 500;
+}
+
+/* Card Wrappers */
+.sidebarCard {
+  background: #ffffff;
+  border: 1px solid #e6dfd9;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Adaptive Matrix Table Rules */
+.tableResponsiveWrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.matrixTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.matrixTable th {
+  background-color: #fdfcfb;
+  color: #6c635c;
+  font-weight: 600;
+  padding: 12px 16px;
+  border-bottom: 2px solid #e6dfd9;
+  white-space: nowrap;
+}
+
+.matrixTable td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f5f2ef;
+  color: #2d2926;
+  vertical-align: middle;
+}
+
+.matrixTable tbody tr:hover {
+  background-color: #faf9f8;
+}
+
+.tablePrimaryCell code {
+  font-family: monospace;
+  background: #f5f2ef;
+  padding: 3px 6px;
+  border-radius: 4px;
+  color: #8a151b;
+  font-size: 13px;
+}
+
+.centerBadgeTag {
+  display: inline-block;
+  background: #eaf3ed;
+  color: #137333;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.stampSuccessText {
+  color: #137333;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inlineCheckIcon {
+  font-size: 14px;
+}
+
+.tableEmptyMessage {
+  text-align: center;
+  color: #8c827a;
+  padding: 32px !important;
+  font-style: italic;
+}
+
+/* Loading Core Spin Elements */
 .loader {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 300px;
+  min-height: 400px;
   gap: 12px;
   font-size: 16px;
   font-weight: 600;
@@ -18,132 +227,28 @@
   100% { transform: rotate(360deg); }
 }
 
-.selectedCard {
-  border: 2px solid #8a151b !important;
-  background-color: #fdfcfb !important;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(138, 21, 27, 0.06) !important;
-  transition: all 0.2s ease-in-out;
-}
+/* Mobile & Tablet Media Breakpoints */
+@media (max-width: 768px) {
+  .masterContainer {
+    padding: 16px;
+  }
 
-.activeSubFocus {
-  margin: 4px 0 0 0;
-  font-size: 13px;
-  color: #8c827a;
-}
+  .detailHeaderWrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
 
-.activeSubFocus span {
-  font-weight: 700;
-  color: #8a151b;
-}
+  .headerRight {
+    width: 100%;
+  }
 
-.activeLabelDot {
-  background: #8a151b;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 20px;
-  margin-left: 8px;
-  display: inline-flex;
-  align-items: center;
-}
+  .pdfExportButton {
+    width: 100%;
+    justify-content: center;
+  }
 
-.centerStatRow {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 0;
-}
-
-.centerStatRow:not(:last-child) {
-  border-bottom: 1px solid #f5f2ef;
-}
-
-.centerMeta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.centerName {
-  font-size: 14px;
-  font-weight: 600;
-  color: #2d2926;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.rankIndexBadge {
-  background: #f5f2ef;
-  color: #6c635c;
-  font-size: 11px;
-  font-weight: 700;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.centerRatio {
-  font-size: 12px;
-  color: #8c827a;
-  font-weight: 500;
-}
-
-.miniTrackBarWrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.miniTrackBar {
-  background-color: #f5f2ef;
-  height: 6px;
-  border-radius: 3px;
-  flex: 1;
-  overflow: hidden;
-}
-
-.miniBarFill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.rankPercentageTag {
-  font-size: 13px;
-  font-weight: 700;
-  color: #2d2926;
-  min-width: 34px;
-  text-align: right;
-}
-
-.cardDivider {
-  border: 0;
-  border-top: 1px dashed #e6dfd9;
-  margin: 16px 0;
-}
-
-.quickTotalsBar {
-  display: flex;
-  justify-content: space-around;
-  font-size: 13px;
-  color: #6c635c;
-}
-
-.totalMiniItem {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.emptyPrompt {
-  text-align: center;
-  padding: 16px;
-  color: #8c827a;
-  font-size: 14px;
+  .detailMainTitle {
+    font-size: 22px;
+  }
 }

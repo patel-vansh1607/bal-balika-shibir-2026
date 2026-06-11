@@ -4,7 +4,7 @@ import { FaSpinner, FaArrowLeft, FaCheckCircle, FaUsers, FaUserClock, FaHistory,
 import { supabase } from '../../supabaseClient';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable'; 
-import styles from '../SessionMasterDashboard/SessionMasterDashboard.module.css';
+import styles from './SessionDataDetails.module.css';
 
 // Move static configuration outside to keep object reference stable and fix ESLint warning
 const REGION_PREFIXES = {
@@ -270,8 +270,8 @@ export default function SessionDataDetails() {
   return (
     <div className={styles.masterContainer}>
       {/* View Header Meta Controls */}
-      <div className={styles.detailHeaderWrapper} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-        <div style={{ flex: 1 }}>
+      <div className={styles.detailHeaderWrapper}>
+        <div className={styles.headerLeft}>
           <button className={styles.cleanBackButton} onClick={() => navigate('/dashboard/session/master')}>
             <FaArrowLeft /> Back to Dashboard
           </button>
@@ -282,18 +282,13 @@ export default function SessionDataDetails() {
         </div>
         
         {/* Dynamic Action Trigger Button Block Component */}
-        <div style={{ paddingRight: '14px' }}>
+        <div className={styles.headerRight}>
           <button 
             onClick={exportToPDF} 
             disabled={isExporting || fullRoster.length === 0}
-            className={styles.cleanBackButton}
+            className={styles.pdfExportButton}
             style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px', 
               backgroundColor: fullRoster.length === 0 ? '#cccccc' : '#8a151b', 
-              color: '#ffffff',
-              border: 'none',
               cursor: fullRoster.length === 0 ? 'not-allowed' : 'pointer'
             }}
           >
