@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation, Routes, Route, useParams } from "react-router-dom";
+import {
+  useNavigate,
+  useLocation,
+  Routes,
+  Route,
+  useParams,
+} from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 import PublicRegister from "../PublicRegister/PublicRegister";
 import OverviewMetrics from "../OverviewMetrics/OverviewMetrics";
@@ -10,7 +16,7 @@ import styles from "./Dashboard.module.css";
 import ArchiveManager from "../ArchiveManager/ArchiveManager";
 import SessionMasterDashboard from "../SessionMasterDashboard/SessionMasterDashboard";
 import AddSession from "../AddSession/AddSession";
-import Sessions from "../../Sessions/Sessions";
+import Sessions from "../Sessions/Sessions";
 import SessionDataDetails from "../SessionDataDetails/SessionDataDetails";
 import {
   FaChartBar,
@@ -28,18 +34,17 @@ import {
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-function CameraRouteWrapper({ regionScope, prefixScope }) {
-  const { sessionId } = useParams();
-  
-  return (
-    <CameraScanner
-      sessionId={sessionId}
-      regionScope={regionScope}
-      prefixScope={prefixScope}
-    />
-  );
-} 
-  // 1. Unified State Declarations
+  function CameraRouteWrapper({ regionScope, prefixScope }) {
+    const { sessionId } = useParams();
+
+    return (
+      <CameraScanner
+        sessionId={sessionId}
+        regionScope={regionScope}
+        prefixScope={prefixScope}
+      />
+    );
+  }
   const [loading, setLoading] = useState(true);
   const [dataFetching, setDataFetching] = useState(true);
   const [userEmail, setUserEmail] = useState("");
@@ -50,14 +55,13 @@ function CameraRouteWrapper({ regionScope, prefixScope }) {
   const [regionScope, setRegionScope] = useState("All");
   const [prefixScope, setPrefixScope] = useState("MTRC-");
   const toggleMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
-  console.log('Menu state:', !!toggleMenu);
+  console.log("Menu state:", !!toggleMenu);
 
-  // 2. Session & Scope Verification Engine
   useEffect(() => {
     const checkUserSession = async () => {
       try {
         setLoading(true);
-        // Get session first
+
         const {
           data: { session },
           error: authError,
@@ -68,15 +72,14 @@ function CameraRouteWrapper({ regionScope, prefixScope }) {
           return;
         }
 
-        // Fetch Profile & Role
         const { data: profile, error } = await supabase
           .from("user_roles")
           .select("role")
-          .eq("id", session.user.id) // Corrected from 'user_id' to 'id'
+          .eq("id", session.user.id)
           .single();
 
         if (profile) {
-          setUserRole(profile.role); // Corrected from 'profile.user_roles.role_name'
+          setUserRole(profile.role);
           setUserEmail(session.user.email);
         } else {
           console.error("Role fetch error:", error);
@@ -89,12 +92,10 @@ function CameraRouteWrapper({ regionScope, prefixScope }) {
           operator: 1,
         };
 
-        // Use this helper function to check permissions
         const hasPermission = (userRole, requiredRole) => {
           return (ROLES[userRole] || 0) >= (ROLES[requiredRole] || 0);
-          
         };
-        console.log('Permissions loaded:', !!hasPermission);
+        console.log("Permissions loaded:", !!hasPermission);
         const cachedRegion = localStorage.getItem("selected_shibir_region");
         if (!cachedRegion) {
           navigate("/select-region");
@@ -116,7 +117,7 @@ function CameraRouteWrapper({ regionScope, prefixScope }) {
     checkUserSession();
   }, [navigate]);
 
-useEffect(() => {
+  useEffect(() => {
     if (loading || !regionScope) return;
     fetchIsolatedDataset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,8 +127,6 @@ useEffect(() => {
       setDataFetching(true);
       let query = supabase.from("attendees").select("*");
 
-      // If you want to see all (including archived) in the manager,
-      // adjust logic to handle visibility here
       if (regionScope !== "All") {
         query = query.eq("region", regionScope);
       }
@@ -144,7 +143,6 @@ useEffect(() => {
     }
   };
 
-  // Handlers
   const handleLogout = async () => {
     setIsLoggingOut(true);
     await supabase.auth.signOut();
@@ -161,10 +159,6 @@ useEffect(() => {
 
       if (error) throw error;
 
-      // Refresh the local state so the UI updates automatically
-      // You can call your existing fetchIsolatedDataset here
-      // Note: If fetchIsolatedDataset is inside a useEffect,
-      // it's better to make it a standalone function you can call.
       setAttendees((prev) => prev.filter((item) => item.id !== attendee.id));
     } catch (err) {
       console.error("Error toggling archive status:", err.message);
@@ -177,7 +171,6 @@ useEffect(() => {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "attendees" },
         (payload) => {
-          // Refresh the data whenever an update happens
           fetchIsolatedDataset();
         },
       )
@@ -190,8 +183,6 @@ useEffect(() => {
     navigate(targetPath);
     setIsMobileMenuOpen(false);
   };
-
-  // 4. Loading State View
 
   return (
     <div className={styles.layout}>
@@ -221,7 +212,6 @@ useEffect(() => {
               </button>
             </div>
           </div>
-
           {/* Active Partition Micro Indicator Badge */}
           <div className={styles.scopeIndicatorCard}>
             <span className={styles.scopeMetaLabel}>REGION </span>
@@ -230,76 +220,83 @@ useEffect(() => {
             </div>
             {/* <span className={styles.scopePrefixCode}>Prefix Filter: <code>{prefixScope}</code></span> */}
           </div>
+          <nav className={styles.navigationList}>
+            {/* 1. Only evaluate admin rules if userRole has actually loaded to prevent layout flashing */}
+            {userRole && userRole !== "operator" && (
+              <>
+                <button
+                  onClick={() => handleNavigation("/dashboard/overview")}
+                  className={`${styles.navLink} ${location.pathname === "/dashboard/overview" ? styles.navLinkActive : ""}`}
+                >
+                  <FaChartBar className={styles.iconMargin} /> Overview Metrics
+                </button>
 
-<nav className={styles.navigationList}>
-  {/* 1. Only evaluate admin rules if userRole has actually loaded to prevent layout flashing */}
-  {userRole && userRole !== "operator" && (
-    <>
-      <button
-        onClick={() => handleNavigation("/dashboard/overview")}
-        className={`${styles.navLink} ${location.pathname === "/dashboard/overview" ? styles.navLinkActive : ""}`}
-      >
-        <FaChartBar className={styles.iconMargin} /> Overview Metrics
-      </button>
+                <button
+                  onClick={() => handleNavigation("/dashboard/roster")}
+                  className={`${styles.navLink} ${location.pathname === "/dashboard/roster" ? styles.navLinkActive : ""}`}
+                >
+                  <FaUsers className={styles.iconMargin} /> Registered Roster
+                </button>
 
-      <button
-        onClick={() => handleNavigation("/dashboard/roster")}
-        className={`${styles.navLink} ${location.pathname === "/dashboard/roster" ? styles.navLinkActive : ""}`}
-      >
-        <FaUsers className={styles.iconMargin} /> Registered Roster
-      </button>
+                <button
+                  onClick={() => handleNavigation("/dashboard/add-new")}
+                  className={`${styles.navLink} ${location.pathname === "/dashboard/add-new" ? styles.navLinkActive : ""}`}
+                >
+                  <FaUserPlus className={styles.iconMargin} /> Register Attendee
+                </button>
 
-      <button
-        onClick={() => handleNavigation("/dashboard/add-new")}
-        className={`${styles.navLink} ${location.pathname === "/dashboard/add-new" ? styles.navLinkActive : ""}`}
-      >
-        <FaUserPlus className={styles.iconMargin} /> Register Attendee
-      </button>
+                {userRole === "master_admin" && (
+                  <button
+                    onClick={() => handleNavigation("/dashboard/archive")}
+                    className={`${styles.navLink} ${location.pathname === "/dashboard/archive" ? styles.navLinkActive : ""}`}
+                  >
+                    <FaArchive className={styles.iconMargin} /> Archive Manager
+                  </button>
+                )}
 
-      {userRole === "master_admin" && (
-        <button
-          onClick={() => handleNavigation("/dashboard/archive")}
-          className={`${styles.navLink} ${location.pathname === "/dashboard/archive" ? styles.navLinkActive : ""}`}
-        >
-          <FaArchive className={styles.iconMargin} /> Archive Manager
-        </button>
-      )}
+                <button
+                  onClick={() => handleNavigation("/dashboard/session/master")}
+                  className={`${styles.navLink} ${location.pathname === "/dashboard/session/master" ? styles.navLinkActive : ""}`}
+                >
+                  <FaChartBar className={styles.iconMargin} /> Session Master
+                </button>
 
-      <button
-        onClick={() => handleNavigation("/dashboard/session/master")}
-        className={`${styles.navLink} ${location.pathname === "/dashboard/session/master" ? styles.navLinkActive : ""}`}
-      >
-        <FaChartBar className={styles.iconMargin} /> Session Master
-      </button>
+                <button
+                  onClick={() =>
+                    handleNavigation("/dashboard/session/add-session")
+                  }
+                  className={`${styles.navLink} ${location.pathname === "/dashboard/session/add-session" ? styles.navLinkActive : ""}`}
+                >
+                  <FaChartBar className={styles.iconMargin} /> Add Session
+                </button>
+              </>
+            )}
 
-      <button
-        onClick={() => handleNavigation("/dashboard/session/add-session")}
-        className={`${styles.navLink} ${location.pathname === "/dashboard/session/add-session" ? styles.navLinkActive : ""}`}
-      >
-        <FaChartBar className={styles.iconMargin} /> Add Session
-      </button>
-    </>
-  )}
-
-  {/* 2. Handle the Sessions Attendance button securely */}
-  {userRole && (
-    userRole === "operator" ? (
-      <button
-        onClick={() => handleNavigation("/dashboard/session/attendance")}
-        className={`${styles.navLink} ${styles.navLinkActive}`}
-      >
-        <FaChartBar className={styles.iconMargin} /> Sessions Attendance
-      </button>
-    ) : (
-      <button
-        onClick={() => handleNavigation("/dashboard/session/attendance")}
-        className={`${styles.navLink} ${location.pathname.startsWith("/dashboard/session/attendance") ? styles.navLinkActive : ""}`}
-      >
-        <FaChartBar className={styles.iconMargin} /> Sessions Attendance
-      </button>
-    )
-  )}
-</nav>        </div>
+            {/* 2. Handle the Sessions Attendance button securely */}
+            {userRole &&
+              (userRole === "operator" ? (
+                <button
+                  onClick={() =>
+                    handleNavigation("/dashboard/session/attendance")
+                  }
+                  className={`${styles.navLink} ${styles.navLinkActive}`}
+                >
+                  <FaChartBar className={styles.iconMargin} /> Sessions
+                  Attendance
+                </button>
+              ) : (
+                <button
+                  onClick={() =>
+                    handleNavigation("/dashboard/session/attendance")
+                  }
+                  className={`${styles.navLink} ${location.pathname.startsWith("/dashboard/session/attendance") ? styles.navLinkActive : ""}`}
+                >
+                  <FaChartBar className={styles.iconMargin} /> Sessions
+                  Attendance
+                </button>
+              ))}
+          </nav>{" "}
+        </div>
 
         <div className={styles.sidebarFooter}>
           {/* Quick Route Switchback Button to main gateway view */}
@@ -322,7 +319,7 @@ useEffect(() => {
           <button
             onClick={handleLogout}
             className={styles.logoutBtn}
-            disabled={isLoggingOut} // Prevents double-clicks
+            disabled={isLoggingOut}
           >
             {isLoggingOut ? (
               <>
@@ -361,9 +358,18 @@ useEffect(() => {
                 <Route path="archive" element="Archive Manager" />
                 <Route path="session/master" element="Session Master" />
                 <Route path="session/add-session" element="Add Session" />
-                <Route path="session/attendance" element="Sessions Attendance" />
-                <Route path="session/attendance/:uuid" element="Mark Attendance" />
-                <Route path="session/master/data/:sessionId" element="Master Data" />
+                <Route
+                  path="session/attendance"
+                  element="Sessions Attendance"
+                />
+                <Route
+                  path="session/attendance/:uuid"
+                  element="Mark Attendance"
+                />
+                <Route
+                  path="session/master/data/:sessionId"
+                  element="Master Data"
+                />
               </Routes>
             </h2>
           </div>
@@ -379,144 +385,134 @@ useEffect(() => {
             )}
           </span>
         </header>
-<div className={styles.viewWrapper}>
-  <Routes>
-    <Route
-      path="overview"
-      element={
-        userRole !== "operator" ? (
-          <OverviewMetrics
-            attendees={attendees}
-            dataFetching={dataFetching}
-          />
-        ) : (
-          <NotFound />
-        )
-      }
-    />
-    <Route
-      path="scanner"
-      element={
-        <CameraScanner
-          regionScope={regionScope}
-          prefixScope={prefixScope}
-        />
-      }
-    />
-    <Route
-      path="scanner/:sessionId"
-      element={
-        <CameraRouteWrapper 
-          regionScope={regionScope} 
-          prefixScope={prefixScope} 
-        />
-      }
-    />
-    <Route
-      path="roster"
-      element={
-        userRole !== "operator" ? (
-          <RegisteredRoster
-            attendees={attendees}
-            setAttendees={setAttendees}
-            dataFetching={dataFetching}
-            regionScope={regionScope}
-            userRole={userRole}
-          />
-        ) : (
-          <NotFound />
-        )
-      }
-    />
-    <Route
-      path="add-new"
-      element={
-        userRole !== "operator" ? (
-          <PublicRegister
-            defaultRegion={regionScope !== "All" ? regionScope : ""}
-          />
-        ) : (
-          <NotFound />
-        )
-      }
-    />
+        <div className={styles.viewWrapper}>
+          <Routes>
+            <Route
+              path="overview"
+              element={
+                userRole !== "operator" ? (
+                  <OverviewMetrics
+                    attendees={attendees}
+                    dataFetching={dataFetching}
+                  />
+                ) : (
+                  <NotFound />
+                )
+              }
+            />
+            <Route
+              path="scanner"
+              element={
+                <CameraScanner
+                  regionScope={regionScope}
+                  prefixScope={prefixScope}
+                />
+              }
+            />
+            <Route
+              path="scanner/:sessionId"
+              element={
+                <CameraRouteWrapper
+                  regionScope={regionScope}
+                  prefixScope={prefixScope}
+                />
+              }
+            />
+            <Route
+              path="roster"
+              element={
+                userRole !== "operator" ? (
+                  <RegisteredRoster
+                    attendees={attendees}
+                    setAttendees={setAttendees}
+                    dataFetching={dataFetching}
+                    regionScope={regionScope}
+                    userRole={userRole}
+                  />
+                ) : (
+                  <NotFound />
+                )
+              }
+            />
+            <Route
+              path="add-new"
+              element={
+                userRole !== "operator" ? (
+                  <PublicRegister
+                    defaultRegion={regionScope !== "All" ? regionScope : ""}
+                  />
+                ) : (
+                  <NotFound />
+                )
+              }
+            />
 
-    <Route
-      path="archive"
-      element={
-        userRole === "master_admin" ? (
-          <ArchiveManager
-            attendees={attendees}
-            toggleArchiveStatus={toggleArchiveStatus}
-            regionScope={regionScope}
-          />
-        ) : (
-          <NotFound />
-        )
-      }
-    />
-    <Route
-      path="session/master"
-      element={
-        userRole !== "operator" ? (
-          <SessionMasterDashboard 
-            activeRegion={regionScope} 
-            prefixScope={prefixScope}
-            globalAttendeesList={attendees}
-            isDataFetching={dataFetching}
-          />
-        ) : (
-          <NotFound />
-        )
-      }
-    />
-    <Route
-      path="session/attendance/:sessionId"
-      element={
-        <Sessions 
-          regionScope={regionScope} 
-          prefixScope={prefixScope}
-          globalAttendeesList={attendees} 
-          isDataFetching={dataFetching}
-        />
-      }
-    />
-    <Route
-      path="session/add-session"
-      element={
-        userRole !== "operator" ? (
-          <AddSession />
-        ) : (
-          <NotFound />
-        )
-      }
-    />
-    <Route
-      path="session/attendance"
-      element={
-        <Sessions 
-          regionScope={regionScope} 
-          prefixScope={prefixScope}
-          globalAttendeesList={attendees} 
-          isDataFetching={dataFetching}
-        />
-      }
-    />
-    
-    <Route 
-      path="session/master/data/:sessionId" 
-      element={
-        userRole !== "operator" ? (
-          <SessionDataDetails />
-        ) : (
-          <NotFound />
-        )
-      } 
-    />
+            <Route
+              path="archive"
+              element={
+                userRole === "master_admin" ? (
+                  <ArchiveManager
+                    attendees={attendees}
+                    toggleArchiveStatus={toggleArchiveStatus}
+                    regionScope={regionScope}
+                  />
+                ) : (
+                  <NotFound />
+                )
+              }
+            />
+            <Route
+              path="session/master"
+              element={
+                userRole !== "operator" ? (
+                  <SessionMasterDashboard
+                    activeRegion={regionScope}
+                    prefixScope={prefixScope}
+                    globalAttendeesList={attendees}
+                    isDataFetching={dataFetching}
+                  />
+                ) : (
+                  <NotFound />
+                )
+              }
+            />
+            <Route
+              path="session/attendance/:sessionId"
+              element={
+                <Sessions
+                  regionScope={regionScope}
+                  prefixScope={prefixScope}
+                  globalAttendeesList={attendees}
+                  isDataFetching={dataFetching}
+                />
+              }
+            />
+            <Route
+              path="session/add-session"
+              element={userRole !== "operator" ? <AddSession /> : <NotFound />}
+            />
+            <Route
+              path="session/attendance"
+              element={
+                <Sessions
+                  regionScope={regionScope}
+                  prefixScope={prefixScope}
+                  globalAttendeesList={attendees}
+                  isDataFetching={dataFetching}
+                />
+              }
+            />
 
-    <Route path="*" element={<NotFound />} />
-  </Routes>
-</div>
+            <Route
+              path="session/master/data/:sessionId"
+              element={
+                userRole !== "operator" ? <SessionDataDetails /> : <NotFound />
+              }
+            />
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
       </div>
     </div>
   );
