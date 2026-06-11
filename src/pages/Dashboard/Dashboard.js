@@ -51,7 +51,6 @@ function CameraRouteWrapper({ regionScope, prefixScope }) {
   const [prefixScope, setPrefixScope] = useState("MTRC-");
   const toggleMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
   console.log('Menu state:', !!toggleMenu);
-  const isOperator = userRole === "operator";
 
   // 2. Session & Scope Verification Engine
   useEffect(() => {
