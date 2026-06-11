@@ -517,7 +517,7 @@ export default function CameraScanner({ sessionId = null, regionScope = 'All', p
       <div className={styles.auditLogPanelCard}>
         <div className={styles.auditHeader}>
           <FaHistory style={{ color: '#8a151b' }} />
-          <h3>Live Gate Session Logs</h3>
+          <h3>Gate Session Logs</h3>
         </div>
         <div className={styles.logStreamTrackFeed}>
           {scannerLog.length === 0 ? (

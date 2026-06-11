@@ -69,7 +69,7 @@ export default function AddSession() {
   return (
     <div className={styles.formContainer}>
       <div className={styles.formHeader}>
-        <h2><FaCalendarPlus /> Schedule New Slot</h2>
+        <h2><FaCalendarPlus /> Add New Session</h2>
         <p>The system will automatically prefix this entry as <strong>Session {sessionNumber}</strong>.</p>
       </div>
 

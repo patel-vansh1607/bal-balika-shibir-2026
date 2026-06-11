@@ -11,7 +11,7 @@ import ArchiveManager from "../ArchiveManager/ArchiveManager";
 import SessionMasterDashboard from "../SessionMasterDashboard/SessionMasterDashboard";
 import AddSession from "../AddSession/AddSession";
 import Sessions from "../../Sessions/Sessions";
-
+import SessionDataDetails from "../SessionDataDetails/SessionDataDetails";
 import {
   FaChartBar,
   FaCamera,
@@ -239,12 +239,12 @@ useEffect(() => {
             >
               <FaChartBar className={styles.iconMargin} /> Overview Metrics
             </button>
-            <button
+            {/* <button
               onClick={() => handleNavigation("/dashboard/scanner")}
               className={`${styles.navLink} ${location.pathname === "/dashboard/scanner" ? styles.navLinkActive : ""}`}
             >
               <FaCamera className={styles.iconMargin} /> Camera QR Scanner
-            </button>
+            </button> */}
             <button
               onClick={() => handleNavigation("/dashboard/roster")}
               className={`${styles.navLink} ${location.pathname === "/dashboard/roster" ? styles.navLinkActive : ""}`}
@@ -340,12 +340,13 @@ useEffect(() => {
             <h2 className={styles.pageContextTitle}>
               <Routes>
                 <Route path="overview" element="Performance Overview" />
-                <Route path="scanner" element="Entrance Verification" />
+                <Route path="scanner/:uuid" element="Mark Attendance" />
                 <Route path="roster" element="Registered Attendees Base" />
                 <Route path="add-new" element="Register New Attendee" />
-                <Route path="session/master" element="Session Master Matrix" />
+                <Route path="session/master" element="Session Master" />
                 <Route path="session/add-session" element="Add Session" />
                 <Route path="session/attendance" element="Sessions Attendance" />
+                <Route path="session/master/data/:sessionId" element="Master Data" />
               </Routes>
             </h2>
           </div>
@@ -361,8 +362,7 @@ useEffect(() => {
             )}
           </span>
         </header>
-
-        <div className={styles.viewWrapper}>
+<div className={styles.viewWrapper}>
           <Routes>
             <Route
               path="overview"
@@ -373,24 +373,24 @@ useEffect(() => {
                 />
               }
             />
-<Route
-  path="scanner"
-  element={
-    <CameraScanner
-      regionScope={regionScope}
-      prefixScope={prefixScope}
-    />
-  }
-/>
-<Route
-  path="scanner/:sessionId"
-  element={
-    <CameraRouteWrapper 
-      regionScope={regionScope} 
-      prefixScope={prefixScope} 
-    />
-  }
-/>
+            <Route
+              path="scanner"
+              element={
+                <CameraScanner
+                  regionScope={regionScope}
+                  prefixScope={prefixScope}
+                />
+              }
+            />
+            <Route
+              path="scanner/:sessionId"
+              element={
+                <CameraRouteWrapper 
+                  regionScope={regionScope} 
+                  prefixScope={prefixScope} 
+                />
+              }
+            />
             <Route
               path="roster"
               element={
@@ -426,40 +426,52 @@ useEffect(() => {
                 ) // Only master_admin gets the ArchiveManager; others get NotFound
               }
             />
-<Route
-  path="session/master"
-  element={
-    <SessionMasterDashboard 
-      regionScope={regionScope} 
-      prefixScope={prefixScope}
-      globalAttendeesList={attendees}
-      isDataFetching={dataFetching}
-    />
-  }
-/>
-<Route
-  path="session/attendance/:sessionId"
-  element={
-    <Sessions 
-      regionScope={regionScope} 
-      prefixScope={prefixScope}
-      globalAttendeesList={attendees} 
-      isDataFetching={dataFetching} // <-- Ensure this is passed!
-    />
-  }
-/>
             <Route
-      path="session/add-session"
-      element={
-        <AddSession />
-      }
-    />
-    <Route
-      path="session/attendance"
-      element={
-        <Sessions />
-      }
-    />
+              path="session/master"
+              element={
+                <SessionMasterDashboard 
+                  activeRegion={regionScope} 
+                  prefixScope={prefixScope}
+                  globalAttendeesList={attendees}
+                  isDataFetching={dataFetching}
+                />
+              }
+            />
+            <Route
+              path="session/attendance/:sessionId"
+              element={
+                <Sessions 
+                  regionScope={regionScope} 
+                  prefixScope={prefixScope}
+                  globalAttendeesList={attendees} 
+                  isDataFetching={dataFetching}
+                />
+              }
+            />
+            <Route
+              path="session/add-session"
+              element={
+                <AddSession />
+              }
+            />
+            <Route
+              path="session/attendance"
+              element={
+                <Sessions 
+                  regionScope={regionScope} 
+                  prefixScope={prefixScope}
+                  globalAttendeesList={attendees} 
+                  isDataFetching={dataFetching}
+                />
+              }
+            />
+            
+            {/* 🔥 ADDED THIS ROUTE HERE TO PREVENT THE 404 OVERLAY */}
+            <Route 
+              path="session/master/data/:sessionId" 
+              element={<SessionDataDetails />} 
+            />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>

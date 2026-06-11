@@ -1,0 +1,149 @@
+.loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #8a151b;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.selectedCard {
+  border: 2px solid #8a151b !important;
+  background-color: #fdfcfb !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(138, 21, 27, 0.06) !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.activeSubFocus {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #8c827a;
+}
+
+.activeSubFocus span {
+  font-weight: 700;
+  color: #8a151b;
+}
+
+.activeLabelDot {
+  background: #8a151b;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.centerStatRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+}
+
+.centerStatRow:not(:last-child) {
+  border-bottom: 1px solid #f5f2ef;
+}
+
+.centerMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.centerName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d2926;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rankIndexBadge {
+  background: #f5f2ef;
+  color: #6c635c;
+  font-size: 11px;
+  font-weight: 700;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.centerRatio {
+  font-size: 12px;
+  color: #8c827a;
+  font-weight: 500;
+}
+
+.miniTrackBarWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.miniTrackBar {
+  background-color: #f5f2ef;
+  height: 6px;
+  border-radius: 3px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.miniBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rankPercentageTag {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2d2926;
+  min-width: 34px;
+  text-align: right;
+}
+
+.cardDivider {
+  border: 0;
+  border-top: 1px dashed #e6dfd9;
+  margin: 16px 0;
+}
+
+.quickTotalsBar {
+  display: flex;
+  justify-content: space-around;
+  font-size: 13px;
+  color: #6c635c;
+}
+
+.totalMiniItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.emptyPrompt {
+  text-align: center;
+  padding: 16px;
+  color: #8c827a;
+  font-size: 14px;
+}
