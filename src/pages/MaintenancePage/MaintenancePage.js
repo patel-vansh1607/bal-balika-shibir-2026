@@ -25,7 +25,7 @@ export default function MaintenancePage() {
             <FaClock className={styles.badgeIcon} />
             <div className={styles.badgeContent}>
               <span className={styles.metaLabel}>Expected Back Online</span>
-              <span className={styles.metaValue}>N/A</span>
+              <span className={styles.metaValue}>6pm EAT, Thursday</span>
             </div>
           </div>
 
