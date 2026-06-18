@@ -47,7 +47,7 @@ export default function SelectRegion() {
     localStorage.setItem("selected_shibir_prefix", region.idPrefix);
     const savedRole = localStorage.getItem("user_role");
     if (savedRole === "operator") {
-      navigate("/dashboard/session/attendance");
+      navigate("/dashboard/overview");
     } else {
       navigate("/dashboard/overview");
     }

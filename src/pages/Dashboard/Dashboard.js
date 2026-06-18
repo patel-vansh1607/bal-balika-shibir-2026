@@ -18,6 +18,7 @@ import SessionMasterDashboard from "../SessionMasterDashboard/SessionMasterDashb
 import AddSession from "../AddSession/AddSession";
 import Sessions from "../Sessions/Sessions";
 import SessionDataDetails from "../SessionDataDetails/SessionDataDetails";
+import AdminControl from "../AdminControl/AdminControl"; // Import the AdminControl component
 import {
   FaChartBar,
   FaSignOutAlt,
@@ -30,7 +31,8 @@ import {
   FaArrowLeft,
   FaArchive,
 } from "react-icons/fa";
-
+import { IoIosAddCircleOutline } from "react-icons/io";
+import { TfiStatsUp } from "react-icons/tfi";
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -245,14 +247,25 @@ export default function Dashboard() {
                   <FaUserPlus className={styles.iconMargin} /> Register Attendee
                 </button>
 
-                {userRole === "master_admin" && (
-                  <button
-                    onClick={() => handleNavigation("/dashboard/archive")}
-                    className={`${styles.navLink} ${location.pathname === "/dashboard/archive" ? styles.navLinkActive : ""}`}
-                  >
-                    <FaArchive className={styles.iconMargin} /> Archive Manager
-                  </button>
-                )}
+             {userRole === "master_admin" && (
+              <>
+                {/* Existing Archive Button */}
+                <button
+                  onClick={() => handleNavigation("/dashboard/archive")}
+                  className={`${styles.navLink} ${location.pathname === "/dashboard/archive" ? styles.navLinkActive : ""}`}
+                >
+                  <FaArchive className={styles.iconMargin} /> Archive Manager
+                </button>
+
+                {/* New Button Example */}
+                <button
+                  onClick={() => handleNavigation("/dashboard/admin-control")}
+                  className={`${styles.navLink} ${location.pathname === "/dashboard/admin-control" ? styles.navLinkActive : ""}`}
+                >
+                  <FaUserShield className={styles.iconMargin} /> Admin Control
+                </button>
+              </>
+            )}
 
                 <button
                   onClick={() => handleNavigation("/dashboard/session/master")}
@@ -267,7 +280,7 @@ export default function Dashboard() {
                   }
                   className={`${styles.navLink} ${location.pathname === "/dashboard/session/add-session" ? styles.navLinkActive : ""}`}
                 >
-                  <FaChartBar className={styles.iconMargin} /> Add Session
+                  <IoIosAddCircleOutline className={styles.iconMargin} /> Add Session
                 </button>
               </>
             )}
@@ -281,7 +294,7 @@ export default function Dashboard() {
                   }
                   className={`${styles.navLink} ${styles.navLinkActive}`}
                 >
-                  <FaChartBar className={styles.iconMargin} /> Sessions
+                  <TfiStatsUp className={styles.iconMargin} /> Sessions
                   Attendance
                 </button>
               ) : (
@@ -291,7 +304,7 @@ export default function Dashboard() {
                   }
                   className={`${styles.navLink} ${location.pathname.startsWith("/dashboard/session/attendance") ? styles.navLinkActive : ""}`}
                 >
-                  <FaChartBar className={styles.iconMargin} /> Sessions
+                  <TfiStatsUp className={styles.iconMargin} /> Sessions
                   Attendance
                 </button>
               ))}
@@ -356,6 +369,7 @@ export default function Dashboard() {
                 <Route path="roster" element="Registered Attendees Base" />
                 <Route path="add-new" element="Register New Attendee" />
                 <Route path="archive" element="Archive Manager" />
+                <Route path="admin-control" element="Admin Control Panel" />
                 <Route path="session/master" element="Session Master" />
                 <Route path="session/add-session" element="Add Session" />
                 <Route
@@ -409,6 +423,16 @@ export default function Dashboard() {
                 />
               }
             />
+            <Route
+  path="admin-control"
+  element={
+    userRole === "master_admin" ? (
+      <AdminControl /> // Ensure you import this component
+    ) : (
+      <NotFound />
+    )
+  }
+/>
             <Route
               path="scanner/:sessionId"
               element={

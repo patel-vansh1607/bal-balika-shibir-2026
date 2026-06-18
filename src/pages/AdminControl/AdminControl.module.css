@@ -1,0 +1,74 @@
+.container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 30px;
+  background: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.container h2 {
+  margin-bottom: 24px;
+  color: #202124;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr auto;
+  gap: 12px;
+  margin-bottom: 32px;
+  align-items: center;
+}
+
+.form input,
+.form select {
+  padding: 10px 14px;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.form button {
+  background-color: #34a853;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.form button:hover {
+  background-color: #137333;
+}
+
+.userList {
+  border-top: 2px solid #f1f3f4;
+  padding-top: 20px;
+}
+
+.userItem {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  padding: 14px;
+  border-bottom: 1px solid #f1f3f4;
+  align-items: center;
+}
+
+.userItem:hover {
+  background-color: #f8f9fa;
+}
+
+.roleBadge {
+  background: #e8f0fe;
+  color: #1967d2;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}

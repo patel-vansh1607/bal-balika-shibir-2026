@@ -16,7 +16,7 @@ export default function App() {
     // You could fetch this from Supabase:
     // supabase.from('settings').select('maintenance_mode').single().then(...)
     // For now, you can toggle this manually or from your DB
-    setIsMaintenance(true); 
+    setIsMaintenance(false); 
   }, []);
 
   if (isMaintenance) {
