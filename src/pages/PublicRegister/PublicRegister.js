@@ -104,7 +104,7 @@ export default function PublicRegister() {
     if (!cm || cm.length < 2)   return fail("Enter a valid Middle Name.",  middleNameRef);
     if (!cl || cl.length < 2)   return fail("Enter a valid Last Name.",    lastNameRef);
     const pa = parseInt(age);
-    if (isNaN(pa) || pa < 3 || pa > 18) return fail("Age must be between 3 and 18.", ageRef);
+    if (isNaN(pa) || pa < 9 || pa > 14) return fail("Age must be between 9 and 14.", ageRef);
     if (!gender)         return fail("Please select a Mandal.",   genderRef);
     if (!selectedRegion) return fail("Please select your Country.", regionRef);
     if (!selectedCenter) return fail("Please select your Center.", centerRef);
@@ -118,51 +118,58 @@ export default function PublicRegister() {
 // Add this temporary placeholder at the top of your component 
 // if you aren't ready to delete all the logic yet:
 const setPhotoPreview = () => {};
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError("");
-    const validated = validateForm();
-    if (!validated) return;
-    const { constructedFullName, parsedAge, strippedContact, cleanEmail } = validated;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setFormError("");
+  const validated = validateForm();
+  if (!validated) return;
+  const { constructedFullName, parsedAge, strippedContact, cleanEmail } = validated;
 
-    setLoading(true);
-    setSuccess(false);
-    setFinalAttendeeData(null);
+  setLoading(true);
+  setSuccess(false);
+  setFinalAttendeeData(null);
 
-    try {
-      const { data: insertData } = await attendeesApi.create({
-        name: constructedFullName,
-        age: parsedAge,
-        gender,
-        region: selectedRegion,
-        center: selectedCenter,
-        parent_contact: strippedContact,
-        parent_email: cleanEmail,
-        status: "Pending",
-      });
+  try {
+    const { data: insertData } = await attendeesApi.create({
+      name: constructedFullName,
+      age: parsedAge,
+      gender,
+      region: selectedRegion,
+      center: selectedCenter,
+      parent_contact: strippedContact,
+      parent_email: cleanEmail,
+      status: "Pending",
+    });
 
-      const rawId       = insertData._raw_id;
-      const trueMemberId = insertData.member_id;
-      setGeneratedQRValue(trueMemberId);
+    const rawId = insertData._raw_id;
+    const trueMemberId = insertData.member_id;
+    setGeneratedQRValue(trueMemberId);
+    
+    // Create a safe identifier for filenames
+    const cleanName = constructedFullName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase();
 
-      // Upload photo
-      const ext       = photoFile.name.split(".").pop().toLowerCase();
-      const cleanName = constructedFullName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase();
+    // --- UPDATED: Only process photo if it exists ---
+    let profileUrl = null;
+    if (photoFile) {
+      const ext = photoFile.name.split(".").pop().toLowerCase();
       const photoFilename = `public_profile_${rawId}_${cleanName}.${ext}`;
-      const { url: profileUrl } = await upload.photo(photoFile, photoFilename);
+      const { url } = await upload.photo(photoFile, photoFilename);
+      profileUrl = url;
+    }
 
-      setTimeout(async () => {
-        const svgElement = qrRef.current?.querySelector("svg");
-        let qrUrl = null;
-        if (svgElement) {
-          const svgString = new XMLSerializer().serializeToString(svgElement);
-          const svgBlob   = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-          const qrFilename = `public_qr_${rawId}_${cleanName}.svg`;
-          const { url } = await upload.qr(svgBlob, qrFilename);
-          qrUrl = url;
-        }
+    setTimeout(async () => {
+      const svgElement = qrRef.current?.querySelector("svg");
+      let qrUrl = null;
+      if (svgElement) {
+        const svgString = new XMLSerializer().serializeToString(svgElement);
+        const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+        const qrFilename = `public_qr_${rawId}_${cleanName}.svg`;
+        const { url } = await upload.qr(svgBlob, qrFilename);
+        qrUrl = url;
+      }
 
-        await attendeesApi.update(rawId, { photo_url: profileUrl, qr_code_url: qrUrl });
+      await attendeesApi.update(rawId, { photo_url: profileUrl, qr_code_url: qrUrl });
+
 
         // Send confirmation email (non-blocking)
         emailApi.sendRegistration({
