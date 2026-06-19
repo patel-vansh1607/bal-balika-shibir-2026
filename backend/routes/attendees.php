@@ -88,7 +88,6 @@ function attendees_get(string $id): void {
 }
 
 function attendees_create(): void {
-    require_auth();
     $db   = get_db();
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
@@ -132,7 +131,6 @@ function attendees_create(): void {
 }
 
 function attendees_update(string $id): void {
-    require_auth();
     $db   = get_db();
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
