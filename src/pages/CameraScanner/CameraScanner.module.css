@@ -1,0 +1,406 @@
+.scannerWorkspaceGrid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Primary Capture Card - Clean White Panel (Matches image_f51c7e.png)
+   ========================================================================== */
+.mainCaptureCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 500px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+.dormantPlaceholder {
+  text-align: center;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.radarPulseWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: #f7fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 50%;
+  margin-bottom: 24px;
+}
+
+.radarPulseWrapper::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(138, 21, 27, 0.2);
+  border-radius: 50%;
+  animation: pulseRadar 2.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  opacity: 0;
+}
+
+@keyframes pulseRadar {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.scanIconCenter {
+  font-size: 26px;
+  color: #718096;
+}
+
+.cardTitle {
+  color: #2d3748;
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.3px;
+}
+
+.cardSubtitle {
+  color: #718096;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 32px 0;
+}
+
+.activateDeviceBtn {
+  background: #8a151b; /* Your signature deep red */
+  color: #ffffff;
+  border: none;
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(138, 21, 27, 0.15);
+}
+
+.activateDeviceBtn:hover {
+  background: #a11d24;
+}
+
+/* ==========================================================================
+   Active Camera Framework
+   ========================================================================== */
+.cameraWrapperActive {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.videoStreamBox {
+  width: 100%;
+  max-width: 450px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #f7fafc;
+}
+
+.videoStreamBox video {
+  width: 100% !important;
+  height: auto !important;
+  object-fit: cover !important;
+}
+
+.killPipelineBtn {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  color: #4a5568;
+  border: 1px solid #cbd5e0;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.killPipelineBtn:hover {
+  background: #fff5f5;
+  border-color: #feb2b2;
+  color: #c53030;
+}
+
+/* ==========================================================================
+   Dynamic Scan Evaluation Feedback Banners (Matches table row accents)
+   ========================================================================== */
+.resultBannerCard {
+  width: 100%;
+  max-width: 550px;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border: 1px solid transparent;
+  animation: slideInUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInUp {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.resultBannerCard.success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.resultBannerCard.success .statusContextIcon { color: #16a34a; }
+.resultBannerCard.success h4 { color: #166534; }
+
+.resultBannerCard.warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+.resultBannerCard.warning .statusContextIcon { color: #d97706; }
+.resultBannerCard.warning h4 { color: #92400e; }
+
+.resultBannerCard.error {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+.resultBannerCard.error .statusContextIcon { color: #dc2626; }
+.resultBannerCard.error h4 { color: #991b1b; }
+
+.resultHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.statusContextIcon {
+  font-size: 24px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.resultHeader h4 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.resultHeader p {
+  color: #718096;
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ==========================================================================
+   Attendee Profile Badge Breakdown Meta Structure
+   ========================================================================== */
+.profileBadgeDataSegment {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.metaRowField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.metaGridHalf {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.metaLabel {
+  color: #718096;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metaValueText {
+  color: #2d3748;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.metaIdHash {
+  color: #2d3748;
+  font-family: monospace;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.resumePipelineBtn {
+  background: #ffffff;
+  color: #2d3748;
+  border: 1px solid #cbd5e0;
+  padding: 11px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.resumePipelineBtn:hover {
+  background: #f7fafc;
+  border-color: #a0aec0;
+}
+
+/* ==========================================================================
+   Audit Session Side Log Panel Feed (Matches image_f51c7e.png Style Cards)
+   ========================================================================== */
+.auditLogPanelCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 500px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.auditHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.auditHeader h3 {
+  color: #2d3748;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.logStreamTrackFeed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.logStreamTrackFeed::-webkit-scrollbar {
+  width: 4px;
+}
+.logStreamTrackFeed::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 10px;
+}
+
+.emptyFeedPlaceholder {
+  color: #a0aec0;
+  font-size: 13px;
+  text-align: center;
+  margin: auto 0;
+  padding: 0 24px;
+  line-height: 1.5;
+}
+
+.logRowEntry {
+  border-left: 3px solid transparent;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 0 6px 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid #edf2f7;
+  border-right: 1px solid #edf2f7;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.logRowEntry.log_success {
+  border-left-color: #16a34a;
+  background: rgba(22, 163, 74, 0.02);
+}
+
+.logRowEntry.log_warning {
+  border-left-color: #d97706;
+  background: rgba(217, 119, 6, 0.02);
+}
+
+.logRowEntry.log_error {
+  border-left-color: #dc2626;
+  background: rgba(220, 38, 38, 0.02);
+}
+
+.logMetaWrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logTimeToken {
+  color: #718096;
+  font-size: 11px;
+  font-family: monospace;
+}
+
+.operatorBadge {
+  background: #edf2f7;
+  color: #4a5568;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: capitalize;
+  font-weight: 500;
+}
+
+.logMessageText {
+  color: #2d3748;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+@media (max-width: 1024px) {
+  .scannerWorkspaceGrid {
+    grid-template-columns: 1fr;
+  }
+  .mainCaptureCard, .auditLogPanelCard {
+    height: auto;
+    min-height: auto;
+  }
+  .logStreamTrackFeed {
+    max-height: 350px;
+  }
+}

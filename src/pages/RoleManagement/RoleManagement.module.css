@@ -1,0 +1,112 @@
+.managementPanelCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 1100px;
+  margin: 32px auto;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #edf2f7;
+  margin-bottom: 24px;
+}
+
+.headerIcon {
+  font-size: 28px;
+  color: #8a151b;
+}
+
+.panelHeader h3 {
+  margin: 0 0 4px 0;
+  color: #2d3748;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.panelHeader p {
+  margin: 0;
+  color: #718096;
+  font-size: 13px;
+}
+
+.adminTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.adminTable th {
+  background: #f8fafc;
+  color: #4a5568;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.adminTable td {
+  padding: 16px;
+  border-bottom: 1px solid #edf2f7;
+  font-size: 14px;
+  color: #2d3748;
+}
+
+.emailCell {
+  font-weight: 500;
+}
+
+.uuidToken {
+  font-family: monospace;
+  color: #718096;
+  font-size: 13px;
+}
+
+.roleDropdown {
+  background: #ffffff;
+  border: 1px solid #cbd5e0;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #2d3748;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.roleDropdown:focus {
+  border-color: #8a151b;
+}
+
+.centerPad {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 300px;
+  color: #718096;
+  font-family: sans-serif;
+}
+
+.spin {
+  animation: spinFrame 1s linear infinite;
+}
+
+.inlineLoader {
+  margin-left: 8px;
+  color: #8a151b;
+  vertical-align: middle;
+}
+
+@keyframes spinFrame {
+  to { transform: rotate(360deg); }
+}

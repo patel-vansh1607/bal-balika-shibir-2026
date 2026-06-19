@@ -1,0 +1,197 @@
+/* src/index.css */
+
+/* Register Local Regular Weight */
+@font-face {
+  font-family: 'Arima Madurai Local';
+  src: url('./assets/fonts/ArimaMadurai-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Register Local Bold Weight */
+@font-face {
+  font-family: 'Arima Madurai Local';
+  src: url('./assets/fonts/ArimaMadurai-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+:root {
+  /* Update this variable to point to your new local font-family name */
+  --font-display: 'Arima Madurai Local', serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  
+  /* Soft, organic palette inspired by baps.org */
+  --bg-main: #fcfbfa;       /* Very soft cream background */
+  --bg-card: #ffffff;       /* Pure white contrast for content cards */
+  --text-main: #2d2926;     /* Deep charcoal for readable body text */
+  --text-muted: #6c635c;    /* Warm gray-brown for metadata labels */
+  --accent-primary: #8a151b; /* Deep Crimson Maroon for primary status/buttons */
+  --accent-soft: #f4ece6;    /* Soft beige/terracotta tint for background boxes */
+  --border-light: #e6dfd9;   /* Muted organic border separating items */
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom CSS helper layout rules */
+.dashboard-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-navbar {
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  margin: 0;
+}
+
+.main-content {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 24px;
+  box-sizing: border-box;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px -1px rgba(138, 21, 27, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+}
+
+.stat-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.dashboard-section {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 16px;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.data-table th {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--border-light);
+}
+
+.data-table td {
+  font-size: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-main);
+}
+
+.badge-present {
+  background-color: #edf7ed;
+  color: #1e4620;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.badge-absent {
+  background-color: var(--accent-soft);
+  color: var(--accent-primary);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.primary-btn {
+  background-color: var(--accent-primary);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 14px;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.primary-btn:hover {
+  opacity: 0.9;
+}   

@@ -1,0 +1,15 @@
+Options -Indexes
+
+RewriteEngine On
+
+# Allow direct access to static file directories
+RewriteCond %{REQUEST_URI} ^/uploads/ [OR]
+RewriteCond %{REQUEST_URI} ^/mtrc/uploads/ [OR]
+RewriteCond %{REQUEST_URI} ^/qr_codes/ [OR]
+RewriteCond %{REQUEST_URI} ^/mtrc/qr_codes/
+RewriteRule ^ - [L]
+
+# Route all other requests through index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]

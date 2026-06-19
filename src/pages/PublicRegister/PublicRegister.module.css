@@ -1,0 +1,660 @@
+/* ==========================================================================
+   1. GLOBAL LAYOUT STRUCTURE
+   ========================================================================== */
+.publicWrapper {
+  max-width: 1400px; /* Expanded layout container width to hold horizontal flows safely */
+  margin: 0 auto;
+  padding: 40px 20px;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+}
+
+.publicHeader {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.publicHeader h1 {
+  font-family: var(--font-display, inherit);
+  color: #1a1a1a;
+  font-size: 32px;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+}
+
+.publicHeader p {
+  color: #666;
+  margin: 0;
+  font-size: 16px;
+}
+
+.containerSplit {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 32px;
+  flex: 1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   2. BANNERS & NOTIFICATIONS
+   ========================================================================== */
+.infoBanner {
+  background-color: #f0f7ff;
+  border: 1px solid #cce3ff;
+  color: #004085;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  display: flex;
+  gap: 12px;
+}
+
+.infoBanner p {
+  margin: 0;
+}
+
+.bannerError {
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #991b1b;
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* ==========================================================================
+   3. ADAPTIVE FORM SYSTEM
+   ========================================================================== */
+.formGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+/* Base style for the row wrapper layers */
+.rowFieldContainer {
+display: flex;
+  flex-direction: row;
+  flex-wrap: wrap; /* Allows wrapping on smaller screens */
+  gap: 16px;
+  width: 100%;
+}
+
+/* Ensure each individual input container inside a row splits layout space evenly */
+.rowFieldContainer > .formGroup,
+.rowFieldContainer > div {
+  flex: 1;
+  min-width: 0;
+}
+
+/* CRITICAL DROPDOWN GAP CORRECTION: 
+   If your component drops an extra div wrapper, this forces the gap to render physically */
+.rowFieldContainer:has(.searchDropdownContainer) {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroupFull {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #4a5568;
+  white-space: nowrap; /* Keeps labels cleanly tracked over inputs */
+}
+
+.input, 
+.select {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #1e293b;
+  transition: all 0.2s ease;
+}
+
+
+
+.input:disabled, 
+.select:disabled {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+
+/* ==========================================================================
+   4. FILE & PHOTO UPLOAD ENGINE
+   ========================================================================== */
+.photoUploadWrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.fileInputHidden {
+  display: none;
+}
+
+.fileLabelBtn {
+  background-color: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.fileLabelBtn:hover {
+  background-color: rgba(138, 21, 27, 0.04);
+  color: #8a151b;
+  border-color: #8a151b;
+}
+
+.inputThumbPreview {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+}
+
+.fileHint {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* ==========================================================================
+   5. BUTTON CORES
+   ========================================================================== */
+.submitBtn {
+  background-color: #8a151b;
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 14px 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(138, 21, 27, 0.15);
+  transition: all 0.2s ease;
+}
+
+.submitBtn:hover {
+  background-color: #721116;
+  transform: translateY(-1px);
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ==========================================================================
+   6. DYNAMIC BADGE & DELEGATE PASS DESIGN
+   ========================================================================== */
+.badgeWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 340px;
+  position: sticky;
+  top: 40px;
+}
+
+.successBanner {
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+}
+
+.successBanner strong {
+  display: block;
+  font-size: 14px;
+}
+
+.successBanner p {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.badgeIdCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.badgeHeader {
+  background-color: #8a151b;
+  padding: 18px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.badgeHeader h4 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.badgeHeader p {
+  margin: 4px 0 0 0;
+  font-size: 10px;
+  opacity: 0.8;
+  letter-spacing: 0.08em;
+}
+
+.badgeBodyContent {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.badgeAvatarPhoto {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.badgeTextMeta {
+  text-align: center;
+}
+
+.badgeTextMeta h3 {
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.badgeRowTags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.badgeCenterTag {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #8a151b;
+  background-color: rgba(138, 21, 27, 0.06);
+  padding: 4px 12px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.badgeGenderTag {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+.tagBalak {
+  background: #ebf8ff;
+  color: #2b6cb0;
+  border: 1px solid #bee3f8;
+}
+
+.tagBalika {
+  background: #fff5f5;
+  color: #c53030;
+  border: 1px solid #fed7d7;
+}
+
+.badgeQrBlock {
+  background: #f8fafc;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-top: 8px;
+}
+
+.downloadLink {
+  background-color: #0f172a;
+  color: #ffffff;
+  text-align: center;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+}
+
+.downloadLink:hover {
+  background-color: #1e293b;
+}
+
+/* ==========================================================================
+   7. ANIMATIONS CORE
+   ========================================================================== */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   8. RESPONSIVE MOBILE OVERRIDES
+   ========================================================================== */
+@media (max-width: 920px) {
+  .containerSplit {
+    flex-direction: column;
+  }
+  
+  /* Simplify the row behavior without fighting the grid */
+  .rowFieldContainer {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .rowFieldContainer > .formGroup {
+    flex: 1 1 100%; /* Force items to take full width on mobile */
+    min-width: 100%;
+  }
+
+  /* Clear the grid override entirely */
+  .rowFieldContainer:has(.searchDropdownContainer) {
+    display: flex !important; /* Revert to flex */
+    grid-template-columns: none !important;
+  }
+
+  .badgeWrapper {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   CUSTOM SEARCHABLE DROPDOWN AND COMBOBOX MODULES
+   ========================================================================== */
+
+/* Dropdown Container Context */
+.searchDropdownContainer {
+  position: relative;
+  width: 100%;
+}
+
+/* Custom Interactive Box Trigger */
+.customSelectTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #1f2937;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+  box-sizing: border-box; /* Secures absolute element dimensions */
+}
+
+.customSelectTrigger:hover:not(.triggerDisabled) {
+  border-color: #9ca3af;
+}
+
+.customSelectTrigger:focus {
+  outline: none;
+  border-color: #8a151b; /* Matches your core primary brand color scheme */
+  box-shadow: 0 0 0 3px rgba(138, 21, 27, 0.08);
+}
+
+/* Disabled State Overlay */
+.triggerDisabled {
+  background-color: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Interactive Dropdown Arrow Icons */
+.arrowIcon {
+  font-size: 0.8rem;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+}
+
+/* Floating Overlay Panel Menu */
+.dropdownOverlayMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.15s ease-out;
+}
+
+/* Sticky Input Search Area inside Menu Container */
+.dropdownSearchHeader {
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background-color: #f9fafb;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 10;
+}
+
+.searchIconInline {
+  color: #9ca3af;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.dropdownSearchInput {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.25rem 0;
+  font-size: 0.9rem;
+  color: #1f2937;
+  outline: none;
+}
+
+.dropdownSearchInput::placeholder {
+  color: #9ca3af;
+}
+
+/* Scrollable Options Menu Lists */
+.dropdownListOptions {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Individual list item entry items */
+.dropdownOptionItem {
+  padding: 0.65rem 1rem;
+  font-size: 0.925rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.dropdownOptionItem:hover {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* Selected option row styling highlight */
+.itemSelected {
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+/* Empty State / Query Fallback Styling */
+.noResultsFoundItem {
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+  text-align: center;
+  background-color: #ffffff;
+}
+
+/* Micro Interactions Keyframe entry animations */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.termsSection {
+  margin: 20px 0;
+}
+
+.checkboxWrapper {
+  margin-bottom: 12px;
+}
+
+.termsLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.termsDisplayBox {
+  background: #f1f3f4;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #1a73e8; /* Highlights the section */
+  font-size: 13px;
+  color: #3c4043;
+}
+
+.termsHeading {
+  font-weight: bold;
+  margin: 0 0 8px 0;
+  color: #202124;
+}
+
+.termsList {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.5;
+}
+
+.termsList li {
+  margin-bottom: 4px;
+}
+
+/* Responsive: Smaller padding on mobile */
+@media (max-width: 480px) {
+  .termsDisplayBox {
+    padding: 10px;
+  }
+}
+.inputRequiredError {
+  border: 2px solid #d93025 !important;
+  background-color: #fff8f7 !important;
+}
+
+.label.error {
+  color: #d93025;
+}
+/* 1. Global Reset: Remove all browser blue focus rings */
+input:focus, 
+select:focus, 
+.customSelectTrigger:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 2. Your specific Error Class (Apply this to inputs when there is an error) */
+.inputError {
+  border: 2px solid #d93025 !important;
+  background-color: #fff8f7 !important;
+  outline: none !important;
+}
+.formGroup, .formGroupFull {
+  scroll-margin-top: 150px; 
+}   
