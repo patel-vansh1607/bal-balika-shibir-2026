@@ -340,7 +340,7 @@ const setPhotoPreview = () => {};
                         <li>Registration is open to children from Grades 1 to 8.</li>
                         <li>A clear, recent passport-style photograph is required for identification.</li>
                         <li>All information provided must be accurate; incorrect details may delay registration.</li>
-                        <li>Your data is used solely for organizing the Bal-Balika Shibir event.</li>
+                        <li>Your data is used solely for organizing the Bal-Balika Shibir.</li>
                         <li>By registering, you consent to receive communication regarding Shibir updates.</li>
                         <li>By filling this form, you are allowing your child to attend this event, and the organizers are not responsible for any mishaps</li>
                       </ul>
