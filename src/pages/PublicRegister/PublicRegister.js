@@ -248,7 +248,7 @@ const setPhotoPreview = () => {};
                   <div className={styles.rowFieldContainer}>
                     <div className={styles.formGroup} ref={ageRef}>
                       <label className={styles.label}>Age *</label>
-                      <input type="number" required min="3" max="18" className={`${styles.input} ${formError && !age ? styles.inputError : ""}`} placeholder="e.g. 11" value={age} onChange={(e) => setAge(e.target.value)} disabled={loading} />
+                      <input type="number" required min="6" max="14" className={`${styles.input} ${formError && !age ? styles.inputError : ""}`} placeholder="e.g. 11" value={age} onChange={(e) => setAge(e.target.value)} disabled={loading} />
                     </div>
                     <div className={styles.formGroup} ref={genderRef}>
                       <label className={styles.label}>Mandal *</label>
