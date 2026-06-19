@@ -23,3 +23,7 @@ yarn-debug.log*
 yarn-error.log*
 
 .env
+
+# Backend secrets — never commit real credentials
+backend/config.php
+cpanel/
