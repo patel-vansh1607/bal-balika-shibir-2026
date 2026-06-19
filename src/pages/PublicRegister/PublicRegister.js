@@ -48,7 +48,7 @@ export default function PublicRegister() {
   const emailRef     = useRef(null);
   const photoRef     = useRef(null);
   const genderRef    = useRef(null);
-  const contactRef   = useRef(null);
+  // const contactRef   = useRef(null);
   const termsRef     = useRef(null);
 
   const regionDataset = {
@@ -109,7 +109,7 @@ export default function PublicRegister() {
     if (!selectedRegion) return fail("Please select your Country.", regionRef);
     if (!selectedCenter) return fail("Please select your Center.", centerRef);
     const stripped = cc.replace(/[\s\-()]/g, "");
-    if (!/^\+[1-9]\d{6,14}$/.test(stripped)) return fail("Invalid phone format (e.g. +254700111222).", contactRef);
+    // if (!/^\+[1-9]\d{6,14}$/.test(stripped)) return fail("Invalid phone format (e.g. +254700111222).", contactRef);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ce)) return fail("Enter a valid email address.", emailRef);
     if (!photoFile)      return fail("A portrait photo is mandatory.", photoRef);
     if (!acceptedTerms)  return fail("Please accept the Terms and Conditions.", termsRef);
