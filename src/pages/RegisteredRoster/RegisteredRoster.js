@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import QRCode from "qrcode";
 import { attendees as attendeesApi } from "../../apiClient";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -57,15 +58,12 @@ export default function RegisteredRoster({
       for (const attendee of filteredAttendees) {
         const id   = attendee.member_id || attendee.id;
         const name = (attendee.name || "Attendee").replace(/\s+/g, "_");
-        if (attendee.qr_code_url) {
-          const response = await fetch(attendee.qr_code_url);
-          const blob = await response.blob();
-          folder.file(`${id}_${name}.svg`, blob);
-        } else {
-          const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(id)}&color=000000&format=png&t=${Date.now()}`;
-          const response = await fetch(url);
-          const blob = await response.blob();
-          folder.file(`${id}_${name}.png`, blob);
+        try {
+          const dataUrl = await QRCode.toDataURL(String(id), { width: 300, margin: 2, color: { dark: "#000000", light: "#ffffff" } });
+          const base64  = dataUrl.replace(/^data:image\/png;base64,/, "");
+          folder.file(`${id}_${name}.png`, base64, { base64: true });
+        } catch (qrErr) {
+          console.error(`QR generation failed for ${id}:`, qrErr);
         }
       }
       const content = await zip.generateAsync({ type: "blob" });
@@ -96,7 +94,7 @@ export default function RegisteredRoster({
     if (filteredAttendees.length === 0) { alert("No matched dataset found to extract."); return; }
     setIsExporting(true);
     try {
-      const headers = ["Member ID","Full Name","Mandal","Age","Center Branch","Parent Contact","Photo Link","QR Code Link"];
+      const headers = ["Member ID","Full Name","Mandal","Age","Center Branch","Parent Contact"];
       const csvRows = [
         headers.join(","),
         ...filteredAttendees.map((row) => {
@@ -106,7 +104,7 @@ export default function RegisteredRoster({
           return [
             `"${finalId}"`, `"${(row.name||"").replace(/"/g,'""')}"`,
             `"${row.gender||"Balak"}"`, `"${row.age}"`, `"${row.center}"`,
-            `"${finalContact}"`, `"${row.photo_url||""}"`, `"${row.qr_code_url||""}"`,
+            `"${finalContact}"`,
           ].join(",");
         }),
       ];

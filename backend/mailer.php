@@ -1,78 +1,66 @@
 <?php
 // ============================================================
-// Lightweight SMTP mailer — SSL port 465, no Composer needed
+// Mailer — uses Resend API (https://resend.com)
+// Logs every attempt to backend/logs/email.log
 // ============================================================
 
 function smtp_send(string $to, string $toName, string $subject, string $htmlBody): void {
-    $host     = SMTP_HOST;
-    $port     = SMTP_PORT;
-    $username = SMTP_USER;
-    $password = SMTP_PASS;
-    $fromAddr = SMTP_USER;
-    $fromName = SMTP_FROM_NAME;
+    $logDir = __DIR__ . '/logs';
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0755, true);
+    }
+    $logFile = $logDir . '/email.log';
 
-    $socket = @fsockopen("ssl://$host", $port, $errno, $errstr, 15);
-    if (!$socket) {
-        throw new RuntimeException("SMTP connect failed ($errno): $errstr");
+    $ts = date('Y-m-d H:i:s');
+    error_log("[$ts] EMAIL ATTEMPT | to=$to | subject=$subject");
+
+    $apiKey = defined('RESEND_API_KEY') ? RESEND_API_KEY : '';
+    if (!$apiKey || $apiKey === 're_YOUR_RESEND_API_KEY_HERE') {
+        $msg = "[$ts] EMAIL SKIP | RESEND_API_KEY not configured | to=$to\n";
+        file_put_contents($logFile, $msg, FILE_APPEND | LOCK_EX);
+        error_log($msg);
+        throw new RuntimeException('RESEND_API_KEY is not configured in config.php');
     }
 
-    $read = function() use ($socket) {
-        $resp = '';
-        while ($line = fgets($socket, 512)) {
-            $resp .= $line;
-            if ($line[3] === ' ') break;
-        }
-        return $resp;
-    };
+    $fromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : 'Bal-Balika Shibir';
+    // FROM must be a verified Resend domain — update this address in config if needed
+    $fromAddr = defined('SMTP_USER') ? SMTP_USER : 'noreply@riftkoders.com';
 
-    $cmd = function(string $c) use ($socket, $read) {
-        fwrite($socket, $c . "\r\n");
-        return $read();
-    };
-
-    $read(); // 220 greeting
-
-    $domain = explode('@', $username)[1] ?? 'localhost';
-    $cmd("EHLO $domain");
-    $cmd("AUTH LOGIN");
-    $cmd(base64_encode($username));
-    $r = $cmd(base64_encode($password));
-    if (strpos($r, '235') === false) {
-        fclose($socket);
-        throw new RuntimeException("SMTP auth failed: $r");
-    }
-
-    $cmd("MAIL FROM:<$fromAddr>");
-    $cmd("RCPT TO:<$to>");
-    $cmd("DATA");
-
-    $boundary = md5(uniqid());
-    $headers  = implode("\r\n", [
-        "From: =?UTF-8?B?" . base64_encode($fromName) . "?= <$fromAddr>",
-        "To: =?UTF-8?B?" . base64_encode($toName) . "?= <$to>",
-        "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=",
-        "MIME-Version: 1.0",
-        "Content-Type: multipart/alternative; boundary=\"$boundary\"",
-        "X-Mailer: Bal-Balika-Shibir-2026",
+    $payload = json_encode([
+        'from'    => "$fromName <$fromAddr>",
+        'to'      => [$to],
+        'subject' => $subject,
+        'html'    => $htmlBody,
     ]);
 
-    $plainText = strip_tags(preg_replace('/<br\s*\/?>/', "\n", $htmlBody));
+    file_put_contents($logFile, "[$ts] SENDING | to=$to | from=$fromAddr | subject=$subject\n", FILE_APPEND | LOCK_EX);
 
-    $body = "$headers\r\n\r\n"
-        . "--$boundary\r\n"
-        . "Content-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n"
-        . chunk_split(base64_encode($plainText)) . "\r\n"
-        . "--$boundary\r\n"
-        . "Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n"
-        . chunk_split(base64_encode($htmlBody)) . "\r\n"
-        . "--$boundary--";
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 20,
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json',
+        ],
+    ]);
 
-    fwrite($socket, $body . "\r\n.\r\n");
-    $r = $read();
-    $cmd("QUIT");
-    fclose($socket);
+    $response  = curl_exec($ch);
+    $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
 
-    if (strpos($r, '250') === false) {
-        throw new RuntimeException("SMTP DATA rejected: $r");
+    $logLine = "[$ts] RESULT | to=$to | http=$httpCode | curl_err=" . ($curlError ?: 'none') . " | resp=$response\n";
+    file_put_contents($logFile, $logLine, FILE_APPEND | LOCK_EX);
+    error_log($logLine);
+
+    if ($curlError) {
+        throw new RuntimeException("Resend curl error: $curlError");
+    }
+
+    if ($httpCode < 200 || $httpCode >= 300) {
+        throw new RuntimeException("Resend API error (HTTP $httpCode): $response");
     }
 }
