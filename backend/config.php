@@ -29,7 +29,7 @@ define('SMTP_FROM_NAME', 'Bal-Balika Shibir');
 // --- CORS: Allowed frontend origins ---
 // Add your Vercel domain(s) here
 define('ALLOWED_ORIGINS', [
-    'https://bal-balika-shibir-2026-sitemba.vercel.app', // update with real Vercel URL
+    'https://mtrc-c3iphmjv2-roarwave.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001',
 ]);
