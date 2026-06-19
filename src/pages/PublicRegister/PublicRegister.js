@@ -5,7 +5,6 @@ import {
   FaUserPlus,
   FaSpinner,
   FaCheckCircle,
-  FaCamera,
   FaInfoCircle,
   FaExclamationTriangle,
   FaChevronDown,
@@ -32,7 +31,6 @@ export default function PublicRegister() {
   const [parentContact, setParentContact] = useState("");
   const [parentEmail, setParentEmail]     = useState("");
   const [photoFile, setPhotoFile]         = useState(null);
-  const [photoPreview, setPhotoPreview]   = useState("");
   const [loading, setLoading]             = useState(false);
   const [success, setSuccess]             = useState(false);
   const [formError, setFormError]         = useState("");
@@ -96,16 +94,7 @@ export default function PublicRegister() {
     setIsCenterDropdownOpen(false);
   };
 
-  const handlePhotoChange = (e) => {
-    setFormError("");
-    const file = e.target.files[0];
-    if (!file) return;
-    const allowed = ["image/jpeg","image/png","image/webp"];
-    if (!allowed.includes(file.type)) { setFormError("Unsupported file format. Please upload JPG, PNG, or WEBP."); e.target.value = ""; return; }
-    if (file.size > 2.5 * 1024 * 1024) { setFormError("Image too large. Photo must be under 2.5MB."); e.target.value = ""; return; }
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
-  };
+
 
   const validateForm = () => {
     const cf = firstName.trim(), cm = middleName.trim(), cl = lastName.trim();
@@ -126,7 +115,9 @@ export default function PublicRegister() {
     if (!acceptedTerms)  return fail("Please accept the Terms and Conditions.", termsRef);
     return { constructedFullName: `${cf} ${cm} ${cl}`, parsedAge: pa, strippedContact: stripped, cleanEmail: ce };
   };
-
+// Add this temporary placeholder at the top of your component 
+// if you aren't ready to delete all the logic yet:
+const setPhotoPreview = () => {};
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
@@ -264,8 +255,6 @@ export default function PublicRegister() {
                       <select className={`${styles.select} ${formError && !gender ? styles.inputError : ""}`} required value={gender} onChange={(e) => setGender(e.target.value)} disabled={loading}>
                         <option value="Balak">Balak</option>
                         <option value="Balika">Balika</option>
-                        <option value="Shishu">Shishu</option>
-                        <option value="Shishika">Shishika</option>
                       </select>
                     </div>
                   </div>
@@ -318,17 +307,17 @@ export default function PublicRegister() {
                   </div>
 
                   <div className={styles.rowFieldContainer}>
-                    <div className={styles.formGroup} ref={contactRef}>
+                    {/* <div className={styles.formGroup} ref={contactRef}>
                       <label className={styles.label}>Parent's WhatsApp Contact *</label>
                       <input type="tel" required maxLength="13" className={`${styles.input} ${formError && parentContact.length !== 13 ? styles.inputError : ""}`} placeholder="+254748660944" value={parentContact} onChange={(e) => { const v = e.target.value.replace(/[^\d+]/g,""); if (v.length <= 13) setParentContact(v); }} disabled={loading} />
-                    </div>
+                    </div> */}
                     <div className={styles.formGroup} ref={emailRef}>
                       <label className={styles.label}>Parent's Email Address *</label>
                       <input type="email" required className={`${styles.input} ${formError && !parentEmail.trim() ? styles.inputError : ""}`} placeholder="e.g. vansh.patel@gmail.com" value={parentEmail} onChange={(e) => setParentEmail(e.target.value)} disabled={loading} />
                     </div>
                   </div>
 
-                  <div className={styles.formGroupFull} ref={photoRef}>
+                  {/* <div className={styles.formGroupFull} ref={photoRef}>
                     <label className={styles.label}>Profile Picture (Clear Passport Style Shot) *</label>
                     <div className={styles.photoUploadWrapper}>
                       <input type="file" required accept="image/jpeg,image/png,image/webp" id="public-photo" className={styles.fileInputHidden} onChange={handlePhotoChange} disabled={loading} />
@@ -336,7 +325,7 @@ export default function PublicRegister() {
                       {photoPreview && <img src={photoPreview} alt="Preview" className={styles.inputThumbPreview} />}
                       <span className={styles.fileHint}>Required: Size must be under 2.5MB (JPG, PNG, WEBP)</span>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div className={styles.termsSection}>
                     <div className={styles.checkboxWrapper}>
@@ -348,11 +337,12 @@ export default function PublicRegister() {
                     <div className={styles.termsDisplayBox}>
                       <p className={styles.termsHeading}>Terms and Conditions:</p>
                       <ul className={styles.termsList}>
-                        <li>Registration is open to children aged 3 to 18 years only.</li>
+                        <li>Registration is open to children from Grades 1 to 8.</li>
                         <li>A clear, recent passport-style photograph is required for identification.</li>
                         <li>All information provided must be accurate; incorrect details may delay registration.</li>
                         <li>Your data is used solely for organizing the Bal-Balika Shibir event.</li>
                         <li>By registering, you consent to receive communication regarding Shibir updates.</li>
+                        <li>By filling this form, you are allowing your child to attend this event, and the organizers are not responsible for any mishaps</li>
                       </ul>
                     </div>
                   </div>
