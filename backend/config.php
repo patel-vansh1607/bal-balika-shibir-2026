@@ -12,7 +12,7 @@ define('DB_PASS', 'THISDAY2027willbegreat');
 define('DB_CHARSET', 'utf8mb4');
 
 // --- Resend Email API ---
-define('RESEND_API_KEY', 're_YOUR_RESEND_API_KEY_HERE');
+define('RESEND_API_KEY', 're_h4T777hm_3G8cSFFK7LScKCZYkK21SDBp');
 
 // --- JWT ---
 define('JWT_SECRET', 'mtrc-riftkoders-2026-j8xK!vPqLnZ#mR3wA9dYeT5sUhCbFoG');

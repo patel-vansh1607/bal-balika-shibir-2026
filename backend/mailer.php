@@ -23,8 +23,7 @@ function smtp_send(string $to, string $toName, string $subject, string $htmlBody
     }
 
     $fromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : 'Bal-Balika Shibir';
-    // FROM must be a verified Resend domain — update this address in config if needed
-    $fromAddr = defined('SMTP_USER') ? SMTP_USER : 'noreply@riftkoders.com';
+    $fromAddr = 'registration@mtrc2026.site';
 
     $payload = json_encode([
         'from'    => "$fromName <$fromAddr>",
