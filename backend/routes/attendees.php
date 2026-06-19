@@ -107,15 +107,14 @@ function attendees_create(): void {
         return;
     }
 
-    // Generate member_id
-    $prefixes = REGION_PREFIXES;
-    $prefix   = $prefixes[$region] ?? 'MTRC-';
-    $stmt     = $db->prepare('SELECT COUNT(*) as cnt FROM attendees WHERE member_id LIKE ?');
-    $stmt->execute([$prefix . '%']);
-    $count     = (int)$stmt->fetch()['cnt'];
-    $member_id = $prefix . str_pad((string)($count + 1), 4, '0', STR_PAD_LEFT);
-
-    $id_str = generate_uuid();
+    // Generate member_id using MAX to avoid duplicates when records have been deleted
+    $prefixes  = REGION_PREFIXES;
+    $prefix    = $prefixes[$region] ?? 'MTRC-';
+    $prefixLen = strlen($prefix) + 1; // SUBSTRING is 1-indexed
+    $stmt      = $db->prepare('SELECT MAX(CAST(SUBSTRING(member_id, ?) AS UNSIGNED)) as max_num FROM attendees WHERE member_id LIKE ?');
+    $stmt->execute([$prefixLen, $prefix . '%']);
+    $maxNum    = (int)($stmt->fetch()['max_num'] ?? 0);
+    $member_id = $prefix . str_pad((string)($maxNum + 1), 4, '0', STR_PAD_LEFT);
 
     $stmt = $db->prepare('
         INSERT INTO attendees (name, age, center, parent_contact, parent_email, status, gender, region, member_id)
