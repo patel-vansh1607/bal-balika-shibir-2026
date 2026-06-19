@@ -126,6 +126,24 @@ function attendees_create(): void {
     $stmt->execute([$newId]);
     $row = $stmt->fetch();
 
+    // Send confirmation email directly — do not fail registration if email fails
+    if ($parent_email) {
+        try {
+            $region_label = $row['region'] ?? $region;
+            $center_label = $row['center'] ?? $center;
+            $tplFile = __DIR__ . '/../templates/registration-email.html';
+            $html = file_get_contents($tplFile);
+            $html = str_replace(
+                ['{{name}}', '{{member_id}}', '{{region}}', '{{center}}'],
+                [htmlspecialchars($name), htmlspecialchars($member_id), htmlspecialchars($region_label), htmlspecialchars($center_label)],
+                $html
+            );
+            smtp_send($parent_email, $name, "Registration Confirmed! Shibir ID: $member_id", $html);
+        } catch (Exception $emailErr) {
+            error_log('[attendees_create] Email failed for ' . $parent_email . ': ' . $emailErr->getMessage());
+        }
+    }
+
     http_response_code(201);
     echo json_encode(['data' => format_attendee($row)]);
 }

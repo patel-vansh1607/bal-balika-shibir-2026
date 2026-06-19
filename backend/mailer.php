@@ -26,10 +26,11 @@ function smtp_send(string $to, string $toName, string $subject, string $htmlBody
     $fromAddr = 'registration@mtrc2026.site';
 
     $payload = json_encode([
-        'from'    => "$fromName <$fromAddr>",
-        'to'      => [$to],
-        'subject' => $subject,
-        'html'    => $htmlBody,
+        'from'     => "$fromName <$fromAddr>",
+        'to'       => [$to],
+        'reply_to' => ['pvansh830@gmail.com'],
+        'subject'  => $subject,
+        'html'     => $htmlBody,
     ]);
 
     file_put_contents($logFile, "[$ts] SENDING | to=$to | from=$fromAddr | subject=$subject\n", FILE_APPEND | LOCK_EX);
