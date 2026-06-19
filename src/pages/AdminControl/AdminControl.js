@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { userRoles, email as emailApi } from '../../apiClient';
+import { userRoles } from '../../apiClient';
 import { FaUserShield, FaSpinner, FaPlus, FaTimes, FaCheckCircle } from 'react-icons/fa';
 import styles from './AdminControl.module.css';
 
