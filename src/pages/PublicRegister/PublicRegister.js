@@ -344,11 +344,12 @@ const handleSubmit = async (e) => {
                     <div className={styles.termsDisplayBox}>
                       <p className={styles.termsHeading}>Terms and Conditions:</p>
                       <ul className={styles.termsList}>
-                        <li>Registration is open to children from Grades 1 to 8.</li>
+                        <li>Registration is open to children from Grades 3 to 8.</li>
                         <li>All information provided must be accurate; incorrect details may delay registration.</li>
                         <li>Your data is used solely for the Bal-Balika Shibir.</li>
                         <li>By registering, you consent to receive communications/updates in regards to the Shibir.</li>
-                        <li>By filling this form, you are allowing your child to attend this event, and the organizers are not responsible for any mishaps.</li>
+                        <li>By filling this form, you are allowing your child to attend this event.</li>
+                        <li>The organizers are not liable for any injuries, damages, or losses incurred during the event. Participation is at the attendee's own discretion.</li>
                       </ul>
                     </div>
                   </div>
