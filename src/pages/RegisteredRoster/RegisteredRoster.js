@@ -162,8 +162,6 @@ export default function RegisteredRoster({
     switch (g) {
       case "Balak":    return styles.tagBalak;
       case "Balika":   return styles.tagBalika;
-      case "Shishu":   return styles.tagShishu;
-      case "Shishika": return styles.tagShishika;
       default:         return styles.tagBalak;
     }
   };
@@ -174,8 +172,8 @@ export default function RegisteredRoster({
         <div className={styles.statCard}><div className={styles.statLabel}>Total Registered</div><p className={styles.statValue}>{filteredAttendees.length}</p></div>
         <div className={styles.statCard}><div className={styles.statLabel} style={{ color:"#2b6cb0" }}>Balak</div><p className={styles.statValue} style={{ color:"#2b6cb0" }}>{filteredAttendees.filter((a)=>a.gender==="Balak").length}</p></div>
         <div className={styles.statCard}><div className={styles.statLabel} style={{ color:"#c53030" }}>Balika</div><p className={styles.statValue} style={{ color:"#c53030" }}>{filteredAttendees.filter((a)=>a.gender==="Balika").length}</p></div>
-        <div className={styles.statCard}><div className={styles.statLabel} style={{ color:"#319795" }}>Shishu</div><p className={styles.statValue} style={{ color:"#319795" }}>{filteredAttendees.filter((a)=>a.gender==="Shishu").length}</p></div>
-        <div className={styles.statCard}><div className={styles.statLabel} style={{ color:"#b7791f" }}>Shishika</div><p className={styles.statValue} style={{ color:"#b7791f" }}>{filteredAttendees.filter((a)=>a.gender==="Shishika").length}</p></div>
+        {/* <div className={styles.statCard}><div className={styles.statLabel} style={{ color:"#319795" }}>Shishu</div><p className={styles.statValue} style={{ color:"#319795" }}>{filteredAttendees.filter((a)=>a.gender==="Shishu").length}</p></div>
+        <div className={styles.statCard}><div className={styles.statLabel} style={{ color:"#b7791f" }}>Shishika</div><p className={styles.statValue} style={{ color:"#b7791f" }}>{filteredAttendees.filter((a)=>a.gender==="Shishika").length}</p></div> */}
       </section>
 
       <div className={styles.contentCard} style={{ marginBottom:"24px",padding:"20px" }}>
@@ -197,8 +195,8 @@ export default function RegisteredRoster({
                 <option value="All">All Mandals</option>
                 <option value="Balak">Balak</option>
                 <option value="Balika">Balika</option>
-                <option value="Shishu">Shishu</option>
-                <option value="Shishika">Shishika</option>
+                {/* <option value="Shishu">Shishu</option>
+                <option value="Shishika">Shishika</option> */}
               </select>
             </div>
             <button onClick={exportToCSV} className={styles.exportBtn} disabled={isExporting}>
