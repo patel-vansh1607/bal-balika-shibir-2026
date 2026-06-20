@@ -347,7 +347,7 @@ const handleSubmit = async (e) => {
                         <li>Registration is open to children from Grades 1 to 8.</li>
                         <li>All information provided must be accurate; incorrect details may delay registration.</li>
                         <li>Your data is used solely for the Bal-Balika Shibir.</li>
-                        <li>By registering, you consent to receive communication/updates regarding Shibir.</li>
+                        <li>By registering, you consent to receive communications/updates in regards to the Shibir.</li>
                         <li>By filling this form, you are allowing your child to attend this event, and the organizers are not responsible for any mishaps.</li>
                       </ul>
                     </div>
