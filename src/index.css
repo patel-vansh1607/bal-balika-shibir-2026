@@ -15,11 +15,20 @@
   font-weight: 700;
   font-style: normal;
 }
-
+@font-face {
+  font-family:'Milky Coffee' ;
+  src: url('./assets/fonts/MilkyCoffee.ttf');
+}
+@font-face {
+  font-family:'Nunito' ;
+  src: url('./assets/fonts/NunitoSemiBold.ttf');
+}
 :root {
   /* Update this variable to point to your new local font-family name */
   --font-display: 'Arima Madurai Local', serif;
   --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-mainbrand: 'Milky Coffee', sans-serif;
+  --font-subbrand: 'Nunito', sans-serif ;
   
   /* Soft, organic palette inspired by baps.org */
   --bg-main: #fcfbfa;       /* Very soft cream background */

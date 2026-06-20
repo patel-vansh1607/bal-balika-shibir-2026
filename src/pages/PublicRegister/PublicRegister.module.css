@@ -5,6 +5,7 @@
   max-width: 1400px; /* Expanded layout container width to hold horizontal flows safely */
   margin: 0 auto;
   padding: 40px 20px;
+  background-color: #e2f0fb;
   font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
 }
 
@@ -14,19 +15,21 @@
 }
 
 .publicHeader h1 {
-  font-family: var(--font-display, inherit);
-  color: #1a1a1a;
-  font-size: 32px;
+  font-family: var( --font-mainbrand, inherit);
+  color: #d73585;
+  font-size: 45px;
   margin: 0 0 8px 0;
   font-weight: 700;
 }
 
 .publicHeader p {
-  color: #666;
+    font-family: var( --font-subbrand, inherit);
+  color: #24316b;
   margin: 0;
-  font-size: 16px;
+  font-size: 20px;
+  text-transform: uppercase;
 }
-
+d73585
 .containerSplit {
   display: flex;
   gap: 32px;
@@ -207,7 +210,7 @@ display: flex;
    5. BUTTON CORES
    ========================================================================== */
 .submitBtn {
-  background-color: #8a151b;
+  background-color: #ffd33f;
   color: #ffffff;
   border: none;
   font-weight: 600;
@@ -225,7 +228,7 @@ display: flex;
 }
 
 .submitBtn:hover {
-  background-color: #721116;
+  background-color: #e9d592;
   transform: translateY(-1px);
 }
 
@@ -398,6 +401,7 @@ display: flex;
 .spin {
   animation: spin 1s linear infinite;
 }
+
 
 @keyframes spin {
   from { transform: rotate(0deg); }
