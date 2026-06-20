@@ -201,8 +201,8 @@ const handleSubmit = async (e) => {
   return (
     <div className={styles.publicWrapper}>
       <header className={styles.publicHeader}>
-        <h1><span>Making the </span>Right Choices</h1>
-        <p>Bal-Balika Shibir, Africa - 2026</p>
+        <h1>Making the Right Choices</h1>
+        <p>Bal-Balika Shibir Africa 2026</p>
       </header>
 
       <div className={styles.containerSingle}>
@@ -355,19 +355,8 @@ const handleSubmit = async (e) => {
                 </div>
 
                 <button type="submit" className={styles.submitBtn} disabled={loading}>
-{loading ? (
-    <>
-      {/* Inline style forces the spinner to be black */}
-      <FaSpinner className="spin" style={{ color: 'black' }} /> 
-      <span style={{ color: 'black' }}>Registering...</span>
-    </>
-  ) : (
-    <>
-      {/* Inline style forces the icon to be black */}
-      <FaUserPlus style={{ color: 'black' }} /> 
-      <span style={{ color: 'black' }}>Complete Registration</span>
-    </>
-  )}                </button>
+                  {loading ? <><FaSpinner className={styles.spin} /> Registering...</> : <><FaUserPlus /> Complete Registration</>}
+                </button>
               </form>
             </>
           )}
