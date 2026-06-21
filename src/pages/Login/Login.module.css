@@ -143,7 +143,7 @@
    SUBMIT BUTTON & SPINNERS
    ========================================================================== */
 .submitBtn {
-  background-color: var(--accent-primary);
+  background-color: #e78524;
   color: #ffffff;
   font-family: var(--font-sans);
   font-weight: 700;
@@ -157,7 +157,8 @@
 }
 
 .submitBtn:hover {
-  opacity: 0.95;
+  background-color: #d6a265;
+  transform: translateY(-1px);
 }
 
 .submitBtn:disabled {
