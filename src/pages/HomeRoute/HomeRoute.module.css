@@ -1,7 +1,7 @@
 /* src/routes/HomeRoute.module.css */
 
 .container {
-  background-color: #e2f0fb;
+  background-color: var(--color-offwhite);
   height: 100vh;
   overflow: hidden;
   padding: 20px;
@@ -59,21 +59,38 @@
 
 .ctaWrapper {
   margin-top: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 .registerBtn {
   background-color: #e78524;
   color: white;
   padding: 18px 50px;
-  border-radius: 10px;
+  border-radius: 50px; /* More rounded looks more friendly */
   font-size: 1.2rem;
   font-weight: 700;
   text-decoration: none;
   display: inline-block;
-  box-shadow: 0 4px 15px rgba(231, 133, 36, 0.3);
-  transition: background-color 0.3s;
+  
+  /* Initial Glow Effect */
+  box-shadow: 0 0 15px #e78524, 0 0 30px #e78524;
+  
+  /* Smooth animation */
+  transition: all 0.3s ease;
+  animation: pulse-glow 2s infinite;
 }
 
 .registerBtn:hover {
-  background-color: #8f4700;
+  background-color: #ff9d3d;
+  transform: scale(1.05); /* Slightly bigger on hover */
+  box-shadow: 0 0 25px #e78524, 0 0 50px #e78524;
+  animation: none; /* Stop pulsing on hover so it stays bright */
+}
+
+/* The pulsing animation */
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 10px #e78524; }
+  50% { box-shadow: 0 0 25px #e78524, 0 0 40px #e78524; }
+  100% { box-shadow: 0 0 10px #e78524; }
 }
