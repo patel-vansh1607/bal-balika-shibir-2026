@@ -201,7 +201,7 @@ const handleSubmit = async (e) => {
   return (
     <div className={styles.publicWrapper}>
       <header className={styles.publicHeader}>
-        <h1><span>Making the </span>Right Choices</h1>
+        <h1>Making the Right Choices</h1>
         <p>Bal-Balika Shibir, Africa - 2026</p>
       </header>
 
@@ -344,11 +344,12 @@ const handleSubmit = async (e) => {
                     <div className={styles.termsDisplayBox}>
                       <p className={styles.termsHeading}>Terms and Conditions:</p>
                       <ul className={styles.termsList}>
-                        <li>Registration is open to children from Grades 1 to 8.</li>
+                        <li>Registration is open to children from Grades 3 to 8.</li>
                         <li>All information provided must be accurate; incorrect details may delay registration.</li>
                         <li>Your data is used solely for the Bal-Balika Shibir.</li>
                         <li>By registering, you consent to receive communications/updates in regards to the Shibir.</li>
-                        <li>By filling this form, you are allowing your child to attend this event, and the organizers are not responsible for any mishaps.</li>
+                        <li>By filling this form, you are allowing your child to attend this event.</li>
+                        <li>The organizers are not liable for any injuries, damages, or losses incurred during the event. Participation is at the attendee's own discretion.</li>
                       </ul>
                     </div>
                   </div>
@@ -358,14 +359,14 @@ const handleSubmit = async (e) => {
 {loading ? (
     <>
       {/* Inline style forces the spinner to be black */}
-      <FaSpinner className="spin" style={{ color: 'black' }} /> 
-      <span style={{ color: 'black' }}>Registering...</span>
+      <FaSpinner className="spin" style={{ color: '#1b1b1b' }} /> 
+      <span style={{ color: '#1b1b1b' }}>Registering...</span>
     </>
   ) : (
     <>
       {/* Inline style forces the icon to be black */}
-      <FaUserPlus style={{ color: 'black' }} /> 
-      <span style={{ color: 'black' }}>Complete Registration</span>
+      <FaUserPlus style={{ color: '#1b1b1b' }} /> 
+      <span style={{ color: '#1b1b1b' }}>Complete Registration</span>
     </>
   )}                </button>
               </form>

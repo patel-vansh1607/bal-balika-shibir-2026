@@ -4,6 +4,7 @@ import { auth } from "../../apiClient";
 import { useAuth } from "../../context/AuthContext";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import styles from "./Login.module.css";
+import { ReactComponent as Logo } from '../../assets/images/Making the Right Choices - Logo_ColorScalable.svg'
 
 export default function Login() {
   const [email, setEmail]               = useState("");
@@ -33,15 +34,25 @@ export default function Login() {
     <div className={styles.wrapper}>
       <div className={styles.card}>
         <div className={styles.headerGroup}>
-          <div className={styles.container}>
-            <img
-              src="https://res.cloudinary.com/dxgkcyfrl/image/upload/v1780507737/BAPS_Aksharderi_Transperent_PNG_o9ldiv.png"
-              className={styles.shieldIcon}
-              alt="BAPS Aksharderi Logo"
-            />
-          </div>
-          <h2 className={styles.title}>Bal Balika Shibir Africa</h2>
-          <p className={styles.subtitle}>Attendance Management System</p>
+              <div className={styles.container}>
+      <section className={styles.brandingSection}>
+        {/* Logo inserted here */}
+        <div className={styles.logoContainer}>
+          <Logo className={styles.logo} />
+        </div>
+
+<header className={styles.publicHeader}>
+  <h1>Making the Right Choices</h1>
+  <h2>Bal-Balika Shibir, Africa - 2026</h2>
+  
+  {/* Divider added here */}
+  <div className={styles.divider} />
+  
+  <p className={styles.p1}>Attendance Management System</p>
+</header>
+      </section>
+    </div>
+
         </div>
 
         {errorMsg && (

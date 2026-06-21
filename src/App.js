@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard/Dashboard';
 import PublicRegister from './pages/PublicRegister/PublicRegister';
 import SelectRegion from './pages/SelectRegion/SelectRegion';
 import NotFound from './pages/NotFound/NotFound';
+import HomeRoute from './pages/HomeRoute/HomeRoute';
 
 export default function App() {
   const [isMaintenance, setIsMaintenance] = useState(false);
@@ -23,7 +24,8 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path='/' element={<HomeRoute />}/>
+        <Route path="/admin" element={<Login />} />
         <Route 
           path="/dashboard/*" 
           element={

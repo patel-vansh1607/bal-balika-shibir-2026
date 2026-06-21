@@ -29,7 +29,6 @@
   font-size: 20px;
   text-transform: uppercase;
 }
-d73585
 .containerSplit {
   display: flex;
   gap: 32px;
@@ -210,7 +209,7 @@ display: flex;
    5. BUTTON CORES
    ========================================================================== */
 .submitBtn {
-  background-color: #ffd33f;
+  background-color: #e78524;
   color: #ffffff;
   border: none;
   font-weight: 600;
@@ -228,7 +227,7 @@ display: flex;
 }
 
 .submitBtn:hover {
-  background-color: #e9d592;
+  background-color: #d6a265;
   transform: translateY(-1px);
 }
 
@@ -436,6 +435,12 @@ display: flex;
   .badgeWrapper {
     width: 100%;
   }
+  .publicHeader h1 {
+    font-size: 30px;
+  }
+  .publicHeader p{
+    font-size: 15px;
+  }
 }
 
 /* ==========================================================================
@@ -610,7 +615,7 @@ display: flex;
   background: #f1f3f4;
   padding: 15px;
   border-radius: 8px;
-  border-left: 4px solid #1a73e8; /* Highlights the section */
+  border-left: 4px solid #e78524; /* Highlights the section */
   font-size: 13px;
   color: #3c4043;
 }

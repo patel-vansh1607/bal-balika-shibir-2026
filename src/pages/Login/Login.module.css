@@ -15,7 +15,7 @@
   border-radius: 16px;
   width: 100%;
   max-width: 420px;
-  padding: 40px 32px;
+  padding: 25px 32px;
   box-shadow: 0 10px 30px rgba(138, 21, 27, 0.03);
   box-sizing: border-box;
 }
@@ -225,4 +225,57 @@
   object-fit: contain;  /* Ensures the transparent PNG does not distort */
   display: inline-block;
   vertical-align: middle;
+}
+
+.publicHeader {
+  text-align: center;
+}
+
+.publicHeader h1 {
+  font-family: var(--font-mainbrand, serif);
+  color: #d73585;
+  font-size: 30px;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.publicHeader h2 {
+  font-family: var(--font-subbrand, sans-serif);
+  color: #24316b;
+  margin: 0;
+  font-size: 17px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.logo {
+  width: 100%;
+  max-width: 115px;
+  max-height: 30vh;
+  height: auto;
+  fill: var(--color-navy);
+}
+.publicHeader p {
+  font-family: var(--font-subbrand, sans-serif);
+  color: #24316b;
+  margin: 15px 0 0 0; /* Added top margin to separate from the line above */
+  font-size: 17px;
+  letter-spacing: 1px;
+}
+/* src/routes/HomeRoute.module.css */
+
+.divider {
+  width: 100%;
+  max-width: 400px;
+  height: 2px; /* Keeps the line thickness sharp */
+  margin: 25px auto;
+  
+  /* Creates the fade effect from transparent -> #24316b (your navy) -> transparent */
+  background: linear-gradient(
+    90deg, 
+    transparent 0%, 
+    #24316b 50%, 
+    transparent 100%
+  );
+  border: none;
 }
