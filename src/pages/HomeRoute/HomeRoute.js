@@ -1,7 +1,7 @@
 // src/routes/HomeRoute.js
 import React from 'react';
 import styles from './HomeRoute.module.css';
-import LogoImage from '../../assets/images/MTRC.png';
+import LogoImage from '../../assets/images/MTRC_NEW_Color.svg';
 
 const HomeRoute = () => {
   return (
