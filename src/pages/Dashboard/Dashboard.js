@@ -89,10 +89,21 @@ export default function Dashboard() {
   }, [loading, regionScope, fetchIsolatedDataset]);
 
   const handleLogout = async () => {
-    setIsLoggingOut(true);
-    logout();
-    navigate("/");
-  };
+  setIsLoggingOut(true);
+  try {
+    await logout(); // Ensure this is awaited if it's an async operation
+    // Clear the specific region data if you want a clean slate on next login
+    localStorage.removeItem("selected_shibir_region");
+    localStorage.removeItem("selected_shibir_prefix");
+    
+    // Explicitly navigate to the login route
+    navigate("/admin", { replace: true });
+  } catch (err) {
+    console.error("Logout failed", err);
+  } finally {
+    setIsLoggingOut(false);
+  }
+};
 
   const toggleArchiveStatus = async (attendee, status) => {
     try {
