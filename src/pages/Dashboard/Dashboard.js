@@ -34,6 +34,8 @@ import {
 } from "react-icons/fa";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
+import KarayakarForm from "../KarayakarForm/KarayakarForm";
+import KarayakarList from "../KarayakarList/KarayakarList";
 
 export default function Dashboard() {
   const navigate  = useNavigate();
@@ -158,6 +160,12 @@ export default function Dashboard() {
                 <button onClick={() => handleNavigation("/dashboard/add-new")} className={`${styles.navLink} ${location.pathname === "/dashboard/add-new" ? styles.navLinkActive : ""}`}>
                   <FaUserPlus className={styles.iconMargin} /> Register Attendee
                 </button>
+                <button onClick={() => handleNavigation("/dashboard/roster/karyakar")} className={`${styles.navLink} ${location.pathname === "/dashboard/roster/karyakar" ? styles.navLinkActive : ""}`}>
+                  <FaUsers className={styles.iconMargin} /> Karyakar List
+                </button>
+                <button onClick={() => handleNavigation("/dashboard/add-new-karyakar")} className={`${styles.navLink} ${location.pathname === "/dashboard/add-new-karyakar" ? styles.navLinkActive : ""}`}>
+                  <FaUserPlus className={styles.iconMargin} /> Add Karyakar
+                </button>
                 {userRole === "master_admin" && (
                   <>
                     <button onClick={() => handleNavigation("/dashboard/archive")} className={`${styles.navLink} ${location.pathname === "/dashboard/archive" ? styles.navLinkActive : ""}`}>
@@ -174,6 +182,7 @@ export default function Dashboard() {
                 <button onClick={() => handleNavigation("/dashboard/session/add-session")} className={`${styles.navLink} ${location.pathname === "/dashboard/session/add-session" ? styles.navLinkActive : ""}`}>
                   <IoIosAddCircleOutline className={styles.iconMargin} /> Add Session
                 </button>
+                
               </>
             )}
             {userRole && (
@@ -241,7 +250,10 @@ export default function Dashboard() {
             <Route path="admin-control" element={userRole === "master_admin" ? <AdminControl /> : <NotFound />} />
             <Route path="scanner/:sessionId" element={<CameraRouteWrapper regionScope={regionScope} prefixScope={prefixScope} />} />
             <Route path="roster" element={userRole !== "operator" ? <RegisteredRoster attendees={attendeesList} setAttendees={setAttendeesList} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} /> : <NotFound />} />
-            <Route path="add-new" element={userRole !== "operator" ? <PublicRegister defaultRegion={regionScope !== "All" ? regionScope : ""} /> : <NotFound />} />
+            <Route path="add-new-karyakar" element={userRole !== "operator" ? <KarayakarForm attendees={attendeesList} setAttendees={setAttendeesList} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} /> : <NotFound />} />
+            <Route path="roster" element={userRole !== "operator" ? <RegisteredRoster attendees={attendeesList} setAttendees={setAttendeesList} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} /> : <NotFound />} />
+
+            <Route path="roster/karyakar" element={userRole !== "operator" ? <KarayakarList defaultRegion={regionScope !== "All" ? regionScope : ""} /> : <NotFound />} />
             <Route path="archive" element={userRole === "master_admin" ? <ArchiveManager attendees={attendeesList} toggleArchiveStatus={toggleArchiveStatus} regionScope={regionScope} /> : <NotFound />} />
             <Route path="session/master" element={userRole !== "operator" ? <SessionMasterDashboard activeRegion={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} /> : <NotFound />} />
             <Route path="session/attendance/:sessionId" element={<Sessions regionScope={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} />} />
