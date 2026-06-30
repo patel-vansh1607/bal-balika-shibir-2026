@@ -683,3 +683,24 @@ select:focus,
 .publicWrapper {
   animation: fadeIn 0.8s ease-out forwards;
 }
+
+.formGroupFull {
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+/* Ensure the layout remains consistent with your current row structure */
+.rowFieldContainer {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #dadce0;
+  background: #fff;
+  font-family: 'Poppins', sans-serif;
+}
