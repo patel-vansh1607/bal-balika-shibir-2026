@@ -10,7 +10,7 @@ import {
   FaUserFriends, FaFileExport, FaDownload, FaSpinner, FaArchive,
 } from "react-icons/fa";
 import styles from "./RegisteredRoster.module.css";
-jsPDF.autoTable = autoTable;
+
 
 export default function RegisteredRoster({
   attendees = [], dataFetching = false, regionScope = "All", userRole, setAttendees,
@@ -48,7 +48,99 @@ export default function RegisteredRoster({
       setIsProcessing(false);
     }
   };
+  const handleExportPDF = () => {
+  if (filteredAttendees.length === 0) {
+    alert("No data available to export.");
+    return;
+  }
 
+  const doc = new jsPDF();
+const handleExportPDF = () => {
+  if (filteredAttendees.length === 0) {
+    alert("No data available to export.");
+    return;
+  }
+
+  const doc = new jsPDF();
+
+  // 1. Logo Space (Top Right)
+  // Reserved area: 160x10, 35x35
+  // Add your image here: 
+  // doc.addImage(yourLogoVariable, 'PNG', 160, 10, 35, 35);
+
+  // 2. Title Section (Font: Milky Coffee)
+  // Note: You must add the custom font to jsPDF first using doc.addFileToVFS and doc.addFont
+  doc.setTextColor(42, 52, 107); // 2A346B
+  doc.setFont("MilkyCoffee"); // Ensure this name matches the font added to jsPDF
+  doc.setFontSize(22);
+  doc.text("Making the Right Choices", 15, 25);
+  
+  // 3. Sub-title Section (Font: Nunito)
+  doc.setFont("Nunito"); 
+  doc.setFontSize(14);
+  doc.text("BAL-BALIKA SHIBIR, AFRICA - 2026", 15, 32);
+
+  // 4. Roster Table
+  const tableColumn = ["Member ID", "Name", "Mandal", "Age", "Center", "Contact"];
+  const tableRows = filteredAttendees.map(a => [
+    a.member_id || a.id,
+    a.name || "",
+    a.gender || "",
+    a.age || "",
+    a.center || "",
+    a.parent_contact || ""
+  ]);
+
+  autoTable(doc, {
+    startY: 50, // Pushed down to clear logo space
+    head: [tableColumn],
+    body: tableRows,
+    theme: 'striped',
+    styles: { fontSize: 10, cellPadding: 3, font: "helvetica" }, // Defaulting table to standard font
+    headStyles: { 
+      fillColor: [42, 52, 107], // Dark Blue #2A346B
+      textColor: [255, 255, 255] 
+    },
+    alternateRowStyles: { fillColor: [240, 240, 240] }
+  });
+
+  doc.save(`Shibir_Roster_${regionScope}.pdf`);
+};
+
+  // 2. Title Section (using #2A346B for text contrast)
+  doc.setTextColor(42, 52, 107); // 2A346B
+  doc.setFontSize(20);
+  doc.text("Making the Right Choices", 15, 20);
+  
+  doc.setFontSize(12);
+  doc.text("BAL-BALIKA SHIBIR, AFRICA - 2026", 15, 28);
+
+  // 3. Roster Table with Branding
+  const tableColumn = ["Member ID", "Name", "Mandal", "Age", "Center", "Contact"];
+  const tableRows = filteredAttendees.map(a => [
+    a.member_id || a.id,
+    a.name || "",
+    a.gender || "",
+    a.age || "",
+    a.center || "",
+    a.parent_contact || ""
+  ]);
+
+  autoTable(doc, {
+    startY: 45,
+    head: [tableColumn],
+    body: tableRows,
+    theme: 'striped',
+    styles: { fontSize: 10, cellPadding: 3 },
+    headStyles: { 
+      fillColor: [42, 52, 107], // Dark Blue #2A346B
+      textColor: [255, 255, 255] 
+    },
+    alternateRowStyles: { fillColor: [240, 240, 240] }
+  });
+
+  doc.save(`Shibir_Roster_${regionScope}.pdf`);
+};
   const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;
     setIsDownloadingQR(true);
@@ -208,10 +300,13 @@ export default function RegisteredRoster({
               {isDownloadingQR ? " Generating Zip..." : " Download All QR"}
             </button>
             <div className={styles.btnWrapper}>
-              <span className={styles.comingSoonBadge}>Coming Soon</span>
-              <button onClick={(e) => e.preventDefault()} className={`${styles.pdfBtn} ${styles.disabledBtn}`} disabled={true}>
-                <FaFileExport />{" Export to PDF"}
-              </button>
+<button 
+  type="button" 
+  onClick={handleExportPDF} 
+  className={styles.pdfBtn}
+>
+  <FaFileExport /> Export to PDF
+</button>
             </div>
           </div>
         </div>
