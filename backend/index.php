@@ -83,6 +83,11 @@ switch ($group) {
         handle_email($method, $segments);
         break;
 
+    case 'karayakars':
+        require_once __DIR__ . '/routes/karayakars.php';
+        handle_karayakars($method, $segments);
+        break;
+
     default:
         http_response_code(404);
         echo json_encode(['error' => 'Route not found']);
