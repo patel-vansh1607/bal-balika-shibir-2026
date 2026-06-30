@@ -99,6 +99,8 @@ function attendees_create(): void {
     $status         = $body['status']   ?? 'Pending';
     $gender         = $body['gender']   ?? 'Balak';
     $region         = trim($body['region'] ?? '');
+    $phone_number   = trim($body['phone_number']    ?? '');
+    $tshirt_size    = trim($body['tshirt_size']     ?? '');
 
     if (!$name || !$age || !$center) {
         http_response_code(400);
@@ -116,10 +118,10 @@ function attendees_create(): void {
     $member_id = $prefix . str_pad((string)($maxNum + 1), 4, '0', STR_PAD_LEFT);
 
     $stmt = $db->prepare('
-        INSERT INTO attendees (name, age, center, parent_contact, parent_email, status, gender, region, member_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO attendees (name, age, center, parent_contact, parent_email, status, gender, region, member_id, phone_number, tshirt_size)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ');
-    $stmt->execute([$name, $age, $center, $parent_contact, $parent_email, $status, $gender, $region, $member_id]);
+    $stmt->execute([$name, $age, $center, $parent_contact, $parent_email, $status, $gender, $region, $member_id, $phone_number ?: null, $tshirt_size ?: null]);
     $newId = (int)$db->lastInsertId();
 
     $stmt = $db->prepare('SELECT * FROM attendees WHERE id = ?');
@@ -163,7 +165,7 @@ function attendees_update(string $id): void {
         return;
     }
 
-    $allowed = ['name','age','center','parent_contact','parent_email','status','gender','region','photo_url','qr_code_url','is_archived'];
+    $allowed = ['name','age','center','parent_contact','parent_email','status','gender','region','photo_url','qr_code_url','is_archived','phone_number','tshirt_size'];
     $sets    = [];
     $params  = [];
 
@@ -205,6 +207,8 @@ function format_attendee(array $row): array {
         'region'         => $row['region'],
         'member_id'      => $row['member_id'],
         'is_archived'    => (bool)$row['is_archived'],
+        'phone_number'   => $row['phone_number'],
+        'tshirt_size'    => $row['tshirt_size'],
         'created_at'     => $row['created_at'],
     ];
 }
