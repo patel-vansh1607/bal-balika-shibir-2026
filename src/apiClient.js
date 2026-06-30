@@ -137,6 +137,20 @@ export const email = {
   sendAdminWelcome:  (data) => apiFetch('POST', '/email/send-admin-welcome',  data),
 };
 
+// ---- Karayakars (volunteers) ----
+export const karayakars = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null && v !== ''))
+    ).toString();
+    return apiFetch('GET', `/karayakars${qs ? '?' + qs : ''}`);
+  },
+  get:    (id)       => apiFetch('GET',    `/karayakars/${id}`),
+  create: (data)     => apiFetch('POST',   '/karayakars', data),
+  update: (id, data) => apiFetch('PATCH',  `/karayakars/${id}`, data),
+  remove: (id)       => apiFetch('DELETE', `/karayakars/${id}`),
+};
+
 // Default export for convenience
-const api = { auth, attendees, sessions, sessionLogs, gateLogs, userRoles, upload, email };
+const api = { auth, attendees, sessions, sessionLogs, gateLogs, userRoles, upload, email, karayakars };
 export default api;
