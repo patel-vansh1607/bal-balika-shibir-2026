@@ -282,6 +282,7 @@ const handleExportPDF = () => {
                 <tr>
                   <th>Picture</th><th>Member ID</th><th>Full Name</th><th>Mandal</th>
                   <th>Age</th><th>Center</th><th>Parent Contact</th>
+                  {["Botswana", "South Africa"].includes(regionScope) && <><th>Phone Number</th><th>T-Shirt</th></>}
                   <th style={{ textAlign:"center" }}>Identity Pass</th>
                   {(userRole === "master_admin" || userRole === "super_admin") && <th>Actions</th>}
                 </tr>
@@ -311,6 +312,20 @@ const handleExportPDF = () => {
                           ? <span className={styles.inlineIconFlex}><FaPhoneAlt className={styles.mutedIcon} /> {parentContactDisplay}</span>
                           : <span style={{ color:"var(--text-muted)",fontSize:"12px" }}>N/A</span>}
                       </td>
+                      {["Botswana", "South Africa"].includes(regionScope) && (
+                        <>
+                          <td className={styles.monospaceText}>
+                            {attendee.phone_number
+                              ? <span className={styles.inlineIconFlex}><FaPhoneAlt className={styles.mutedIcon} /> {attendee.phone_number}</span>
+                              : <span style={{ color:"var(--text-muted)",fontSize:"12px" }}>—</span>}
+                          </td>
+                          <td>
+                            {attendee.tshirt_size
+                              ? <span className={styles.badgeGenderTag}>{attendee.tshirt_size}</span>
+                              : <span style={{ color:"var(--text-muted)",fontSize:"12px" }}>—</span>}
+                          </td>
+                        </>
+                      )}
                       <td style={{ textAlign:"center" }}>
                         <button onClick={() => handleOpenQrModal(attendee)} className={styles.viewPassBtn}><FaQrcode style={{ fontSize:"13px" }} /> View QR</button>
                       </td>
