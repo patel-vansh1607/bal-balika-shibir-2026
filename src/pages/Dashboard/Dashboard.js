@@ -19,6 +19,7 @@ import AddSession from "../AddSession/AddSession";
 import Sessions from "../Sessions/Sessions";
 import SessionDataDetails from "../SessionDataDetails/SessionDataDetails";
 import AdminControl from "../AdminControl/AdminControl";
+import PublicRegister from "../PublicRegister/PublicRegister";
 import {
   FaChartBar,
   FaSignOutAlt,
@@ -241,7 +242,7 @@ export default function Dashboard() {
             <Route path="admin-control" element={userRole === "master_admin" ? <AdminControl /> : <NotFound />} />
             <Route path="scanner/:sessionId" element={<CameraRouteWrapper regionScope={regionScope} prefixScope={prefixScope} />} />
             <Route path="roster" element={userRole !== "operator" ? <RegisteredRoster attendees={attendeesList} setAttendees={setAttendeesList} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} /> : <NotFound />} />
-            <Route path="add-new" element={userRole !== "operator" ? <AddAttendee /> : <NotFound />} />
+            <Route path="add-new" element={userRole !== "operator" ? <PublicRegister /> : <NotFound />} />
             <Route path="add-new-karyakar" element={userRole !== "operator" ? <KarayakarForm /> : <NotFound />} />
 
             <Route path="roster/karyakar" element={userRole !== "operator" ? <KarayakarList defaultRegion={regionScope !== "All" ? regionScope : ""} /> : <NotFound />} />
