@@ -1,45 +1,46 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { FaUndo, FaSearch, FaArchive, FaSpinner } from "react-icons/fa";
+import { attendees as attendeesApi } from "../../apiClient";
 import styles from "./ArchiveManager.module.css";
 
-export default function ArchiveManager({ attendees, toggleArchiveStatus }) {
-  const [searchTerm, setSearchTerm] = useState("");
+export default function ArchiveManager({ regionScope }) {
+  const [searchTerm, setSearchTerm]     = useState("");
   const [confirmAction, setConfirmAction] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [localRecords, setLocalRecords] = useState([]);
+  const [records, setRecords]           = useState([]);
+  const [loading, setLoading]           = useState(true);
 
-  useEffect(() => {
-    if (attendees) {
-      setLocalRecords(attendees);
+  const fetchArchived = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = { archived: 1 };
+      if (regionScope && regionScope !== "All") params.region = regionScope;
+      const { data } = await attendeesApi.list(params);
+      setRecords(data || []);
+    } catch (err) {
+      console.error("Archive fetch failed:", err);
+    } finally {
+      setLoading(false);
     }
-  }, [attendees]);
+  }, [regionScope]);
 
-  const archivedRecords = localRecords.filter(
+  useEffect(() => { fetchArchived(); }, [fetchArchived]);
+
+  const archivedRecords = records.filter(
     (a) =>
-      a.is_archived === true &&
-      (a.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (a.member_id && a.member_id.toString().includes(searchTerm))),
+      a.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.member_id && a.member_id.toString().includes(searchTerm)),
   );
 
   const handleRestore = async () => {
     if (!confirmAction) return;
     setIsProcessing(true);
-
     try {
-      setLocalRecords((prev) =>
-        prev.map((item) =>
-          String(item.id).trim() === String(confirmAction.id).trim()
-            ? { ...item, is_archived: false }
-            : item,
-        ),
-      );
-
-      await toggleArchiveStatus(confirmAction, false);
-
+      await attendeesApi.update(confirmAction._raw_id || parseInt(confirmAction.id, 10), { is_archived: false });
+      setRecords((prev) => prev.filter((item) => item.id !== confirmAction.id));
       setConfirmAction(null);
     } catch (error) {
       console.error("Restoration pipeline failed:", error);
-      setLocalRecords(attendees);
     } finally {
       setIsProcessing(false);
     }
@@ -82,7 +83,13 @@ export default function ArchiveManager({ attendees, toggleArchiveStatus }) {
               </tr>
             </thead>
             <tbody>
-              {archivedRecords.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="4" className={styles.emptyTablePlaceholder}>
+                    <FaSpinner className={styles.spin} /> Loading archived records...
+                  </td>
+                </tr>
+              ) : archivedRecords.length === 0 ? (
                 <tr>
                   <td colSpan="4" className={styles.emptyTablePlaceholder}>
                     No archived record tracks match your search filters.

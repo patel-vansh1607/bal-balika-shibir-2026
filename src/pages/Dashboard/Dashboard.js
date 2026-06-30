@@ -35,6 +35,7 @@ import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
 import KarayakarForm from "../KarayakarForm/KarayakarForm";
 import KarayakarList from "../KarayakarList/KarayakarList";
+import AddAttendee from "../AddAttendee/AddAttendee";
 
 export default function Dashboard() {
   const navigate  = useNavigate();
@@ -105,15 +106,6 @@ export default function Dashboard() {
     setIsLoggingOut(false);
   }
 };
-
-  const toggleArchiveStatus = async (attendee, status) => {
-    try {
-      await attendeesApi.update(attendee._raw_id || parseInt(attendee.id, 10), { is_archived: status });
-      setAttendeesList((prev) => prev.filter((item) => item.id !== attendee.id));
-    } catch (err) {
-      console.error("Error toggling archive status:", err.message);
-    }
-  };
 
   const handleNavigation = (targetPath) => {
     navigate(targetPath);
@@ -249,11 +241,11 @@ export default function Dashboard() {
             <Route path="admin-control" element={userRole === "master_admin" ? <AdminControl /> : <NotFound />} />
             <Route path="scanner/:sessionId" element={<CameraRouteWrapper regionScope={regionScope} prefixScope={prefixScope} />} />
             <Route path="roster" element={userRole !== "operator" ? <RegisteredRoster attendees={attendeesList} setAttendees={setAttendeesList} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} /> : <NotFound />} />
-            <Route path="add-new-karyakar" element={userRole !== "operator" ? <KarayakarForm attendees={attendeesList} setAttendees={setAttendeesList} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} /> : <NotFound />} />
-            <Route path="roster" element={userRole !== "operator" ? <RegisteredRoster attendees={attendeesList} setAttendees={setAttendeesList} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} /> : <NotFound />} />
+            <Route path="add-new" element={userRole !== "operator" ? <AddAttendee /> : <NotFound />} />
+            <Route path="add-new-karyakar" element={userRole !== "operator" ? <KarayakarForm /> : <NotFound />} />
 
             <Route path="roster/karyakar" element={userRole !== "operator" ? <KarayakarList defaultRegion={regionScope !== "All" ? regionScope : ""} /> : <NotFound />} />
-            <Route path="archive" element={userRole === "master_admin" ? <ArchiveManager attendees={attendeesList} toggleArchiveStatus={toggleArchiveStatus} regionScope={regionScope} /> : <NotFound />} />
+            <Route path="archive" element={userRole === "master_admin" ? <ArchiveManager regionScope={regionScope} /> : <NotFound />} />
             <Route path="session/master" element={userRole !== "operator" ? <SessionMasterDashboard activeRegion={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} /> : <NotFound />} />
             <Route path="session/attendance/:sessionId" element={<Sessions regionScope={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} />} />
             <Route path="session/add-session" element={userRole !== "operator" ? <AddSession /> : <NotFound />} />
