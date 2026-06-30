@@ -8,7 +8,6 @@ import {
 } from "react-router-dom";
 import { attendees as attendeesApi } from "../../apiClient";
 import { useAuth } from "../../context/AuthContext";
-import PublicRegister from "../PublicRegister/PublicRegister";
 import OverviewMetrics from "../OverviewMetrics/OverviewMetrics";
 import CameraScanner from "../CameraScanner/CameraScanner";
 import RegisteredRoster from "../RegisteredRoster/RegisteredRoster";

@@ -48,13 +48,6 @@ export default function RegisteredRoster({
       setIsProcessing(false);
     }
   };
-  const handleExportPDF = () => {
-  if (filteredAttendees.length === 0) {
-    alert("No data available to export.");
-    return;
-  }
-
-  const doc = new jsPDF();
 const handleExportPDF = () => {
   if (filteredAttendees.length === 0) {
     alert("No data available to export.");
@@ -97,41 +90,6 @@ const handleExportPDF = () => {
     body: tableRows,
     theme: 'striped',
     styles: { fontSize: 10, cellPadding: 3, font: "helvetica" }, // Defaulting table to standard font
-    headStyles: { 
-      fillColor: [42, 52, 107], // Dark Blue #2A346B
-      textColor: [255, 255, 255] 
-    },
-    alternateRowStyles: { fillColor: [240, 240, 240] }
-  });
-
-  doc.save(`Shibir_Roster_${regionScope}.pdf`);
-};
-
-  // 2. Title Section (using #2A346B for text contrast)
-  doc.setTextColor(42, 52, 107); // 2A346B
-  doc.setFontSize(20);
-  doc.text("Making the Right Choices", 15, 20);
-  
-  doc.setFontSize(12);
-  doc.text("BAL-BALIKA SHIBIR, AFRICA - 2026", 15, 28);
-
-  // 3. Roster Table with Branding
-  const tableColumn = ["Member ID", "Name", "Mandal", "Age", "Center", "Contact"];
-  const tableRows = filteredAttendees.map(a => [
-    a.member_id || a.id,
-    a.name || "",
-    a.gender || "",
-    a.age || "",
-    a.center || "",
-    a.parent_contact || ""
-  ]);
-
-  autoTable(doc, {
-    startY: 45,
-    head: [tableColumn],
-    body: tableRows,
-    theme: 'striped',
-    styles: { fontSize: 10, cellPadding: 3 },
     headStyles: { 
       fillColor: [42, 52, 107], // Dark Blue #2A346B
       textColor: [255, 255, 255] 
