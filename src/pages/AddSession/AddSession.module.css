@@ -72,7 +72,7 @@
 }
 
 .submitBtn {
-  background-color: #8a151b;
+  background-color: #e78524;
   color: #ffffff;
   border: none;
   padding: 12px;
@@ -89,7 +89,7 @@
 }
 
 .submitBtn:hover:not(:disabled) {
-  background-color: #721015;
+  background-color: #e78524;
 }
 
 .submitBtn:disabled {

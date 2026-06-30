@@ -31,11 +31,11 @@
   --font-subbrand: 'Nunito', sans-serif ;
   
   /* Soft, organic palette inspired by baps.org */
-  --bg-main: #fcfbfa;       /* Very soft cream background */
-  --bg-card: #ffffff;       /* Pure white contrast for content cards */
+  --bg-main: #ffffff;       /* Very soft cream background */
+  --bg-card: #fbfced;       /* Pure white contrast for content cards */
   --text-main: #2d2926;     /* Deep charcoal for readable body text */
   --text-muted: #6c635c;    /* Warm gray-brown for metadata labels */
-  --accent-primary: #8a151b; /* Deep Crimson Maroon for primary status/buttons */
+  --accent-primary: #e78524; /* Deep Crimson Maroon for primary status/buttons */
   --accent-soft: #f4ece6;    /* Soft beige/terracotta tint for background boxes */
   --border-light: #e6dfd9;   /* Muted organic border separating items */
 }

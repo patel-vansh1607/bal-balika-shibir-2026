@@ -83,10 +83,10 @@ export default function SelectRegion() {
               onMouseLeave={() => setHoveredRegion(null)}
               className={styles.badgeItem}
             >
-              <span className={styles.badgeText} style={{ color: hoveredRegion === region.id ? "#8a151b" : "#2d2926" }}>
+              <span className={styles.badgeText} style={{ color: hoveredRegion === region.id ? "#e78524" : "#2d2926" }}>
                 {region.name}
               </span>
-              <div className={styles.badgeCircle} style={{ borderColor: hoveredRegion === region.id ? "#8a151b" : "transparent" }}>
+              <div className={styles.badgeCircle} style={{ borderColor: hoveredRegion === region.id ? "#e78524" : "transparent" }}>
                 <img src={region.flagMapUrl} alt={region.name} className={styles.badgeImg} />
               </div>
             </div>
