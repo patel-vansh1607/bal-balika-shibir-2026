@@ -36,7 +36,6 @@ import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
 import KarayakarForm from "../KarayakarForm/KarayakarForm";
 import KarayakarList from "../KarayakarList/KarayakarList";
-import AddAttendee from "../AddAttendee/AddAttendee";
 
 export default function Dashboard() {
   const navigate  = useNavigate();
