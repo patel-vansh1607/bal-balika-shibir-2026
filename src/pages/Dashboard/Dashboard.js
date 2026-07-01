@@ -223,6 +223,8 @@ export default function Dashboard() {
                 <Route path="session/attendance" element="Sessions Attendance" />
                 <Route path="session/attendance/:uuid" element="Mark Attendance" />
                 <Route path="session/master/data/:sessionId" element="Master Data" />
+                <Route path="roster/karyakar" element="Karyakar List" />
+                <Route path="add-new-karyakar" element="Register New Karyakar" />
               </Routes>
             </h2>
           </div>

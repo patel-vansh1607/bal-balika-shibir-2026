@@ -403,3 +403,20 @@
   border-collapse: collapse;
   min-width: 600px; /* Forces safety row metrics alignment to never squeeze text out */
 }
+.formGroup { margin-bottom: 20px; }
+.label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #71717a; margin-bottom: 8px; }
+
+.photoUploadBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border: 2px dashed #e4e4e7;
+  border-radius: 12px;
+  cursor: pointer;
+  color: #a1a1aa;
+  overflow: hidden;
+}
+
+.photoUploadBox:hover { border-color: #8a151b; color: #8a151b; }

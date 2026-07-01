@@ -1,69 +1,70 @@
-.container {
-  max-width: 800px;
-  margin: 20px auto;
-  padding: 20px;
+.container { padding: 20px; }
+
+.filterSelect { margin-bottom: 16px; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e0; }
+
+.tableWrapper { overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+.dataTable { width: 100%; border-collapse: collapse; text-align: left; }
+
+.dataTable th, .dataTable td { padding: 12px 16px; border-bottom: 1px solid #edf2f7; }
+
+.avatarSmall { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+
+.avatarPlaceholderSmall { width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; }
+
+.deleteBtn { background: none; border: none; color: #c53030; cursor: pointer; padding: 6px; }
+
+.deleteBtn:disabled { opacity: 0.5; }
+
+.center { text-align: center; padding: 20px !important; color: #718096; }
+
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+/* Reuse your existing Archive Management CSS architecture */
+
+/* Custom adjustments for the Karyakar list */
+.avatar { 
+  width: 36px; 
+  height: 36px; 
+  border-radius: 50%; 
+  object-fit: cover; 
+  border: 1px solid var(--border-light, #e4e4e7);
 }
 
-.list {
-  display: grid;
-  gap: 12px;
-  margin-top: 20px;
+.avatarPlaceholder { 
+  width: 36px; 
+  height: 36px; 
+  border-radius: 50%; 
+  background: var(--bg-main, #f8f9fa); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  color: #a1a1aa;
 }
 
-.item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-}
-
-.info {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.avatar {
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.avatarPlaceholder {
-  width: 45px;
-  height: 45px;
-  background: #f1f5f9;
-  display: flex;
+.deleteBtn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  color: #94a3b8;
+  background: none;
+  border: none;
+  color: #c53030;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
 
-.name {
-  font-weight: 600;
-  color: #2d2926;
+.deleteBtn:hover {
+  background-color: #fee2e2;
 }
 
-.region {
-  font-size: 12px;
-  color: #718096;
+.deleteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.center {
-  display: flex;
-  justify-content: center;
-  padding: 40px;
-}
-
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
+/* Ensure consistent spacing in cells */
+.dataTable td {
+  vertical-align: middle;
 }

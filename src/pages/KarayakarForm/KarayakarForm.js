@@ -66,64 +66,55 @@ export default function KarayakarForm() {
     }
   };
 
-  return (
-    <div className={styles.container}>
-      <h2>Register Karayakar</h2>
-
-      {error   && <p style={{ color: '#c53030', marginBottom: 12, fontSize: 14 }}>{error}</p>}
-      {success && <p style={{ color: '#276749', marginBottom: 12, fontSize: 14 }}>{success}</p>}
-
-      <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.inputGroup}>
-          <label>Full Name</label>
-          <input
-            required
-            placeholder="Enter full name"
-            value={form.fullName}
-            onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
-          />
+return (
+    <div className={styles.wrapper}>
+      <div className={styles.card}>
+        <div className={styles.headerGroup}>
+          <h2 className={styles.title}>Register Karayakar</h2>
         </div>
 
-        <div className={styles.inputGroup}>
-          <label>Region</label>
-          <select
-            value={form.region}
-            onChange={e => setForm(f => ({ ...f, region: e.target.value, tshirtSize: '' }))}
-          >
-            {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
-        </div>
+        {error && <div className={styles.errorBanner}>{error}</div>}
+        {success && <div className={styles.errorBanner} style={{backgroundColor: '#f0fff4', color: '#276749', borderColor: '#9ae6b4'}}>{success}</div>}
 
-        {needsTshirt && (
-          <div className={styles.inputGroup}>
-            <label>T-Shirt Size</label>
-            <select
-              required
-              value={form.tshirtSize}
-              onChange={e => setForm(f => ({ ...f, tshirtSize: e.target.value }))}
-            >
-              <option value="">Select size</option>
-              {TSHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+        <form onSubmit={handleSubmit} className={styles.formElement}>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Full Name</label>
+            <input className={styles.input} required placeholder="Enter full name" value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Region</label>
+            <select className={styles.input} value={form.region} onChange={e => setForm(f => ({ ...f, region: e.target.value, tshirtSize: '' }))}>
+              {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
-        )}
 
-        <div className={styles.inputGroup}>
-          <label>Profile Photo</label>
-          <div className={styles.photoUpload}>
-            {preview
-              ? <img src={preview} alt="Preview" className={styles.preview} />
-              : <FaUser className={styles.placeholderIcon} />
-            }
-            <input type="file" accept="image/*" onChange={handleFileChange} />
+          {needsTshirt && (
+            <div className={styles.formGroup}>
+              <label className={styles.label}>T-Shirt Size</label>
+              <select className={styles.input} required value={form.tshirtSize} onChange={e => setForm(f => ({ ...f, tshirtSize: e.target.value }))}>
+                <option value="">Select size</option>
+                {TSHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          )}
+
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Profile Photo</label>
+            {/* Wrapper for interaction */}
+            <label className={styles.photoUploadTrigger}>
+              <div className={styles.photoUpload}>
+                {preview ? <img src={preview} alt="Preview" className={styles.preview} /> : <FaUser className={styles.placeholderIcon} />}
+              </div>
+              <span className={styles.uploadText}>Tap to choose image</span>
+              <input type="file" accept="image/*" onChange={handleFileChange} hidden />
+            </label>
           </div>
-        </div>
 
-        <button type="submit" disabled={submitting}>
-          {submitting ? <FaSpinner className={styles.spin} /> : <FaPlus />}
-          {submitting ? ' Submitting...' : ' Register'}
-        </button>
-      </form>
+          <button type="submit" className={styles.submitBtn} disabled={submitting}>
+            {submitting ? <div className={styles.btnLoadingState}><div className={styles.spinner} /> Submitting...</div> : <><FaPlus /> Register</>}
+          </button>
+        </form>
+      </div>
     </div>
-  );
-}
+  );}
