@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaPlus, FaSpinner, FaUser } from 'react-icons/fa';
+import { FaPlus, FaUser } from 'react-icons/fa';
 import { karayakars as karayakarsApi, upload } from '../../apiClient';
 import styles from './KarayakarForm.module.css';
 
