@@ -225,6 +225,7 @@ export default function Dashboard() {
                 <Route path="session/master/data/:sessionId" element="Master Data" />
                 <Route path="roster/karyakar" element="Karyakar List" />
                 <Route path="add-new-karyakar" element="Register New Karyakar" />
+
               </Routes>
             </h2>
           </div>
