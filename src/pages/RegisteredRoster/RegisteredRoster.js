@@ -54,50 +54,65 @@ const handleExportPDF = () => {
     return;
   }
 
-  const doc = new jsPDF();
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-  // 1. Logo Space (Top Right)
-  // Reserved area: 160x10, 35x35
-  // Add your image here: 
-  // doc.addImage(yourLogoVariable, 'PNG', 160, 10, 35, 35);
-
-  // 2. Title Section (Font: Milky Coffee)
-  // Note: You must add the custom font to jsPDF first using doc.addFileToVFS and doc.addFont
-  doc.setTextColor(42, 52, 107); // 2A346B
-  doc.setFont("MilkyCoffee"); // Ensure this name matches the font added to jsPDF
-  doc.setFontSize(22);
-  doc.text("Making the Right Choices", 15, 25);
+  // 1. Sleek Header
+  doc.setFillColor(42, 52, 107);
+  doc.rect(0, 0, 210, 25, 'F');
   
-  // 3. Sub-title Section (Font: Nunito)
-  doc.setFont("Nunito"); 
-  doc.setFontSize(14);
-  doc.text("BAL-BALIKA SHIBIR, AFRICA - 2026", 15, 32);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("BAL-BALIKA SHIBIR 2026", 10, 15);
+  
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(200, 200, 200);
+  doc.text("Attendee Registration List", 10, 21);
 
-  // 4. Roster Table
-  const tableColumn = ["Member ID", "Name", "Mandal", "Age", "Center", "Contact"];
-  const tableRows = filteredAttendees.map(a => [
-    a.member_id || a.id,
-    a.name || "",
-    a.gender || "",
-    a.age || "",
-    a.center || "",
-    a.parent_contact || ""
-  ]);
-
+  // 2. High-End Table Design
   autoTable(doc, {
-    startY: 50, // Pushed down to clear logo space
-    head: [tableColumn],
-    body: tableRows,
-    theme: 'striped',
-    styles: { fontSize: 10, cellPadding: 3, font: "helvetica" }, // Defaulting table to standard font
-    headStyles: { 
-      fillColor: [42, 52, 107], // Dark Blue #2A346B
-      textColor: [255, 255, 255] 
+    startY: 30,
+    head: [["ID", "Name", "Mandal", "Age", "Center", "Contact"]],
+    body: filteredAttendees.map(a => [
+      a.member_id || a.id,
+      a.name || "",
+      a.gender || "",
+      a.age || "",
+      a.center || "",
+      a.parent_contact || ""
+    ]),
+    theme: 'plain', // Removes heavy borders for a cleaner look
+    styles: { 
+      fontSize: 8, 
+      cellPadding: { top: 3, bottom: 3, left: 1, right: 1 },
+      overflow: 'hidden', 
+      valign: 'middle'
     },
-    alternateRowStyles: { fillColor: [240, 240, 240] }
+    headStyles: { 
+      fillColor: [245, 245, 245],
+      textColor: [42, 52, 107],
+      fontStyle: 'bold',
+      borderBottomWidth: 0.5,
+      borderBottomColor: '#2a346b'
+    },
+    columnStyles: {
+      0: { cellWidth: 12 },
+      1: { cellWidth: 'auto' }, 
+      2: { cellWidth: 20 },
+      3: { cellWidth: 12, halign: 'center' },
+      4: { cellWidth: 35 },
+      5: { cellWidth: 30 }
+    },
+    // Adding alternating row colors for readability
+    didParseCell: function(data) {
+      if (data.section === 'body' && data.row.index % 2 === 0) {
+        data.cell.styles.fillColor = [250, 250, 250];
+      }
+    }
   });
 
-  doc.save(`Shibir_Roster_${regionScope}.pdf`);
+  doc.save(`Shibir_Roster_${regionScope || 'General'}.pdf`);
 };
   const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;

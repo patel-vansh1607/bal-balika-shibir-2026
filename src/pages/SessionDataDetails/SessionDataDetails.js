@@ -151,7 +151,7 @@ export default function SessionDataDetails() {
         <div className={styles.headerRight}>
           <button onClick={exportToPDF} disabled={isExporting || fullRoster.length === 0} className={styles.pdfExportButton} style={{ backgroundColor: fullRoster.length === 0 ? "#cccccc" : "#8a151b", cursor: fullRoster.length === 0 ? "not-allowed" : "pointer" }}>
             {isExporting ? <FaSpinner className={styles.spin} /> : <FaFileDownload />}
-            {isGlobal ? "Export Region Audit Report PDF" : "Export Center Ledger PDF"}
+            {isGlobal ? "Export Attendance Report" : "Export Attendance Report"}
           </button>
         </div>
       </div>
