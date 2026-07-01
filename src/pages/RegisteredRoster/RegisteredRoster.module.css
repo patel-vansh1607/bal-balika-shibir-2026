@@ -169,27 +169,27 @@
   cursor: pointer;
 }
 .pdfBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 12px 24px;
-  border-radius: 8px;
+  background-color: #dc0000;
+  color: #ffffff;
+  font-family: var(--font-sans);
   font-weight: 600;
-  font-size: 14px;
-  transition: all 0.2s ease-in-out;
+  font-size: 13.5px;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 8px;
   cursor: pointer;
-  border: 1px solid #1a73e8;
-  background-color: #ffffff;
-  color: #1a73e8;
-  width: 100%;
-  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+   transition: all 0.2s ease;
+
 }
 
 .pdfBtn:hover {
-  background-color: #f1f7ff;
-  border-color: #1557b0;
-  color: #1557b0;
+  border: 2px solid #dc0000; /* Set width, style, and color in one line */
+  background-color: #ffffff;
+  color: #dc0000;
+  cursor: pointer;
 }
 
 .pdfBtn:active {
