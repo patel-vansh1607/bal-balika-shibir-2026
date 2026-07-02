@@ -326,7 +326,7 @@ export default function PublicRegister() {
     }
 
     const needsTshirt =
-      selectedRegion === "Botswana" || selectedRegion === "South Africa";
+      selectedRegion === "Botswana" || selectedRegion === "South Africa" || selectedRegion === "Malawi";
     if (needsTshirt && !tshirtSize) {
       return fail("Please select a T-shirt size.", shirtRef);
     }
@@ -766,7 +766,8 @@ export default function PublicRegister() {
                   </div>
 
                   {(selectedRegion === "Botswana" ||
-                    selectedRegion === "South Africa") && (
+                    selectedRegion === "South Africa" ||
+                    selectedRegion === "Malawi") && (
                     <div className={styles.rowFieldContainer} ref={shirtRef}>
                       <div className={styles.formGroup}>
                         <label className={styles.label}>T-Shirt Size *</label>
