@@ -42,7 +42,7 @@ export default function PublicRegister() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [tshirtSize, setTshirtSize] = useState("");
-  const [photoPreview, setPhotoPreview] = useState("");
+  // const [photoPreview, setPhotoPreview] = useState("");
 
   const phoneRef = useRef(null);
   const shirtRef = useRef(null);
@@ -434,7 +434,7 @@ export default function PublicRegister() {
         setCenterSearchQuery("");
         setParentEmail("");
         setPhotoFile(null);
-        setPhotoPreview("");
+        // setPhotoPreview("");
         setPhoneNumber("");
         setTshirtSize("");
       }, 600);
