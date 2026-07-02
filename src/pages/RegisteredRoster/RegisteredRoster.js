@@ -212,40 +212,37 @@ export default function RegisteredRoster({
     });
   }, [attendees, searchTerm, selectedCenter, selectedGender, showArchived]);
 
-  const exportToCSV = () => {
-    if (filteredAttendees.length === 0) {
-      alert("No matched dataset found to extract.");
-      return;
+const exportToCSV = () => {
+    if (filteredAttendees.length === 0) { 
+      alert("No matched dataset found to extract."); 
+      return; 
     }
     setIsExporting(true);
     try {
-      const isSpecialRegion = ["Botswana", "South Africa"].includes(
-        regionScope,
-      );
-      const headers = [
-        "Member ID",
-        "Full Name",
-        "Mandal",
-        "Age",
-        "Center Branch",
-        "Parent Contact",
-      ];
+      const isSpecialRegion = ["Botswana", "South Africa"].includes(regionScope);
+      
+      // Plain text headers with Serial Number and Country
+      const headers = ["Sr No.", "Member ID", "Full Name", "Mandal", "Age", "Country", "Center Branch", "Parent Contact"];
       if (isSpecialRegion) {
         headers.push("T-Shirt Size");
       }
 
       const csvRows = [
         headers.join(","),
-        ...filteredAttendees.map((row) => {
-          const finalId = row.member_id || row.id;
-          const rawContact = row.parent_contact || "";
+        ...filteredAttendees.map((row, index) => {
+          const finalId      = row.member_id || row.id;
+          const rawContact   = row.parent_contact || "";
           const finalContact = rawContact ? `\t${rawContact}` : "";
+          
+          const attendeeCountry = row.country || row.region || (regionScope !== "All" ? regionScope : "");
 
           const baseFields = [
-            `"${finalId}"`,
-            `"${(row.name || "").replace(/"/g, '""')}"`,
-            `"${row.gender || "Balak"}"`,
-            `"${row.age}"`,
+            `"${index + 1}"`, // Sequential number sequence
+            `"${finalId}"`, 
+            `"${(row.name||"").replace(/"/g,'""')}"`,
+            `"${row.gender||"Balak"}"`, 
+            `"${row.age}"`, 
+            `"${attendeeCountry}"`,
             `"${row.center}"`,
             `"${finalContact}"`,
           ];
@@ -257,25 +254,24 @@ export default function RegisteredRoster({
           return baseFields.join(",");
         }),
       ];
-      const encodedUri = encodeURI(
-        "data:text/csv;charset=utf-8," + csvRows.join("\n"),
-      );
+
+      // Safe Blob delivery to prevent layout file corruption messages on open
+      const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute(
-        "download",
-        `Roster_${(regionScope || "All").replace(/\s+/g, "_")}_${selectedGender || "Export"}.csv`,
-      );
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Roster_${(regionScope||"All").replace(/\s+/g,"_")}_${selectedGender||"Export"}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Export failed", error);
     } finally {
       setIsExporting(false);
     }
   };
-
   const downloadQRImg = async (memberId, userName, storedQrUrl) => {
     setIsDownloadingSingle(true);
     try {
