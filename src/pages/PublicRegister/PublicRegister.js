@@ -32,7 +32,6 @@ export default function PublicRegister() {
   const [centerSearchQuery, setCenterSearchQuery] = useState("");
   const [isCenterDropdownOpen, setIsCenterDropdownOpen] = useState(false);
 
-  const [parentContact, setParentContact] = useState("");
   const [parentEmail, setParentEmail] = useState("");
   const [photoFile, setPhotoFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -43,9 +42,10 @@ export default function PublicRegister() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [tshirtSize, setTshirtSize] = useState("");
+  const [photoPreview, setPhotoPreview] = useState("");
+
   const phoneRef = useRef(null);
   const shirtRef = useRef(null);
-
   const regionRef = useRef(null);
   const centerRef = useRef(null);
   const qrRef = useRef(null);
@@ -54,9 +54,7 @@ export default function PublicRegister() {
   const lastNameRef = useRef(null);
   const ageRef = useRef(null);
   const emailRef = useRef(null);
-  // const photoRef     = useRef(null);
   const genderRef = useRef(null);
-  // const contactRef   = useRef(null);
   const termsRef = useRef(null);
 
   const regionDataset = {
@@ -112,7 +110,7 @@ export default function PublicRegister() {
     Uganda: {
       code: "+256",
       centers: [
-        "Campala",
+        "Kampala",
         "Entebbe",
         "Jinja",
         "Mbarara",
@@ -258,7 +256,10 @@ export default function PublicRegister() {
     setIsRegionDropdownOpen(false);
     setSelectedCenter("");
     setCenterSearchQuery("");
-    setParentContact(regionDataset[clean]?.code || "");
+    setTshirtSize("");
+
+    const countryDialCode = regionDataset[clean]?.code || "";
+    setPhoneNumber(`${countryDialCode} `);
   };
 
   const handleSelectCenter = (centerName) => {
@@ -267,12 +268,34 @@ export default function PublicRegister() {
     setIsCenterDropdownOpen(false);
   };
 
+  const handlePhoneChange = (e) => {
+    const value = e.target.value;
+    const currentCode = selectedRegion
+      ? regionDataset[selectedRegion]?.code || ""
+      : "";
+
+    if (currentCode) {
+      if (!value.startsWith(currentCode)) {
+        setPhoneNumber(`${currentCode} `);
+        return;
+      }
+
+      const remainingPart = value.substring(currentCode.length);
+      const digitsOnly = remainingPart.replace(/\D/g, "");
+      const limitedDigits = digitsOnly.slice(0, 9);
+
+      setPhoneNumber(`${currentCode} ${limitedDigits}`);
+    } else {
+      const digitsOnly = value.replace(/\D/g, "");
+      setPhoneNumber(digitsOnly.slice(0, 15));
+    }
+  };
+
   const validateForm = () => {
     const cf = firstName.trim(),
       cm = middleName.trim(),
       cl = lastName.trim();
-    const cc = parentContact.trim(),
-      ce = parentEmail.trim();
+    const ce = parentEmail.trim();
     const fail = (msg, ref) => {
       setFormError(msg);
       ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -290,29 +313,37 @@ export default function PublicRegister() {
     if (!gender) return fail("Please select a Mandal.", genderRef);
     if (!selectedRegion) return fail("Please select your Country.", regionRef);
     if (!selectedCenter) return fail("Please select your Center.", centerRef);
-    const stripped = cc.replace(/[\s\-()]/g, "");
-    // if (!/^\+[1-9]\d{6,14}$/.test(stripped)) return fail("Invalid phone format (e.g. +254700111222).", contactRef);
+
+    const strippedPhone = phoneNumber ? phoneNumber.replace(/\s/g, "") : "";
+    const currentCode = regionDataset[selectedRegion]?.code || "";
+    const digitsAfterPrefix = strippedPhone.substring(currentCode.length);
+
+    if (digitsAfterPrefix.length !== 9) {
+      return fail(
+        "Phone number must contain exactly 9 digits after the country code prefix.",
+        phoneRef,
+      );
+    }
+
+    const needsTshirt =
+      selectedRegion === "Botswana" || selectedRegion === "South Africa";
+    if (needsTshirt && !tshirtSize) {
+      return fail("Please select a T-shirt size.", shirtRef);
+    }
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ce))
       return fail("Enter a valid email address.", emailRef);
-    // if (!photoFile)      return fail("A portrait photo is mandatory.", photoRef);
     if (!acceptedTerms)
       return fail("Please accept the Terms and Conditions.", termsRef);
-    if (["Botswana", "South Africa"].includes(selectedRegion)) {
-      if (!phoneNumber || phoneNumber.length < 9)
-        return fail("Enter a valid phone number.", phoneRef);
-      if (!tshirtSize) return fail("Please select a T-shirt size.", shirtRef);
-    }
+
     return {
       constructedFullName: `${cf} ${cm} ${cl}`,
       parsedAge: pa,
-      strippedContact: stripped,
+      strippedContact: strippedPhone,
       cleanEmail: ce,
-      extraData: { phoneNumber, tshirtSize }, // Include these in return
     };
   };
-  // Add this temporary placeholder at the top of your component
-  // if you aren't ready to delete all the logic yet:
-  const setPhotoPreview = () => {};
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
@@ -334,7 +365,7 @@ export default function PublicRegister() {
         center: selectedCenter,
         parent_contact: strippedContact,
         parent_email: cleanEmail,
-        phone_number: phoneNumber,
+        phone_number: strippedContact,
         tshirt_size: tshirtSize,
         status: "Pending",
       });
@@ -343,12 +374,10 @@ export default function PublicRegister() {
       const trueMemberId = insertData.member_id;
       setGeneratedQRValue(trueMemberId);
 
-      // Create a safe identifier for filenames
       const cleanName = constructedFullName
         .replace(/[^a-zA-Z0-9]/g, "_")
         .toLowerCase();
 
-      // --- UPDATED: Only process photo if it exists ---
       let profileUrl = null;
       if (photoFile) {
         const ext = photoFile.name.split(".").pop().toLowerCase();
@@ -375,7 +404,6 @@ export default function PublicRegister() {
           qr_code_url: qrUrl,
         });
 
-        // Send confirmation email (non-blocking)
         emailApi
           .sendRegistration({
             email: cleanEmail,
@@ -404,10 +432,11 @@ export default function PublicRegister() {
         setRegionSearchQuery("");
         setSelectedCenter("");
         setCenterSearchQuery("");
-        setParentContact("");
         setParentEmail("");
         setPhotoFile(null);
         setPhotoPreview("");
+        setPhoneNumber("");
+        setTshirtSize("");
       }, 600);
     } catch (uploadErr) {
       setFormError(`Registration failed: ${uploadErr.message}`);
@@ -545,7 +574,6 @@ export default function PublicRegister() {
                       <label className={styles.label}>Middle Name *</label>
                       <input
                         type="text"
-                        required
                         className={`${styles.input} ${formError && !middleName.trim() ? styles.inputError : ""}`}
                         placeholder="e.g. Vimalkumar"
                         value={middleName}
@@ -557,8 +585,7 @@ export default function PublicRegister() {
                       <label className={styles.label}>Last Name *</label>
                       <input
                         type="text"
-                        required
-                        className={`${styles.input} ${formError && !firstName.trim() ? styles.inputError : ""}`}
+                        className={`${styles.input} ${formError && !lastName.trim() ? styles.inputError : ""}`}
                         placeholder="e.g. Patel"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
@@ -572,7 +599,6 @@ export default function PublicRegister() {
                       <label className={styles.label}>Age *</label>
                       <input
                         type="number"
-                        required
                         min="9"
                         max="14"
                         className={`${styles.input} ${formError && !age ? styles.inputError : ""}`}
@@ -586,7 +612,6 @@ export default function PublicRegister() {
                       <label className={styles.label}>Mandal *</label>
                       <select
                         className={`${styles.select} ${formError && !gender ? styles.inputError : ""}`}
-                        required
                         value={gender}
                         onChange={(e) => setGender(e.target.value)}
                         disabled={loading}
@@ -648,6 +673,7 @@ export default function PublicRegister() {
                         )}
                       </div>
                     </div>
+
                     <div className={styles.formGroup} ref={centerRef}>
                       <label className={styles.label}>Center *</label>
                       <div className={styles.searchDropdownContainer}>
@@ -705,26 +731,50 @@ export default function PublicRegister() {
                       </div>
                     </div>
                   </div>
-                  {["Botswana", "South Africa"].includes(selectedRegion) && (
-                    <div className={styles.rowFieldContainer}>
-                      <div className={styles.formGroup} ref={phoneRef}>
-                        <label className={styles.label}>
-                          Parents Mobile Number *
-                        </label>
-                        <input
-                          type="tel"
-                          className={styles.input}
-                          placeholder="e.g. +267 123 4567"
-                          value={phoneNumber}
-                          onChange={(e) => setPhoneNumber(e.target.value)}
-                        />
-                      </div>
-                      <div className={styles.formGroup} ref={shirtRef}>
+
+                  <div className={styles.rowFieldContainer}>
+                    <div className={styles.formGroup} ref={phoneRef}>
+                      <label className={styles.label}>
+                        Parents Mobile Number *
+                      </label>
+                      <input
+                        type="tel"
+                        className={`${styles.input} ${formError && (!phoneNumber.trim() || phoneNumber.replace(/\s/g, "").substring(regionDataset[selectedRegion]?.code?.length || 0).length !== 9) ? styles.inputError : ""}`}
+                        placeholder={
+                          selectedRegion
+                            ? `Enter 9 digits after ${regionDataset[selectedRegion]?.code}`
+                            : "-- Choose Country First --"
+                        }
+                        value={phoneNumber}
+                        onChange={handlePhoneChange}
+                        disabled={loading || !selectedRegion}
+                      />
+                    </div>
+                    <div className={styles.formGroup} ref={emailRef}>
+                      <label className={styles.label}>
+                        Parent's Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        className={`${styles.input} ${formError && !parentEmail.trim() ? styles.inputError : ""}`}
+                        placeholder="e.g. email@example.com"
+                        value={parentEmail}
+                        onChange={(e) => setParentEmail(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  {(selectedRegion === "Botswana" ||
+                    selectedRegion === "South Africa") && (
+                    <div className={styles.rowFieldContainer} ref={shirtRef}>
+                      <div className={styles.formGroup}>
                         <label className={styles.label}>T-Shirt Size *</label>
                         <select
-                          className={styles.select}
+                          className={`${styles.select} ${formError && !tshirtSize ? styles.inputError : ""}`}
                           value={tshirtSize}
                           onChange={(e) => setTshirtSize(e.target.value)}
+                          disabled={loading}
                         >
                           <option value="">Select Size</option>
                           <option value="S">S</option>
@@ -735,38 +785,8 @@ export default function PublicRegister() {
                       </div>
                     </div>
                   )}
-                  <div className={styles.rowFieldContainer}>
-                    {/* <div className={styles.formGroup} ref={contactRef}>
-                      <label className={styles.label}>Parent's WhatsApp Contact *</label>
-                      <input type="tel" required maxLength="13" className={`${styles.input} ${formError && parentContact.length !== 13 ? styles.inputError : ""}`} placeholder="+254748660944" value={parentContact} onChange={(e) => { const v = e.target.value.replace(/[^\d+]/g,""); if (v.length <= 13) setParentContact(v); }} disabled={loading} />
-                    </div> */}
-                    <div className={styles.formGroup} ref={emailRef}>
-                      <label className={styles.label}>
-                        Parent's Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        className={`${styles.input} ${formError && !parentEmail.trim() ? styles.inputError : ""}`}
-                        placeholder="e.g. vansh.patel@gmail.com"
-                        value={parentEmail}
-                        onChange={(e) => setParentEmail(e.target.value)}
-                        disabled={loading}
-                      />
-                    </div>
-                  </div>
 
-                  {/* <div className={styles.formGroupFull} ref={photoRef}>
-                    <label className={styles.label}>Profile Picture (Clear Passport Style Shot) *</label>
-                    <div className={styles.photoUploadWrapper}>
-                      <input type="file" required accept="image/jpeg,image/png,image/webp" id="public-photo" className={styles.fileInputHidden} onChange={handlePhotoChange} disabled={loading} />
-                      <label htmlFor="public-photo" className={`${styles.fileLabelBtn} ${formError && !photoFile ? styles.inputError : ""}`}><FaCamera /> Select Portrait Image *</label>
-                      {photoPreview && <img src={photoPreview} alt="Preview" className={styles.inputThumbPreview} />}
-                      <span className={styles.fileHint}>Required: Size must be under 2.5MB (JPG, PNG, WEBP)</span>
-                    </div>
-                  </div> */}
-
-                  <div className={styles.termsSection}>
+                  <div className={styles.termsSection} ref={termsRef}>
                     <div className={styles.checkboxWrapper}>
                       <label
                         className={styles.termsLabel}
@@ -781,6 +801,7 @@ export default function PublicRegister() {
                           type="checkbox"
                           checked={acceptedTerms}
                           onChange={(e) => setAcceptedTerms(e.target.checked)}
+                          disabled={loading}
                         />
                         <span>
                           I understand and accept the registration terms *
@@ -813,7 +834,6 @@ export default function PublicRegister() {
                         <li>
                           The organizers are not liable for any injuries,
                           damages, or losses incurred during the event.
-                          Participation is at the attendee's own discretion.
                         </li>
                       </ul>
                     </div>
@@ -827,22 +847,20 @@ export default function PublicRegister() {
                 >
                   {loading ? (
                     <>
-                      {/* Inline style forces the spinner to be black */}
                       <FaSpinner
-                        className="spin"
+                        className={styles.spin}
                         style={{ color: "#1b1b1b" }}
                       />
                       <span style={{ color: "#1b1b1b" }}>Registering...</span>
                     </>
                   ) : (
                     <>
-                      {/* Inline style forces the icon to be black */}
                       <FaUserPlus style={{ color: "#1b1b1b" }} />
                       <span style={{ color: "#1b1b1b" }}>
                         Complete Registration
                       </span>
                     </>
-                  )}{" "}
+                  )}
                 </button>
               </form>
             </>
