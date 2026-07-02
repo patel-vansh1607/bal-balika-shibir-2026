@@ -68,100 +68,122 @@ export default function RegisteredRoster({
     }
   };
 
-  const handleExportPDF = () => {
-    if (filteredAttendees.length === 0) {
-      alert("No data available to export.");
-      return;
+const handleExportPDF = (currentCountry = "All", currentCenter = "All", currentMandal = "All") => {
+  if (filteredAttendees.length === 0) {
+    alert("No data available to export based on current filters.");
+    return;
+  }
+
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const isSpecialRegion = ["Botswana", "South Africa"].includes(regionScope);
+
+  // Added "Age" explicitly into the structural headers layout configuration
+  const headers = isSpecialRegion
+    ? [["Sr No.", "Member ID", "Full Name", "Mandal", "Age", "Country", "Center Branch", "Parent Contact", "T-Shirt"]]
+    : [["Sr No.", "Member ID", "Full Name", "Mandal", "Age", "Country", "Center Branch", "Parent Contact"]];
+
+  // Added a.age to match the header index arrays layout structure perfectly
+  const bodyData = filteredAttendees.map((a, index) => {
+    const baseRow = [
+      String(index + 1),
+      a.member_id || `MTRC-${a.id}`,
+      a.name || "",
+      a.gender || "Balak",
+      a.age || "—",
+      a.country || a.region || "Kenya",
+      a.center || "",
+      a.parent_contact || "",
+    ];
+    if (isSpecialRegion) {
+      baseRow.push(a.tshirt_size || "");
     }
+    return baseRow;
+  });
 
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
-
-    // 1. Sleek Header
-    doc.setFillColor(42, 52, 107);
-    doc.rect(0, 0, 210, 25, "F");
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("BAL-BALIKA SHIBIR 2026", 10, 15);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(200, 200, 200);
-    doc.text("Attendee Registration List", 10, 21);
-
-    // Dynamic configuration based on Region
-    const isSpecialRegion = ["Botswana", "South Africa"].includes(regionScope);
-    const headers = isSpecialRegion
-      ? [["ID", "Name", "Mandal", "Age", "Center", "Contact", "T-Shirt"]]
-      : [["ID", "Name", "Mandal", "Age", "Center", "Contact"]];
-
-    const bodyData = filteredAttendees.map((a) => {
-      const baseRow = [
-        a.member_id || a.id,
-        a.name || "",
-        a.gender || "",
-        a.age || "",
-        a.center || "",
-        a.parent_contact || "",
-      ];
-      if (isSpecialRegion) {
-        baseRow.push(a.tshirt_size || "");
-      }
-      return baseRow;
-    });
-
-    // 2. High-End Table Design
-    autoTable(doc, {
-      startY: 30,
-      head: headers,
-      body: bodyData,
-      theme: "plain",
-      styles: {
-        fontSize: 8,
-        cellPadding: { top: 3, bottom: 3, left: 1, right: 1 },
-        overflow: "hidden",
-        valign: "middle",
-      },
-      headStyles: {
-        fillColor: [245, 245, 245],
-        textColor: [42, 52, 107],
-        fontStyle: "bold",
-        borderBottomWidth: 0.5,
-        borderBottomColor: "#2a346b",
-      },
-      columnStyles: isSpecialRegion
-        ? {
-            0: { cellWidth: 12 },
-            1: { cellWidth: "auto" },
-            2: { cellWidth: 15 },
-            3: { cellWidth: 10, halign: "center" },
-            4: { cellWidth: 30 },
-            5: { cellWidth: 30 },
-            6: { cellWidth: 15, halign: "center" },
-          }
-        : {
-            0: { cellWidth: 12 },
-            1: { cellWidth: "auto" },
-            2: { cellWidth: 20 },
-            3: { cellWidth: 12, halign: "center" },
-            4: { cellWidth: 35 },
-            5: { cellWidth: 30 },
-          },
-      didParseCell: function (data) {
-        if (data.section === "body" && data.row.index % 2 === 0) {
-          data.cell.styles.fillColor = [250, 250, 250];
+  autoTable(doc, {
+    startY: 32,
+    head: headers,
+    body: bodyData,
+    theme: "striped",
+    styles: {
+      fontSize: 8, // Dropped slightly to 8pt to comfortably fit the new Age field safely on A4
+      font: "helvetica",
+      cellPadding: { top: 4, bottom: 4, left: 2, right: 2 },
+      overflow: "visible",
+      valign: "middle",
+      lineColor: [226, 239, 249],
+      lineWidth: 0.15,
+    },
+    headStyles: {
+      fillColor: [42, 52, 107], // #2A346B 
+      textColor: [255, 255, 255], 
+      fontStyle: "bold",
+      fontSize: 8.5,
+    },
+    columnStyles: isSpecialRegion
+      ? {
+          0: { cellWidth: 10, halign: "center" },
+          1: { cellWidth: 26, fontStyle: "bold" }, 
+          2: { cellWidth: "auto" },                 
+          3: { cellWidth: 14, halign: "center" }, 
+          4: { cellWidth: 10, halign: "center" }, // Age column sizing properties block
+          5: { cellWidth: 20 }, 
+          6: { cellWidth: 22 },                   
+          7: { cellWidth: 24 },                   
+          8: { cellWidth: 12, halign: "center" }, 
         }
-      },
-    });
+      : {
+          0: { cellWidth: 10, halign: "center" },
+          1: { cellWidth: 28, fontStyle: "bold" }, 
+          2: { cellWidth: "auto" },                 
+          3: { cellWidth: 16, halign: "center" }, 
+          4: { cellWidth: 12, halign: "center" }, // Age column sizing properties block
+          5: { cellWidth: 24 }, 
+          6: { cellWidth: 26 },                   
+          7: { cellWidth: 26 },                   
+        },
+    alternateRowStyles: {
+      fillColor: [247, 251, 254],
+    },
+    margin: { left: 10, right: 10 },
+    
+    didDrawPage: function (data) {
+      doc.setFillColor(42, 52, 107);
+      doc.rect(0, 0, 210, 24, "F");
 
-    doc.save(`Shibir_Roster_${regionScope || "General"}.pdf`);
-  };
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("Making the Right Choices - Bal-Balika Shibir, Africa - 2026", 12, 11);
 
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(214, 162, 101); // #D6A265 Ochre Gold
+      doc.text(
+        `Attendee Roster  |  Filtered Country: ${currentCountry}  |  Center: ${currentCenter}  |  Mandal: ${currentMandal}`,
+        12,
+        18
+      );
+
+      const totalPages = doc.internal.getNumberOfPages();
+      const currentPage = data.pageNumber;
+      doc.setFontSize(8);
+      doc.setTextColor(42, 52, 107);
+      doc.text(
+        `Page ${currentPage} of ${totalPages}`, 
+        data.settings.margin.left, 
+        doc.internal.pageSize.height - 10
+      );
+    }
+  });
+
+  doc.save(`Shibir_Roster_${currentCountry.replace(/\s+/g, "_")}.pdf`);
+};
   const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;
     setIsDownloadingQR(true);
@@ -401,13 +423,14 @@ const exportToCSV = () => {
               {isDownloadingQR ? " Generating Zip..." : " Download All QR"}
             </button>
             <div className={styles.btnWrapper}>
-              <button
-                type="button"
-                onClick={handleExportPDF}
-                className={styles.pdfBtn}
-              >
-                <FaFileExport /> Export to PDF
-              </button>
+<button 
+  type="button" 
+  onClick={() => handleExportPDF(regionScope || "All", selectedCenter, selectedGender)} 
+  className={styles.pdfBtn}
+  style={{ backgroundColor: "#2a346b", color: "#fff", border: "none", padding: "10px 16px", borderRadius: "6px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: "600" }}
+>
+  <FaFileExport /> Export to PDF
+</button>
             </div>
           </div>
         </div>
