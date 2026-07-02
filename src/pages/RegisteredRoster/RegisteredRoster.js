@@ -6,37 +6,58 @@ import { attendees as attendeesApi } from "../../apiClient";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
-  FaSearch, FaPhoneAlt, FaMapMarkerAlt, FaQrcode, FaTimes,
-  FaUserFriends, FaFileExport, FaDownload, FaSpinner, FaArchive,
+  FaSearch,
+  FaPhoneAlt,
+  FaMapMarkerAlt,
+  FaQrcode,
+  FaTimes,
+  FaUserFriends,
+  FaFileExport,
+  FaDownload,
+  FaSpinner,
+  FaArchive,
 } from "react-icons/fa";
 import styles from "./RegisteredRoster.module.css";
 
 export default function RegisteredRoster({
-  attendees = [], dataFetching = false, regionScope = "All", userRole, setAttendees,
+  attendees = [],
+  dataFetching = false,
+  regionScope = "All",
+  userRole,
+  setAttendees,
 }) {
-  const [searchTerm, setSearchTerm]           = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const showArchived = false;
-  const [selectedCenter, setSelectedCenter]   = useState("All");
-  const [isProcessing, setIsProcessing]       = useState(false);
-  const [selectedGender, setSelectedGender]   = useState("All");
-  const [isExporting, setIsExporting]         = useState(false);
+  const [selectedCenter, setSelectedCenter] = useState("All");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedGender, setSelectedGender] = useState("All");
+  const [isExporting, setIsExporting] = useState(false);
   const [isDownloadingQR, setIsDownloadingQR] = useState(false);
   const [isDownloadingSingle, setIsDownloadingSingle] = useState(false);
-  const [confirmAction, setConfirmAction]     = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
   const [activeQrModalUser, setActiveQrModalUser] = useState(null);
-  const [isQrLoading, setIsQrLoading]         = useState(true);
+  const [isQrLoading, setIsQrLoading] = useState(true);
 
-  const centersList = ["All", ...new Set(attendees.map((a) => a.center).filter(Boolean))];
+  const centersList = [
+    "All",
+    ...new Set(attendees.map((a) => a.center).filter(Boolean)),
+  ];
 
-  const initiateArchive  = (attendee, shouldArchive) => setConfirmAction({ attendee, shouldArchive });
-  const handleOpenQrModal = (user) => { setActiveQrModalUser(user); setIsQrLoading(true); };
+  const initiateArchive = (attendee, shouldArchive) =>
+    setConfirmAction({ attendee, shouldArchive });
+  const handleOpenQrModal = (user) => {
+    setActiveQrModalUser(user);
+    setIsQrLoading(true);
+  };
 
   const executeArchive = async () => {
     if (!confirmAction) return;
     setIsProcessing(true);
     const { attendee, shouldArchive } = confirmAction;
     try {
-      await attendeesApi.update(attendee._raw_id || parseInt(attendee.id, 10), { is_archived: shouldArchive });
+      await attendeesApi.update(attendee._raw_id || parseInt(attendee.id, 10), {
+        is_archived: shouldArchive,
+      });
       setAttendees((prev) => prev.filter((a) => a.id !== attendee.id));
       setConfirmAction(null);
     } catch (err) {
@@ -53,17 +74,21 @@ export default function RegisteredRoster({
       return;
     }
 
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
 
     // 1. Sleek Header
     doc.setFillColor(42, 52, 107);
-    doc.rect(0, 0, 210, 25, 'F');
-    
+    doc.rect(0, 0, 210, 25, "F");
+
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.text("BAL-BALIKA SHIBIR 2026", 10, 15);
-    
+
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(200, 200, 200);
@@ -71,18 +96,18 @@ export default function RegisteredRoster({
 
     // Dynamic configuration based on Region
     const isSpecialRegion = ["Botswana", "South Africa"].includes(regionScope);
-    const headers = isSpecialRegion 
+    const headers = isSpecialRegion
       ? [["ID", "Name", "Mandal", "Age", "Center", "Contact", "T-Shirt"]]
       : [["ID", "Name", "Mandal", "Age", "Center", "Contact"]];
 
-    const bodyData = filteredAttendees.map(a => {
+    const bodyData = filteredAttendees.map((a) => {
       const baseRow = [
         a.member_id || a.id,
         a.name || "",
         a.gender || "",
         a.age || "",
         a.center || "",
-        a.parent_contact || ""
+        a.parent_contact || "",
       ];
       if (isSpecialRegion) {
         baseRow.push(a.tshirt_size || "");
@@ -95,44 +120,46 @@ export default function RegisteredRoster({
       startY: 30,
       head: headers,
       body: bodyData,
-      theme: 'plain',
-      styles: { 
-        fontSize: 8, 
+      theme: "plain",
+      styles: {
+        fontSize: 8,
         cellPadding: { top: 3, bottom: 3, left: 1, right: 1 },
-        overflow: 'hidden', 
-        valign: 'middle'
+        overflow: "hidden",
+        valign: "middle",
       },
-      headStyles: { 
+      headStyles: {
         fillColor: [245, 245, 245],
         textColor: [42, 52, 107],
-        fontStyle: 'bold',
+        fontStyle: "bold",
         borderBottomWidth: 0.5,
-        borderBottomColor: '#2a346b'
+        borderBottomColor: "#2a346b",
       },
-      columnStyles: isSpecialRegion ? {
-        0: { cellWidth: 12 },
-        1: { cellWidth: 'auto' }, 
-        2: { cellWidth: 15 },
-        3: { cellWidth: 10, halign: 'center' },
-        4: { cellWidth: 30 },
-        5: { cellWidth: 30 },
-        6: { cellWidth: 15, halign: 'center' }
-      } : {
-        0: { cellWidth: 12 },
-        1: { cellWidth: 'auto' }, 
-        2: { cellWidth: 20 },
-        3: { cellWidth: 12, halign: 'center' },
-        4: { cellWidth: 35 },
-        5: { cellWidth: 30 }
-      },
-      didParseCell: function(data) {
-        if (data.section === 'body' && data.row.index % 2 === 0) {
+      columnStyles: isSpecialRegion
+        ? {
+            0: { cellWidth: 12 },
+            1: { cellWidth: "auto" },
+            2: { cellWidth: 15 },
+            3: { cellWidth: 10, halign: "center" },
+            4: { cellWidth: 30 },
+            5: { cellWidth: 30 },
+            6: { cellWidth: 15, halign: "center" },
+          }
+        : {
+            0: { cellWidth: 12 },
+            1: { cellWidth: "auto" },
+            2: { cellWidth: 20 },
+            3: { cellWidth: 12, halign: "center" },
+            4: { cellWidth: 35 },
+            5: { cellWidth: 30 },
+          },
+      didParseCell: function (data) {
+        if (data.section === "body" && data.row.index % 2 === 0) {
           data.cell.styles.fillColor = [250, 250, 250];
         }
-      }
+      },
     });
 
-    doc.save(`Shibir_Roster_${regionScope || 'General'}.pdf`);
+    doc.save(`Shibir_Roster_${regionScope || "General"}.pdf`);
   };
 
   const downloadBatchQR = async () => {
@@ -142,18 +169,25 @@ export default function RegisteredRoster({
       const zip = new JSZip();
       const folder = zip.folder(`QR_Codes_${regionScope}`);
       for (const attendee of filteredAttendees) {
-        const id   = attendee.member_id || attendee.id;
+        const id = attendee.member_id || attendee.id;
         const name = (attendee.name || "Attendee").replace(/\s+/g, "_");
         try {
-          const dataUrl = await QRCode.toDataURL(String(id), { width: 300, margin: 2, color: { dark: "#000000", light: "#ffffff" } });
-          const base64  = dataUrl.replace(/^data:image\/png;base64,/, "");
+          const dataUrl = await QRCode.toDataURL(String(id), {
+            width: 300,
+            margin: 2,
+            color: { dark: "#000000", light: "#ffffff" },
+          });
+          const base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
           folder.file(`${id}_${name}.png`, base64, { base64: true });
         } catch (qrErr) {
           console.error(`QR generation failed for ${id}:`, qrErr);
         }
       }
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, `Batch_QR_${regionScope}_${new Date().toISOString().slice(0,10)}.zip`);
+      saveAs(
+        content,
+        `Batch_QR_${regionScope}_${new Date().toISOString().slice(0, 10)}.zip`,
+      );
     } catch (error) {
       console.error("Batch download failed", error);
       alert("Failed to generate ZIP file. Please try again.");
@@ -164,12 +198,14 @@ export default function RegisteredRoster({
 
   const filteredAttendees = useMemo(() => {
     return attendees.filter((attendee) => {
-      const nameSafe    = attendee.name?.toLowerCase() || "";
+      const nameSafe = attendee.name?.toLowerCase() || "";
       const contactSafe = String(attendee.parent_contact || "");
-      const idSafe      = String(attendee.member_id || "").toLowerCase();
+      const idSafe = String(attendee.member_id || "").toLowerCase();
       return (
         attendee.is_archived === showArchived &&
-        (nameSafe.includes(searchTerm.toLowerCase()) || contactSafe.includes(searchTerm) || idSafe.includes(searchTerm.toLowerCase())) &&
+        (nameSafe.includes(searchTerm.toLowerCase()) ||
+          contactSafe.includes(searchTerm) ||
+          idSafe.includes(searchTerm.toLowerCase())) &&
         (selectedCenter === "All" || attendee.center === selectedCenter) &&
         (selectedGender === "All" || attendee.gender === selectedGender)
       );
@@ -177,11 +213,23 @@ export default function RegisteredRoster({
   }, [attendees, searchTerm, selectedCenter, selectedGender, showArchived]);
 
   const exportToCSV = () => {
-    if (filteredAttendees.length === 0) { alert("No matched dataset found to extract."); return; }
+    if (filteredAttendees.length === 0) {
+      alert("No matched dataset found to extract.");
+      return;
+    }
     setIsExporting(true);
     try {
-      const isSpecialRegion = ["Botswana", "South Africa"].includes(regionScope);
-      const headers = ["Member ID", "Full Name", "Mandal", "Age", "Center Branch", "Parent Contact"];
+      const isSpecialRegion = ["Botswana", "South Africa"].includes(
+        regionScope,
+      );
+      const headers = [
+        "Member ID",
+        "Full Name",
+        "Mandal",
+        "Age",
+        "Center Branch",
+        "Parent Contact",
+      ];
       if (isSpecialRegion) {
         headers.push("T-Shirt Size");
       }
@@ -189,13 +237,16 @@ export default function RegisteredRoster({
       const csvRows = [
         headers.join(","),
         ...filteredAttendees.map((row) => {
-          const finalId      = row.member_id || row.id;
-          const rawContact   = row.parent_contact || "";
+          const finalId = row.member_id || row.id;
+          const rawContact = row.parent_contact || "";
           const finalContact = rawContact ? `\t${rawContact}` : "";
-          
+
           const baseFields = [
-            `"${finalId}"`, `"${(row.name||"").replace(/"/g,'""')}"`,
-            `"${row.gender||"Balak"}"`, `"${row.age}"`, `"${row.center}"`,
+            `"${finalId}"`,
+            `"${(row.name || "").replace(/"/g, '""')}"`,
+            `"${row.gender || "Balak"}"`,
+            `"${row.age}"`,
+            `"${row.center}"`,
             `"${finalContact}"`,
           ];
 
@@ -206,10 +257,15 @@ export default function RegisteredRoster({
           return baseFields.join(",");
         }),
       ];
-      const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvRows.join("\n"));
+      const encodedUri = encodeURI(
+        "data:text/csv;charset=utf-8," + csvRows.join("\n"),
+      );
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `Roster_${(regionScope||"All").replace(/\s+/g,"_")}_${selectedGender||"Export"}.csv`);
+      link.setAttribute(
+        "download",
+        `Roster_${(regionScope || "All").replace(/\s+/g, "_")}_${selectedGender || "Export"}.csv`,
+      );
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -223,16 +279,17 @@ export default function RegisteredRoster({
   const downloadQRImg = async (memberId, userName, storedQrUrl) => {
     setIsDownloadingSingle(true);
     try {
-      const url = storedQrUrl ||
+      const url =
+        storedQrUrl ||
         `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(memberId)}&color=000000&format=png&t=${Date.now()}`;
       const ext = storedQrUrl ? "svg" : "png";
       const response = await fetch(url);
       if (!response.ok) throw new Error("Network response was not ok");
-      const blob    = await response.blob();
+      const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = `ID_${memberId}_${userName.replace(/\s+/g,"_")}.${ext}`;
+      link.download = `ID_${memberId}_${userName.replace(/\s+/g, "_")}.${ext}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -247,53 +304,110 @@ export default function RegisteredRoster({
 
   const getGenderTagClass = (g) => {
     switch (g) {
-      case "Balak":    return styles.tagBalak;
-      case "Balika":   return styles.tagBalika;
-      default:         return styles.tagBalak;
+      case "Balak":
+        return styles.tagBalak;
+      case "Balika":
+        return styles.tagBalika;
+      default:
+        return styles.tagBalak;
     }
   };
 
   return (
     <div className={styles.rosterContainer}>
       <section className={styles.statsGrid}>
-        <div className={styles.statCard}><div className={styles.statLabel}>Total Registered</div><p className={styles.statValue}>{filteredAttendees.length}</p></div>
-        <div className={styles.statCard}><div className={styles.statLabel} style={{ color:"#2b6cb0" }}>Balak</div><p className={styles.statValue} style={{ color:"#2b6cb0" }}>{filteredAttendees.filter((a)=>a.gender==="Balak").length}</p></div>
-        <div className={styles.statCard}><div className={styles.statLabel} style={{ color:"#c53030" }}>Balika</div><p className={styles.statValue} style={{ color:"#c53030" }}>{filteredAttendees.filter((a)=>a.gender==="Balika").length}</p></div>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel}>Total Registered</div>
+          <p className={styles.statValue}>{filteredAttendees.length}</p>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel} style={{ color: "#2b6cb0" }}>
+            Balak
+          </div>
+          <p className={styles.statValue} style={{ color: "#2b6cb0" }}>
+            {filteredAttendees.filter((a) => a.gender === "Balak").length}
+          </p>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel} style={{ color: "#c53030" }}>
+            Balika
+          </div>
+          <p className={styles.statValue} style={{ color: "#c53030" }}>
+            {filteredAttendees.filter((a) => a.gender === "Balika").length}
+          </p>
+        </div>
       </section>
 
-      <div className={styles.contentCard} style={{ marginBottom:"24px",padding:"20px" }}>
+      <div
+        className={styles.contentCard}
+        style={{ marginBottom: "24px", padding: "20px" }}
+      >
         <div className={styles.toolbarRow}>
           <div className={styles.searchWrapper}>
-            <input type="text" placeholder="Search by name, ID or contacts..." className={styles.inputField} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <input
+              type="text"
+              placeholder="Search by name, ID or contacts..."
+              className={styles.inputField}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
             <FaSearch className={styles.searchIcon} />
           </div>
           <div className={styles.filterGroup}>
             <div className={styles.filterSelectContainer}>
-              <FaMapMarkerAlt style={{ color:"var(--accent-primary)" }} />
-              <select value={selectedCenter} onChange={(e) => setSelectedCenter(e.target.value)} className={styles.selectDropdown}>
-                {centersList.map((c) => <option key={c} value={c}>{c === "All" ? "All Center Branches" : c}</option>)}
+              <FaMapMarkerAlt style={{ color: "var(--accent-primary)" }} />
+              <select
+                value={selectedCenter}
+                onChange={(e) => setSelectedCenter(e.target.value)}
+                className={styles.selectDropdown}
+              >
+                {centersList.map((c) => (
+                  <option key={c} value={c}>
+                    {c === "All" ? "All Center Branches" : c}
+                  </option>
+                ))}
               </select>
             </div>
             <div className={styles.filterSelectContainer}>
-              <FaUserFriends style={{ color:"var(--accent-primary)" }} />
-              <select value={selectedGender} onChange={(e) => setSelectedGender(e.target.value)} className={styles.selectDropdown}>
+              <FaUserFriends style={{ color: "var(--accent-primary)" }} />
+              <select
+                value={selectedGender}
+                onChange={(e) => setSelectedGender(e.target.value)}
+                className={styles.selectDropdown}
+              >
                 <option value="All">All Mandals</option>
                 <option value="Balak">Balak</option>
                 <option value="Balika">Balika</option>
               </select>
             </div>
-            <button onClick={exportToCSV} className={styles.exportBtn} disabled={isExporting}>
-              {isExporting ? <FaSpinner className={styles.spin} /> : <FaFileExport />}
+            <button
+              onClick={exportToCSV}
+              className={styles.exportBtn}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <FaSpinner className={styles.spin} />
+              ) : (
+                <FaFileExport />
+              )}
               {isExporting ? " Exporting..." : " Export to Excel"}
             </button>
-            <button onClick={downloadBatchQR} className={styles.qrBtn} disabled={isDownloadingQR}>
-              {isDownloadingQR ? <FaSpinner className={styles.spin} /> : <FaDownload />}
+            <button
+              onClick={downloadBatchQR}
+              className={styles.qrBtn}
+              disabled={isDownloadingQR}
+            >
+              {isDownloadingQR ? (
+                <FaSpinner className={styles.spin} />
+              ) : (
+                <FaDownload />
+              )}
               {isDownloadingQR ? " Generating Zip..." : " Download All QR"}
             </button>
             <div className={styles.btnWrapper}>
-              <button 
-                type="button" 
-                onClick={handleExportPDF} 
+              <button
+                type="button"
+                onClick={handleExportPDF}
                 className={styles.pdfBtn}
               >
                 <FaFileExport /> Export to PDF
@@ -305,66 +419,202 @@ export default function RegisteredRoster({
 
       <div className={styles.contentCard}>
         {dataFetching ? (
-          <div className={styles.tableMessageBlock}><FaSpinner className={`${styles.spin} ${styles.loaderSpinner}`} /><p style={{ marginTop:"12px" }}>Updating regional partition data view...</p></div>
+          <div className={styles.tableMessageBlock}>
+            <FaSpinner className={`${styles.spin} ${styles.loaderSpinner}`} />
+            <p style={{ marginTop: "12px" }}>
+              Updating regional partition data view...
+            </p>
+          </div>
         ) : filteredAttendees.length === 0 ? (
-          <div className={styles.tableMessageBlock}><p>No attendees found matching <strong>{regionScope === "All" ? "All African Regions" : regionScope}</strong> selection grid.</p></div>
+          <div className={styles.tableMessageBlock}>
+            <p>
+              No attendees found matching{" "}
+              <strong>
+                {regionScope === "All" ? "All African Regions" : regionScope}
+              </strong>{" "}
+              selection grid.
+            </p>
+          </div>
         ) : (
           <div className={styles.tableContainer}>
             <table className={styles.dataTable}>
               <thead>
                 <tr>
-                  <th>Member ID</th><th>Full Name</th><th>Mandal</th>
-                  <th>Age</th><th>Center</th><th>Parent Contact</th>
+                  <th>Member ID</th>
+                  <th>Full Name</th>
+                  <th>Mandal</th>
+                  <th>Age</th>
+                  <th>Center</th>
+                  <th>Parent Contact</th>
                   {["Botswana", "South Africa"].includes(regionScope) && (
                     <th>T-Shirt</th>
                   )}
-                  <th style={{ textAlign:"center" }}>Identity Pass</th>
-                  {(userRole === "master_admin" || userRole === "super_admin") && <th>Actions</th>}
+                  <th style={{ textAlign: "center" }}>Identity Pass</th>
+                  {(userRole === "master_admin" ||
+                    userRole === "super_admin") && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {filteredAttendees.map((attendee) => {
-                  const systemIdCode      = attendee.member_id || `MTRC-${attendee.id}`;
+                  const systemIdCode =
+                    attendee.member_id || `MTRC-${attendee.id}`;
                   const parentContactDisplay = attendee.parent_contact;
                   return (
                     <tr key={attendee.id}>
-                      <td className={styles.monospaceText} style={{ fontWeight:"700",color:"var(--accent-primary)" }}>{systemIdCode}</td>
+                      <td
+                        className={styles.monospaceText}
+                        style={{
+                          fontWeight: "700",
+                          color: "var(--accent-primary)",
+                        }}
+                      >
+                        {systemIdCode}
+                      </td>
                       <td className={styles.boldText}>{attendee.name}</td>
-                      <td><span className={`${styles.badgeGenderTag} ${getGenderTagClass(attendee.gender)}`}>{attendee.gender || "Balak"}</span></td>
+                      <td>
+                        <span
+                          className={`${styles.badgeGenderTag} ${getGenderTagClass(attendee.gender)}`}
+                        >
+                          {attendee.gender || "Balak"}
+                        </span>
+                      </td>
                       <td>{attendee.age}</td>
-                      <td><span className={styles.inlineIconFlex}><FaMapMarkerAlt className={styles.mutedIcon} /> {attendee.center}</span></td>
+                      <td>
+                        <span className={styles.inlineIconFlex}>
+                          <FaMapMarkerAlt className={styles.mutedIcon} />{" "}
+                          {attendee.center}
+                        </span>
+                      </td>
                       <td className={styles.monospaceText}>
-                        {parentContactDisplay
-                          ? <span className={styles.inlineIconFlex}><FaPhoneAlt className={styles.mutedIcon} /> {parentContactDisplay}</span>
-                          : <span style={{ color:"var(--text-muted)",fontSize:"12px" }}>N/A</span>}
+                        {parentContactDisplay ? (
+                          <span className={styles.inlineIconFlex}>
+                            <FaPhoneAlt className={styles.mutedIcon} />{" "}
+                            {parentContactDisplay}
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              color: "var(--text-muted)",
+                              fontSize: "12px",
+                            }}
+                          >
+                            N/A
+                          </span>
+                        )}
                       </td>
                       {["Botswana", "South Africa"].includes(regionScope) && (
                         <td>
-                          {attendee.tshirt_size
-                            ? <span className={styles.badgeGenderTag}>{attendee.tshirt_size}</span>
-                            : <span style={{ color:"var(--text-muted)",fontSize:"12px" }}>—</span>}
+                          {attendee.tshirt_size ? (
+                            <span className={styles.badgeGenderTag}>
+                              {attendee.tshirt_size}
+                            </span>
+                          ) : (
+                            <span
+                              style={{
+                                color: "var(--text-muted)",
+                                fontSize: "12px",
+                              }}
+                            >
+                              —
+                            </span>
+                          )}
                         </td>
                       )}
-                      <td style={{ textAlign:"center" }}>
-                        <button onClick={() => handleOpenQrModal(attendee)} className={styles.viewPassBtn}><FaQrcode style={{ fontSize:"13px" }} /> View QR</button>
+                      <td style={{ textAlign: "center" }}>
+                        <button
+                          onClick={() => handleOpenQrModal(attendee)}
+                          className={styles.viewPassBtn}
+                        >
+                          <FaQrcode style={{ fontSize: "13px" }} /> View QR
+                        </button>
                       </td>
-                      <td style={{ textAlign:"center" }}>
-                        {(userRole === "master_admin" || userRole === "super_admin" || userRole === "admin") && !attendee.is_archived && (
-                          <button onClick={() => initiateArchive(attendee, true)} className={styles.archiveBtn} title="Archive Record"><FaArchive style={{ fontSize:"12px" }} /> Archive</button>
-                        )}
-                        {userRole === "master_admin" && attendee.is_archived && (
-                          <button onClick={() => initiateArchive(attendee, false)} className={styles.actionBtn} style={{ color:"green" }}>Restore</button>
-                        )}
+                      <td style={{ textAlign: "center" }}>
+                        {(userRole === "master_admin" ||
+                          userRole === "super_admin" ||
+                          userRole === "admin") &&
+                          !attendee.is_archived && (
+                            <button
+                              onClick={() => initiateArchive(attendee, true)}
+                              className={styles.archiveBtn}
+                              title="Archive Record"
+                            >
+                              <FaArchive style={{ fontSize: "12px" }} /> Archive
+                            </button>
+                          )}
+                        {userRole === "master_admin" &&
+                          attendee.is_archived && (
+                            <button
+                              onClick={() => initiateArchive(attendee, false)}
+                              className={styles.actionBtn}
+                              style={{ color: "green" }}
+                            >
+                              Restore
+                            </button>
+                          )}
                       </td>
                       {confirmAction && (
-                        <div className={styles.modalOverlay} onClick={() => setConfirmAction(null)}>
-                          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-                            <h3>Confirm {confirmAction.shouldArchive ? "Archive" : "Restore"}</h3>
-                            <p>Are you sure you want to {confirmAction.shouldArchive ? "archive" : "restore"} <strong>{confirmAction.attendee.name}</strong>?</p>
-                            <div style={{ display:"flex",gap:"10px",marginTop:"20px" }}>
-                              <button onClick={() => setConfirmAction(null)} className={styles.cancelBtn}>Cancel</button>
-                              <button onClick={executeArchive} className={styles.confirmBtn} disabled={isProcessing} style={{ backgroundColor: confirmAction.shouldArchive ? "#d97706" : "green", opacity: isProcessing ? 0.7 : 1, cursor: isProcessing ? "not-allowed" : "pointer", display:"flex",alignItems:"center",justifyContent:"center",gap:"8px" }}>
-                                {isProcessing ? <><FaSpinner className={styles.spin} /> Processing...</> : confirmAction.shouldArchive ? "Confirm Archive" : "Confirm Restore"}
+                        <div
+                          className={styles.modalOverlay}
+                          onClick={() => setConfirmAction(null)}
+                        >
+                          <div
+                            className={styles.modalCard}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <h3>
+                              Confirm{" "}
+                              {confirmAction.shouldArchive
+                                ? "Archive"
+                                : "Restore"}
+                            </h3>
+                            <p>
+                              Are you sure you want to{" "}
+                              {confirmAction.shouldArchive
+                                ? "archive"
+                                : "restore"}{" "}
+                              <strong>{confirmAction.attendee.name}</strong>?
+                            </p>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "10px",
+                                marginTop: "20px",
+                              }}
+                            >
+                              <button
+                                onClick={() => setConfirmAction(null)}
+                                className={styles.cancelBtn}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={executeArchive}
+                                className={styles.confirmBtn}
+                                disabled={isProcessing}
+                                style={{
+                                  backgroundColor: confirmAction.shouldArchive
+                                    ? "#d97706"
+                                    : "green",
+                                  opacity: isProcessing ? 0.7 : 1,
+                                  cursor: isProcessing
+                                    ? "not-allowed"
+                                    : "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: "8px",
+                                }}
+                              >
+                                {isProcessing ? (
+                                  <>
+                                    <FaSpinner className={styles.spin} />{" "}
+                                    Processing...
+                                  </>
+                                ) : confirmAction.shouldArchive ? (
+                                  "Confirm Archive"
+                                ) : (
+                                  "Confirm Restore"
+                                )}
                               </button>
                             </div>
                           </div>
@@ -380,13 +630,29 @@ export default function RegisteredRoster({
       </div>
 
       {activeQrModalUser && (
-        <div className={styles.modalOverlay} onClick={() => setActiveQrModalUser(null)}>
-          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.modalCloseBtn} onClick={() => setActiveQrModalUser(null)}><FaTimes /></button>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setActiveQrModalUser(null)}
+        >
+          <div
+            className={styles.modalCard}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className={styles.modalCloseBtn}
+              onClick={() => setActiveQrModalUser(null)}
+            >
+              <FaTimes />
+            </button>
             <h3 className={styles.modalTitle}>QR Code</h3>
             <p className={styles.modalSubtitle}>BAL-BALIKA SHIBIR 2026</p>
             <div className={styles.qrContainer}>
-              {isQrLoading && <div className={styles.qrLoaderWrapper}><FaSpinner className={styles.spin} /><span className={styles.loaderText}>Loading QR...</span></div>}
+              {isQrLoading && (
+                <div className={styles.qrLoaderWrapper}>
+                  <FaSpinner className={styles.spin} />
+                  <span className={styles.loaderText}>Loading QR...</span>
+                </div>
+              )}
               <img
                 src={
                   activeQrModalUser?.qr_code_url ||
@@ -399,26 +665,82 @@ export default function RegisteredRoster({
               />
             </div>
             <div className={styles.modalInfoBox}>
-              <div style={{ display:"flex",alignItems:"center",gap:"14px",marginBottom:"14px" }}>
-                <div style={{ textAlign:"left" }}>
-                  <div className={styles.modalAttendeeName}>{activeQrModalUser.name}</div>
-                  <div style={{ fontSize:"12.5px",color:"var(--text-muted)",fontWeight:"500" }}>
-                    Mandal: <span className={`${styles.badgeGenderTag} ${getGenderTagClass(activeQrModalUser.gender)}`} style={{ marginLeft:"4px" }}>{activeQrModalUser.gender || "Balak"}</span>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "14px",
+                  marginBottom: "14px",
+                }}
+              >
+                <div style={{ textAlign: "left" }}>
+                  <div className={styles.modalAttendeeName}>
+                    {activeQrModalUser.name}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "12.5px",
+                      color: "var(--text-muted)",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Mandal:{" "}
+                    <span
+                      className={`${styles.badgeGenderTag} ${getGenderTagClass(activeQrModalUser.gender)}`}
+                      style={{ marginLeft: "4px" }}
+                    >
+                      {activeQrModalUser.gender || "Balak"}
+                    </span>
                   </div>
                 </div>
               </div>
-              <div className={styles.modalDataRow} style={{ borderTop:"1px dashed var(--border-light)",paddingTop:"10px" }}>
-                <span>Center:</span><span style={{ color:"var(--text-main)",fontWeight:"600" }}>{activeQrModalUser.center}</span>
+              <div
+                className={styles.modalDataRow}
+                style={{
+                  borderTop: "1px dashed var(--border-light)",
+                  paddingTop: "10px",
+                }}
+              >
+                <span>Center:</span>
+                <span style={{ color: "var(--text-main)", fontWeight: "600" }}>
+                  {activeQrModalUser.center}
+                </span>
               </div>
               <div className={styles.modalDataRow}>
                 <span>ID Number:</span>
-                <span style={{ fontFamily:"monospace",color:"var(--accent-primary)",fontWeight:"700" }}>
-                  {String(activeQrModalUser.member_id || activeQrModalUser.id || "").toUpperCase()}
+                <span
+                  style={{
+                    fontFamily: "monospace",
+                    color: "var(--accent-primary)",
+                    fontWeight: "700",
+                  }}
+                >
+                  {String(
+                    activeQrModalUser.member_id || activeQrModalUser.id || "",
+                  ).toUpperCase()}
                 </span>
               </div>
             </div>
-            <button onClick={() => downloadQRImg(activeQrModalUser.member_id || activeQrModalUser.id, activeQrModalUser.name, activeQrModalUser.qr_code_url)} className={styles.modalDownloadBtn} disabled={isDownloadingSingle}>
-              {isDownloadingSingle ? <><FaSpinner className={styles.spin} /> Downloading...</> : <><FaDownload /> Download QR Code</>}
+            <button
+              onClick={() =>
+                downloadQRImg(
+                  activeQrModalUser.member_id || activeQrModalUser.id,
+                  activeQrModalUser.name,
+                  activeQrModalUser.qr_code_url,
+                )
+              }
+              className={styles.modalDownloadBtn}
+              disabled={isDownloadingSingle}
+            >
+              {isDownloadingSingle ? (
+                <>
+                  <FaSpinner className={styles.spin} /> Downloading...
+                </>
+              ) : (
+                <>
+                  <FaDownload /> Download QR Code
+                </>
+              )}
             </button>
           </div>
         </div>
