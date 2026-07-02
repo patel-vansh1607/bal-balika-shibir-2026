@@ -80,7 +80,7 @@ const handleExportPDF = (currentCountry = "All", currentCenter = "All", currentM
     format: "a4",
   });
 
-  const isSpecialRegion = ["Botswana", "South Africa", "Malawi"].includes(regionScope);
+  const isSpecialRegion = ["Botswana", "South Africa", "Malawi", "Zambia"].includes(regionScope);
 
   const headers = isSpecialRegion
     ? [["Sr No.", "Member ID", "Full Name", "Mandal", "Age", "Country", "Center Branch", "Parent Contact", "T-Shirt"]]
@@ -248,7 +248,7 @@ const exportToCSV = () => {
     }
     setIsExporting(true);
     try {
-      const isSpecialRegion = ["Botswana", "South Africa", "Malawi"].includes(regionScope);
+      const isSpecialRegion = ["Botswana", "South Africa", "Malawi", "Zambia"].includes(regionScope);
       
       // Plain text headers with Serial Number and Country
       const headers = ["Sr No.", "Member ID", "Full Name", "Mandal", "Age", "Country", "Center Branch", "Parent Contact"];
@@ -434,7 +434,6 @@ const exportToCSV = () => {
   type="button" 
   onClick={() => handleExportPDF(regionScope || "All", selectedCenter, selectedGender)} 
   className={styles.pdfBtn}
-  style={{ backgroundColor: "#2a346b", color: "#fff", border: "none", padding: "10px 16px", borderRadius: "6px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: "600" }}
 >
   <FaFileExport /> Export to PDF
 </button>
@@ -472,7 +471,7 @@ const exportToCSV = () => {
                   <th>Age</th>
                   <th>Center</th>
                   <th>Parent Contact</th>
-                  {["Botswana", "South Africa", "Malawi"].includes(regionScope) && (
+                  {["Botswana", "South Africa", "Malawi", "Zambia"].includes(regionScope) && (
                     <th>T-Shirt</th>
                   )}
                   <th style={{ textAlign: "center" }}>Identity Pass</th>
@@ -528,7 +527,7 @@ const exportToCSV = () => {
                           </span>
                         )}
                       </td>
-                      {["Botswana", "South Africa", "Malawi"].includes(regionScope) && (
+                      {["Botswana", "South Africa", "Malawi", "Zambia"].includes(regionScope) && (
                         <td>
                           {attendee.tshirt_size ? (
                             <span className={styles.badgeGenderTag}>

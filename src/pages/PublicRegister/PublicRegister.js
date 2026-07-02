@@ -326,7 +326,7 @@ export default function PublicRegister() {
     }
 
     const needsTshirt =
-      selectedRegion === "Botswana" || selectedRegion === "South Africa" || selectedRegion === "Malawi";
+      selectedRegion === "Botswana" || selectedRegion === "South Africa" || selectedRegion === "Malawi" || selectedRegion === "Zambia";
     if (needsTshirt && !tshirtSize) {
       return fail("Please select a T-shirt size.", shirtRef);
     }
@@ -767,7 +767,9 @@ export default function PublicRegister() {
 
                   {(selectedRegion === "Botswana" ||
                     selectedRegion === "South Africa" ||
-                    selectedRegion === "Malawi") && (
+                    selectedRegion === "Malawi" ||
+                    selectedRegion === "Zambia")
+                   && (
                     <div className={styles.rowFieldContainer} ref={shirtRef}>
                       <div className={styles.formGroup}>
                         <label className={styles.label}>T-Shirt Size *</label>
@@ -778,10 +780,13 @@ export default function PublicRegister() {
                           disabled={loading}
                         >
                           <option value="">Select Size</option>
-                          <option value="S">S</option>
-                          <option value="M">M</option>
-                          <option value="L">L</option>
-                          <option value="XL">XL</option>
+                          <option value="24">24</option>
+                          <option value="26">26</option>
+                          <option value="28">28</option>
+                          <option value="30">30</option>
+                          <option value="32">32</option>
+                          <option value="34">34</option>
+                          <option value="36">36</option>
                         </select>
                       </div>
                     </div>
