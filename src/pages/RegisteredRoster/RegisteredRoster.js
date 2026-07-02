@@ -11,7 +11,6 @@ import {
 } from "react-icons/fa";
 import styles from "./RegisteredRoster.module.css";
 
-
 export default function RegisteredRoster({
   attendees = [], dataFetching = false, regionScope = "All", userRole, setAttendees,
 }) {
@@ -20,7 +19,6 @@ export default function RegisteredRoster({
   const [selectedCenter, setSelectedCenter]   = useState("All");
   const [isProcessing, setIsProcessing]       = useState(false);
   const [selectedGender, setSelectedGender]   = useState("All");
-  const [imageErrors, setImageErrors]         = useState({});
   const [isExporting, setIsExporting]         = useState(false);
   const [isDownloadingQR, setIsDownloadingQR] = useState(false);
   const [isDownloadingSingle, setIsDownloadingSingle] = useState(false);
@@ -48,72 +46,95 @@ export default function RegisteredRoster({
       setIsProcessing(false);
     }
   };
-const handleExportPDF = () => {
-  if (filteredAttendees.length === 0) {
-    alert("No data available to export.");
-    return;
-  }
 
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-  // 1. Sleek Header
-  doc.setFillColor(42, 52, 107);
-  doc.rect(0, 0, 210, 25, 'F');
-  
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("BAL-BALIKA SHIBIR 2026", 10, 15);
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(200, 200, 200);
-  doc.text("Attendee Registration List", 10, 21);
-
-  // 2. High-End Table Design
-  autoTable(doc, {
-    startY: 30,
-    head: [["ID", "Name", "Mandal", "Age", "Center", "Contact"]],
-    body: filteredAttendees.map(a => [
-      a.member_id || a.id,
-      a.name || "",
-      a.gender || "",
-      a.age || "",
-      a.center || "",
-      a.parent_contact || ""
-    ]),
-    theme: 'plain', // Removes heavy borders for a cleaner look
-    styles: { 
-      fontSize: 8, 
-      cellPadding: { top: 3, bottom: 3, left: 1, right: 1 },
-      overflow: 'hidden', 
-      valign: 'middle'
-    },
-    headStyles: { 
-      fillColor: [245, 245, 245],
-      textColor: [42, 52, 107],
-      fontStyle: 'bold',
-      borderBottomWidth: 0.5,
-      borderBottomColor: '#2a346b'
-    },
-    columnStyles: {
-      0: { cellWidth: 12 },
-      1: { cellWidth: 'auto' }, 
-      2: { cellWidth: 20 },
-      3: { cellWidth: 12, halign: 'center' },
-      4: { cellWidth: 35 },
-      5: { cellWidth: 30 }
-    },
-    // Adding alternating row colors for readability
-    didParseCell: function(data) {
-      if (data.section === 'body' && data.row.index % 2 === 0) {
-        data.cell.styles.fillColor = [250, 250, 250];
-      }
+  const handleExportPDF = () => {
+    if (filteredAttendees.length === 0) {
+      alert("No data available to export.");
+      return;
     }
-  });
 
-  doc.save(`Shibir_Roster_${regionScope || 'General'}.pdf`);
-};
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    // 1. Sleek Header
+    doc.setFillColor(42, 52, 107);
+    doc.rect(0, 0, 210, 25, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("BAL-BALIKA SHIBIR 2026", 10, 15);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(200, 200, 200);
+    doc.text("Attendee Registration List", 10, 21);
+
+    // Dynamic configuration based on Region
+    const isSpecialRegion = ["Botswana", "South Africa"].includes(regionScope);
+    const headers = isSpecialRegion 
+      ? [["ID", "Name", "Mandal", "Age", "Center", "Contact", "T-Shirt"]]
+      : [["ID", "Name", "Mandal", "Age", "Center", "Contact"]];
+
+    const bodyData = filteredAttendees.map(a => {
+      const baseRow = [
+        a.member_id || a.id,
+        a.name || "",
+        a.gender || "",
+        a.age || "",
+        a.center || "",
+        a.parent_contact || ""
+      ];
+      if (isSpecialRegion) {
+        baseRow.push(a.tshirt_size || "");
+      }
+      return baseRow;
+    });
+
+    // 2. High-End Table Design
+    autoTable(doc, {
+      startY: 30,
+      head: headers,
+      body: bodyData,
+      theme: 'plain',
+      styles: { 
+        fontSize: 8, 
+        cellPadding: { top: 3, bottom: 3, left: 1, right: 1 },
+        overflow: 'hidden', 
+        valign: 'middle'
+      },
+      headStyles: { 
+        fillColor: [245, 245, 245],
+        textColor: [42, 52, 107],
+        fontStyle: 'bold',
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#2a346b'
+      },
+      columnStyles: isSpecialRegion ? {
+        0: { cellWidth: 12 },
+        1: { cellWidth: 'auto' }, 
+        2: { cellWidth: 15 },
+        3: { cellWidth: 10, halign: 'center' },
+        4: { cellWidth: 30 },
+        5: { cellWidth: 30 },
+        6: { cellWidth: 15, halign: 'center' }
+      } : {
+        0: { cellWidth: 12 },
+        1: { cellWidth: 'auto' }, 
+        2: { cellWidth: 20 },
+        3: { cellWidth: 12, halign: 'center' },
+        4: { cellWidth: 35 },
+        5: { cellWidth: 30 }
+      },
+      didParseCell: function(data) {
+        if (data.section === 'body' && data.row.index % 2 === 0) {
+          data.cell.styles.fillColor = [250, 250, 250];
+        }
+      }
+    });
+
+    doc.save(`Shibir_Roster_${regionScope || 'General'}.pdf`);
+  };
+
   const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;
     setIsDownloadingQR(true);
@@ -159,18 +180,30 @@ const handleExportPDF = () => {
     if (filteredAttendees.length === 0) { alert("No matched dataset found to extract."); return; }
     setIsExporting(true);
     try {
-      const headers = ["Member ID","Full Name","Mandal","Age","Center Branch","Parent Contact"];
+      const isSpecialRegion = ["Botswana", "South Africa"].includes(regionScope);
+      const headers = ["Member ID", "Full Name", "Mandal", "Age", "Center Branch", "Parent Contact"];
+      if (isSpecialRegion) {
+        headers.push("T-Shirt Size");
+      }
+
       const csvRows = [
         headers.join(","),
         ...filteredAttendees.map((row) => {
           const finalId      = row.member_id || row.id;
           const rawContact   = row.parent_contact || "";
           const finalContact = rawContact ? `\t${rawContact}` : "";
-          return [
+          
+          const baseFields = [
             `"${finalId}"`, `"${(row.name||"").replace(/"/g,'""')}"`,
             `"${row.gender||"Balak"}"`, `"${row.age}"`, `"${row.center}"`,
             `"${finalContact}"`,
-          ].join(",");
+          ];
+
+          if (isSpecialRegion) {
+            baseFields.push(`"${row.tshirt_size || ""}"`);
+          }
+
+          return baseFields.join(",");
         }),
       ];
       const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvRows.join("\n"));
@@ -212,17 +245,6 @@ const handleExportPDF = () => {
     }
   };
 
-  const getAvatarUrl = (photoPath) => {
-    if (!photoPath) return null;
-    if (photoPath.startsWith("http://") || photoPath.startsWith("https://")) {
-      return `${photoPath.split("?")[0]}?t=${Date.now()}`;
-    }
-    return photoPath;
-  };
-
-  const getInitials  = (name) => name ? name.trim().charAt(0).toUpperCase() : "?";
-  const handleImageError = (id) => setImageErrors((prev) => ({ ...prev, [id]: true }));
-
   const getGenderTagClass = (g) => {
     switch (g) {
       case "Balak":    return styles.tagBalak;
@@ -237,8 +259,6 @@ const handleExportPDF = () => {
         <div className={styles.statCard}><div className={styles.statLabel}>Total Registered</div><p className={styles.statValue}>{filteredAttendees.length}</p></div>
         <div className={styles.statCard}><div className={styles.statLabel} style={{ color:"#2b6cb0" }}>Balak</div><p className={styles.statValue} style={{ color:"#2b6cb0" }}>{filteredAttendees.filter((a)=>a.gender==="Balak").length}</p></div>
         <div className={styles.statCard}><div className={styles.statLabel} style={{ color:"#c53030" }}>Balika</div><p className={styles.statValue} style={{ color:"#c53030" }}>{filteredAttendees.filter((a)=>a.gender==="Balika").length}</p></div>
-        {/* <div className={styles.statCard}><div className={styles.statLabel} style={{ color:"#319795" }}>Shishu</div><p className={styles.statValue} style={{ color:"#319795" }}>{filteredAttendees.filter((a)=>a.gender==="Shishu").length}</p></div>
-        <div className={styles.statCard}><div className={styles.statLabel} style={{ color:"#b7791f" }}>Shishika</div><p className={styles.statValue} style={{ color:"#b7791f" }}>{filteredAttendees.filter((a)=>a.gender==="Shishika").length}</p></div> */}
       </section>
 
       <div className={styles.contentCard} style={{ marginBottom:"24px",padding:"20px" }}>
@@ -260,8 +280,6 @@ const handleExportPDF = () => {
                 <option value="All">All Mandals</option>
                 <option value="Balak">Balak</option>
                 <option value="Balika">Balika</option>
-                {/* <option value="Shishu">Shishu</option>
-                <option value="Shishika">Shishika</option> */}
               </select>
             </div>
             <button onClick={exportToCSV} className={styles.exportBtn} disabled={isExporting}>
@@ -273,13 +291,13 @@ const handleExportPDF = () => {
               {isDownloadingQR ? " Generating Zip..." : " Download All QR"}
             </button>
             <div className={styles.btnWrapper}>
-<button 
-  type="button" 
-  onClick={handleExportPDF} 
-  className={styles.pdfBtn}
->
-  <FaFileExport /> Export to PDF
-</button>
+              <button 
+                type="button" 
+                onClick={handleExportPDF} 
+                className={styles.pdfBtn}
+              >
+                <FaFileExport /> Export to PDF
+              </button>
             </div>
           </div>
         </div>
@@ -295,28 +313,21 @@ const handleExportPDF = () => {
             <table className={styles.dataTable}>
               <thead>
                 <tr>
-                  <th>Picture</th><th>Member ID</th><th>Full Name</th><th>Mandal</th>
+                  <th>Member ID</th><th>Full Name</th><th>Mandal</th>
                   <th>Age</th><th>Center</th><th>Parent Contact</th>
-                  {["Botswana", "South Africa"].includes(regionScope) && <><th>Phone Number</th><th>T-Shirt</th></>}
+                  {["Botswana", "South Africa"].includes(regionScope) && (
+                    <th>T-Shirt</th>
+                  )}
                   <th style={{ textAlign:"center" }}>Identity Pass</th>
                   {(userRole === "master_admin" || userRole === "super_admin") && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {filteredAttendees.map((attendee) => {
-                  const resolvedAvatarUrl = getAvatarUrl(attendee.photo_url);
-                  const hasImageError     = imageErrors[attendee.id];
                   const systemIdCode      = attendee.member_id || `MTRC-${attendee.id}`;
                   const parentContactDisplay = attendee.parent_contact;
                   return (
                     <tr key={attendee.id}>
-                      <td>
-                        <div className={styles.avatarWrapper}>
-                          {resolvedAvatarUrl && !hasImageError
-                            ? <img src={resolvedAvatarUrl} alt="" crossOrigin="anonymous" className={styles.avatarImage} onError={() => handleImageError(attendee.id)} />
-                            : <div className={styles.avatarFallback}>{getInitials(attendee.name)}</div>}
-                        </div>
-                      </td>
                       <td className={styles.monospaceText} style={{ fontWeight:"700",color:"var(--accent-primary)" }}>{systemIdCode}</td>
                       <td className={styles.boldText}>{attendee.name}</td>
                       <td><span className={`${styles.badgeGenderTag} ${getGenderTagClass(attendee.gender)}`}>{attendee.gender || "Balak"}</span></td>
@@ -328,18 +339,11 @@ const handleExportPDF = () => {
                           : <span style={{ color:"var(--text-muted)",fontSize:"12px" }}>N/A</span>}
                       </td>
                       {["Botswana", "South Africa"].includes(regionScope) && (
-                        <>
-                          <td className={styles.monospaceText}>
-                            {attendee.phone_number
-                              ? <span className={styles.inlineIconFlex}><FaPhoneAlt className={styles.mutedIcon} /> {attendee.phone_number}</span>
-                              : <span style={{ color:"var(--text-muted)",fontSize:"12px" }}>—</span>}
-                          </td>
-                          <td>
-                            {attendee.tshirt_size
-                              ? <span className={styles.badgeGenderTag}>{attendee.tshirt_size}</span>
-                              : <span style={{ color:"var(--text-muted)",fontSize:"12px" }}>—</span>}
-                          </td>
-                        </>
+                        <td>
+                          {attendee.tshirt_size
+                            ? <span className={styles.badgeGenderTag}>{attendee.tshirt_size}</span>
+                            : <span style={{ color:"var(--text-muted)",fontSize:"12px" }}>—</span>}
+                        </td>
                       )}
                       <td style={{ textAlign:"center" }}>
                         <button onClick={() => handleOpenQrModal(attendee)} className={styles.viewPassBtn}><FaQrcode style={{ fontSize:"13px" }} /> View QR</button>
@@ -396,9 +400,6 @@ const handleExportPDF = () => {
             </div>
             <div className={styles.modalInfoBox}>
               <div style={{ display:"flex",alignItems:"center",gap:"14px",marginBottom:"14px" }}>
-                {getAvatarUrl(activeQrModalUser.photo_url) && !imageErrors[activeQrModalUser.id]
-                  ? <img src={getAvatarUrl(activeQrModalUser.photo_url)} alt="" crossOrigin="anonymous" className={styles.modalAvatarImg} onError={() => handleImageError(activeQrModalUser.id)} />
-                  : <div className={styles.modalAvatarFallback}>{getInitials(activeQrModalUser.name)}</div>}
                 <div style={{ textAlign:"left" }}>
                   <div className={styles.modalAttendeeName}>{activeQrModalUser.name}</div>
                   <div style={{ fontSize:"12.5px",color:"var(--text-muted)",fontWeight:"500" }}>
