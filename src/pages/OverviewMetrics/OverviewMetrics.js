@@ -1,10 +1,43 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FaUsers, FaUserPlus, FaChartBar } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import styles from "../Dashboard/Dashboard.module.css";
 
 export default function OverviewMetrics() {
   const navigate = useNavigate();
+  const [userName, setUserName] = useState("Admin"); // Default fallback while loading
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      // 1. Retrieve the token stored during login (adjust 'token' to match your localStorage key)
+      const token = localStorage.getItem("token"); 
+      
+      if (!token) return;
+
+      try {
+        // 2. Fetch from your PHP endpoint (replace API_BASE_URL with your actual backend URL)
+        const response = await fetch("/api/user-roles/me", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // Ensure it matches what require_auth() expects
+          }
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          // 3. Map to data.name based on your PHP format_user_role() response structural output
+          if (result?.data?.name) {
+            setUserName(result.data.name);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const navOptions = [
     { title: "Registered Roster", icon: <FaUsers />, path: "/dashboard/roster", color: "#34a853" },
@@ -16,7 +49,7 @@ export default function OverviewMetrics() {
     <>
       <section className={styles.welcomeSection} style={{ marginBottom: "32px" }}>
         <h1 style={{ fontSize: "28px", color: "#202124", marginBottom: "8px" }}>
-          Jay Swaminarayan, Admin
+          Jay Swaminarayan, {userName}
         </h1>
         <p style={{ color: "#5f6368" }}>Select an option below to manage the event portal.</p>
       </section>
