@@ -241,7 +241,6 @@ export default function Dashboard() {
               className={styles.manualRefreshBtn} 
               onClick={handleManualRefresh}
               disabled={dataFetching}
-              title="Force sync data"
               aria-label="Refresh database metrics"
             >
               <FaSyncAlt className={`${styles.refreshIcon} ${dataFetching ? styles.spin : ""}`} />
