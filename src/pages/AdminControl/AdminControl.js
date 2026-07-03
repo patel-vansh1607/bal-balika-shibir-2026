@@ -113,7 +113,7 @@ export default function AdminControl() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <FaUserShield style={{ fontSize: 24, color: '#8a151b' }} />
+          <FaUserShield style={{ fontSize: 24, color: '#e78524' }} />
           <div>
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#2d2926' }}>Manage System Access</h2>
             <p style={{ margin: 0, fontSize: 13, color: '#718096' }}>Add users and assign region permissions</p>
@@ -121,7 +121,7 @@ export default function AdminControl() {
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, background: showForm ? '#f1f5f9' : '#8a151b', color: showForm ? '#2d2926' : '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, background: showForm ? '#f1f5f9' : '#e78524', color: showForm ? '#2d2926' : '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
         >
           {showForm ? <><FaTimes /> Cancel</> : <><FaPlus /> Add User</>}
         </button>
@@ -168,7 +168,7 @@ export default function AdminControl() {
                 const active = form.authorized_regions.includes(r);
                 return (
                   <button key={r} type="button" onClick={() => toggleRegion(r)}
-                    style={{ padding: '6px 14px', borderRadius: 20, border: `1.5px solid ${active ? '#8a151b' : '#cbd5e0'}`, background: active ? '#8a151b' : '#fff', color: active ? '#fff' : '#4a5568', fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s' }}>
+                    style={{ padding: '6px 14px', borderRadius: 20, border: `1.5px solid ${active ? '#e78524' : '#cbd5e0'}`, background: active ? '#e78524' : '#fff', color: active ? '#fff' : '#4a5568', fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s' }}>
                     {r}
                   </button>
                 );
@@ -176,7 +176,7 @@ export default function AdminControl() {
             </div>
           </div>
 
-          <button type="submit" disabled={submitting} style={{ background: '#8a151b', color: '#fff', border: 'none', borderRadius: 8, padding: '11px 28px', fontWeight: 600, fontSize: 14, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button type="submit" disabled={submitting} style={{ background: '#e78524', color: '#fff', border: 'none', borderRadius: 8, padding: '11px 28px', fontWeight: 600, fontSize: 14, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: 8 }}>
             {submitting ? <><FaSpinner style={{ animation: 'spin 1s linear infinite' }} /> Creating...</> : <><FaPlus /> Create & Send Email</>}
           </button>
         </form>
@@ -214,7 +214,7 @@ export default function AdminControl() {
                     <option value="admin">Admin</option>
                     <option value="super_admin">Super Admin</option>
                   </select>
-                  {updatingId === u.id && <FaSpinner style={{ animation: 'spin 1s linear infinite', color: '#8a151b' }} />}
+                  {updatingId === u.id && <FaSpinner style={{ animation: 'spin 1s linear infinite', color: '#e78524' }} />}
                 </>
               )}
             </div>
