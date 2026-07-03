@@ -180,9 +180,10 @@
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center; /* Centering fix */
   gap: 8px;
-   transition: all 0.2s ease;
-
+  transition: all 0.2s ease;
+  width: 100%;
 }
 
 .pdfBtn:hover {
