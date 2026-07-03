@@ -31,6 +31,7 @@ import {
   FaSpinner,
   FaArrowLeft,
   FaArchive,
+  FaSyncAlt,
 } from "react-icons/fa";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
@@ -55,6 +56,9 @@ export default function Dashboard() {
   const [attendeesList, setAttendeesList]   = useState([]);
   const [regionScope, setRegionScope]       = useState("All");
   const [prefixScope, setPrefixScope]       = useState("MTRC-");
+  
+  // We use this key to force React to remount child components on refresh
+  const [refreshKey, setRefreshKey]         = useState(0);
 
   useEffect(() => {
     const cachedRegion = localStorage.getItem("selected_shibir_region");
@@ -81,31 +85,35 @@ export default function Dashboard() {
     }
   }, [regionScope]);
 
+  // Runs only once on component mount when initialization loading completes
   useEffect(() => {
     if (!loading && regionScope) {
       fetchIsolatedDataset();
-      // Poll for updates every 30s (replaces Supabase realtime)
-      const interval = setInterval(fetchIsolatedDataset, 30000);
-      return () => clearInterval(interval);
     }
   }, [loading, regionScope, fetchIsolatedDataset]);
 
+  const handleManualRefresh = () => {
+    if (!dataFetching) {
+      fetchIsolatedDataset();
+      // This forces the <Routes> component below to remount, triggering 
+      // internal fetch logic inside your other components (Sessions, Overview, etc.)
+      setRefreshKey(prevKey => prevKey + 1); 
+    }
+  };
+
   const handleLogout = async () => {
-  setIsLoggingOut(true);
-  try {
-    await logout(); // Ensure this is awaited if it's an async operation
-    // Clear the specific region data if you want a clean slate on next login
-    localStorage.removeItem("selected_shibir_region");
-    localStorage.removeItem("selected_shibir_prefix");
-    
-    // Explicitly navigate to the login route
-    navigate("/admin", { replace: true });
-  } catch (err) {
-    console.error("Logout failed", err);
-  } finally {
-    setIsLoggingOut(false);
-  }
-};
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      localStorage.removeItem("selected_shibir_region");
+      localStorage.removeItem("selected_shibir_prefix");
+      navigate("/admin", { replace: true });
+    } catch (err) {
+      console.error("Logout failed", err);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const handleNavigation = (targetPath) => {
     navigate(targetPath);
@@ -173,7 +181,6 @@ export default function Dashboard() {
                 <button onClick={() => handleNavigation("/dashboard/session/add-session")} className={`${styles.navLink} ${location.pathname === "/dashboard/session/add-session" ? styles.navLinkActive : ""}`}>
                   <IoIosAddCircleOutline className={styles.iconMargin} /> Add Session
                 </button>
-                
               </>
             )}
             {userRole && (
@@ -225,20 +232,33 @@ export default function Dashboard() {
                 <Route path="session/master/data/:sessionId" element="Master Data" />
                 <Route path="roster/karyakar" element="Karyakar List" />
                 <Route path="add-new-karyakar" element="Register New Karyakar" />
-
               </Routes>
             </h2>
           </div>
-          <span className={styles.systemStatusText}>
-            {dataFetching
-              ? <span className={styles.syncingIndicator}><FaSpinner className={styles.spin} /> Syncing Data...</span>
-              : <><span className={styles.pulseDot}></span> MTRC</>
-            }
-          </span>
+          
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <button 
+              className={styles.manualRefreshBtn} 
+              onClick={handleManualRefresh}
+              disabled={dataFetching}
+              title="Force sync data"
+              aria-label="Refresh database metrics"
+            >
+              <FaSyncAlt className={`${styles.refreshIcon} ${dataFetching ? styles.spin : ""}`} />
+              <span>Refresh</span>
+            </button>
+            <span className={styles.systemStatusText}>
+              {dataFetching
+                ? <span className={styles.syncingIndicator}><FaSpinner className={styles.spin} /> Syncing Data...</span>
+                : <><span className={styles.pulseDot}></span> MTRC</>
+              }
+            </span>
+          </div>
         </header>
 
         <div className={styles.viewWrapper}>
-          <Routes>
+          {/* Passing the refreshKey here forces React to cleanly remount whichever child view is currently open, triggering all internal API calls anew */}
+          <Routes key={refreshKey}>
             <Route path="overview" element={userRole !== "operator" ? <OverviewMetrics attendees={attendeesList} dataFetching={dataFetching} /> : <NotFound />} />
             <Route path="scanner" element={<CameraScanner regionScope={regionScope} prefixScope={prefixScope} />} />
             <Route path="admin-control" element={userRole === "master_admin" ? <AdminControl /> : <NotFound />} />
