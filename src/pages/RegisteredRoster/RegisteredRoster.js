@@ -555,8 +555,7 @@ const exportToCSV = () => {
                       </td>
                       <td style={{ textAlign: "center" }}>
                         {(userRole === "master_admin" ||
-                          userRole === "super_admin" ||
-                          userRole === "admin") &&
+                          userRole === "super_admin") &&
                           !attendee.is_archived && (
                             <button
                               onClick={() => initiateArchive(attendee, true)}
