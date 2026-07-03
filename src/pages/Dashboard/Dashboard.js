@@ -133,8 +133,9 @@ export default function Dashboard() {
           <div className={styles.brandFrame}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <h1 className={styles.brandTitle}>Bal-Balika Shibir</h1>
-                <p className={styles.brandSubtitle}>africa 2026</p>
+                <h1 className={styles.brandTitle}>Making the Right Choices</h1>
+                <p className={styles.brandSubtitle}>Bal-Balika Shibir, africa 2026</p>
+                
               </div>
               <button className={styles.closeMenuBtn} onClick={() => setIsMobileMenuOpen(false)} aria-label="Close menu">
                 <FaTimes />
