@@ -422,18 +422,25 @@
 .photoUploadBox:hover { border-color: #8a151b; color: #8a151b; }
 
 .exportBtn {
+  background-color: #10793F;
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 13.5px;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 8px;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background-color: #27ae60;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  font-weight: 500;
+   transition: all 0.2s ease;
+}
+.exportBtn:hover{
+  border: 2px solid #10793F; /* Set width, style, and color in one line */
+  background-color: #ffffff;
+  color: #10793F;
   cursor: pointer;
-  transition: background-color 0.2s, opacity 0.2s;
 }
 .actionsWrapper {
   display: flex;
