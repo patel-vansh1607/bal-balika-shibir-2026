@@ -308,8 +308,8 @@ export default function PublicRegister() {
     if (!cl || cl.length < 2)
       return fail("Enter a valid Last Name.", lastNameRef);
     const pa = parseInt(age);
-    if (isNaN(pa) || pa < 9 || pa > 14)
-      return fail("Age must be between 9 and 14.", ageRef);
+    if (isNaN(pa) || pa < 7 || pa > 14)
+      return fail("Age must be between 7 and 14.", ageRef);
     if (!gender) return fail("Please select a Mandal.", genderRef);
     if (!selectedRegion) return fail("Please select your Country.", regionRef);
     if (!selectedCenter) return fail("Please select your Center.", centerRef);
@@ -599,7 +599,7 @@ export default function PublicRegister() {
                       <label className={styles.label}>Age *</label>
                       <input
                         type="number"
-                        min="9"
+                        min="7"
                         max="14"
                         className={`${styles.input} ${formError && !age ? styles.inputError : ""}`}
                         placeholder="e.g. 11"
@@ -820,7 +820,7 @@ export default function PublicRegister() {
                       </p>
                       <ul className={styles.termsList}>
                         <li>
-                          Registration is open to children from Grades 3 to 8.
+                          Registration is open to children of ages 7 to 14.
                         </li>
                         <li>
                           All information provided must be accurate; incorrect
