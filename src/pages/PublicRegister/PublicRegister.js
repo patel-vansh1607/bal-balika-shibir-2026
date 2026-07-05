@@ -344,106 +344,116 @@ export default function PublicRegister() {
     };
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError("");
-    const validated = validateForm();
-    if (!validated) return;
-    const { constructedFullName, parsedAge, strippedContact, cleanEmail } =
-      validated;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setFormError("");
+  const validated = validateForm();
+  if (!validated) return;
+  
+  const { constructedFullName: rawFullName, parsedAge, strippedContact, cleanEmail } =
+    validated;
 
-    setLoading(true);
-    setSuccess(false);
-    setFinalAttendeeData(null);
+  // Title Case Formatting Logic: Converts "vansH vimalkumar patel" -> "Vansh Vimalkumar Patel"
+  const constructedFullName = rawFullName
+    ? rawFullName
+        .trim()
+        .split(/\s+/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ")
+    : "";
 
-    try {
-      const { data: insertData } = await attendeesApi.create({
-        name: constructedFullName,
-        age: parsedAge,
-        gender,
-        region: selectedRegion,
-        center: selectedCenter,
-        parent_contact: strippedContact,
-        parent_email: cleanEmail,
-        phone_number: strippedContact,
-        tshirt_size: tshirtSize,
-        status: "Pending",
-      });
+  setLoading(true);
+  setSuccess(false);
+  setFinalAttendeeData(null);
 
-      const rawId = insertData._raw_id;
-      const trueMemberId = insertData.member_id;
-      setGeneratedQRValue(trueMemberId);
+  try {
+    const { data: insertData } = await attendeesApi.create({
+      name: constructedFullName, // Saves perfectly formatted to your DB
+      age: parsedAge,
+      gender,
+      region: selectedRegion,
+      center: selectedCenter,
+      parent_contact: strippedContact,
+      parent_email: cleanEmail,
+      phone_number: strippedContact,
+      tshirt_size: tshirtSize,
+      status: "Pending",
+    });
 
-      const cleanName = constructedFullName
-        .replace(/[^a-zA-Z0-9]/g, "_")
-        .toLowerCase();
+    const rawId = insertData._raw_id;
+    const trueMemberId = insertData.member_id;
+    setGeneratedQRValue(trueMemberId);
 
-      let profileUrl = null;
-      if (photoFile) {
-        const ext = photoFile.name.split(".").pop().toLowerCase();
-        const photoFilename = `public_profile_${rawId}_${cleanName}.${ext}`;
-        const { url } = await upload.photo(photoFile, photoFilename);
-        profileUrl = url;
+    // Uses the clean title-cased string to build the asset filenames safely
+    const cleanName = constructedFullName
+      .replace(/[^a-zA-Z0-9]/g, "_")
+      .toLowerCase();
+
+    let profileUrl = null;
+    if (photoFile) {
+      const ext = photoFile.name.split(".").pop().toLowerCase();
+      const photoFilename = `public_profile_${rawId}_${cleanName}.${ext}`;
+      const { url } = await upload.photo(photoFile, photoFilename);
+      profileUrl = url;
+    }
+
+    setTimeout(async () => {
+      const svgElement = qrRef.current?.querySelector("svg");
+      let qrUrl = null;
+      if (svgElement) {
+        const svgString = new XMLSerializer().serializeToString(svgElement);
+        const svgBlob = new Blob([svgString], {
+          type: "image/svg+xml;charset=utf-8",
+        });
+        const qrFilename = `public_qr_${rawId}_${cleanName}.svg`;
+        const { url } = await upload.qr(svgBlob, qrFilename);
+        qrUrl = url;
       }
 
-      setTimeout(async () => {
-        const svgElement = qrRef.current?.querySelector("svg");
-        let qrUrl = null;
-        if (svgElement) {
-          const svgString = new XMLSerializer().serializeToString(svgElement);
-          const svgBlob = new Blob([svgString], {
-            type: "image/svg+xml;charset=utf-8",
-          });
-          const qrFilename = `public_qr_${rawId}_${cleanName}.svg`;
-          const { url } = await upload.qr(svgBlob, qrFilename);
-          qrUrl = url;
-        }
+      await attendeesApi.update(rawId, {
+        photo_url: profileUrl,
+        qr_code_url: qrUrl,
+      });
 
-        await attendeesApi.update(rawId, {
-          photo_url: profileUrl,
-          qr_code_url: qrUrl,
-        });
-
-        emailApi
-          .sendRegistration({
-            email: cleanEmail,
-            name: constructedFullName,
-            memberId: trueMemberId,
-            region: selectedRegion,
-            center: selectedCenter,
-          })
-          .catch(console.warn);
-
-        setFinalAttendeeData({
+      emailApi
+        .sendRegistration({
+          email: cleanEmail,
+          name: constructedFullName, // Clean string in notification emails
           memberId: trueMemberId,
-          name: constructedFullName,
           region: selectedRegion,
           center: selectedCenter,
-        });
-        setSuccess(true);
-        setLoading(false);
+        })
+        .catch(console.warn);
 
-        setFirstName("");
-        setMiddleName("");
-        setLastName("");
-        setAge("");
-        setGender("Balak");
-        setSelectedRegion("");
-        setRegionSearchQuery("");
-        setSelectedCenter("");
-        setCenterSearchQuery("");
-        setParentEmail("");
-        setPhotoFile(null);
-        // setPhotoPreview("");
-        setPhoneNumber("");
-        setTshirtSize("");
-      }, 600);
-    } catch (uploadErr) {
-      setFormError(`Registration failed: ${uploadErr.message}`);
+      setFinalAttendeeData({
+        memberId: trueMemberId,
+        name: constructedFullName, // Clean string for display updates
+        region: selectedRegion,
+        center: selectedCenter,
+      });
+      setSuccess(true);
       setLoading(false);
-    }
-  };
 
+      setFirstName("");
+      setMiddleName("");
+      setLastName("");
+      setAge("");
+      setGender("Balak");
+      setSelectedRegion("");
+      setRegionSearchQuery("");
+      setSelectedCenter("");
+      setCenterSearchQuery("");
+      setParentEmail("");
+      setPhotoFile(null);
+      // setPhotoPreview("");
+      setPhoneNumber("");
+      setTshirtSize("");
+    }, 600);
+} catch (uploadErr) {
+    setFormError(`Registration failed: ${uploadErr.message}`);
+    setLoading(false);
+  }
+};
   const handleResetFormView = () => {
     setSuccess(false);
     setFinalAttendeeData(null);
