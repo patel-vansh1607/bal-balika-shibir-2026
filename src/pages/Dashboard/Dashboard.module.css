@@ -715,3 +715,12 @@
   animation: spin 1.2s linear infinite;
   color: var(--accent-primary, #e78524) !important;
 }
+.navCard {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.navCard:hover {
+  background-color: var(--accent-soft) !important; /* Forces the accent background on hover */
+  transform: translateY(-2px); /* Adds a smooth lift effect matching your transition */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Adds a subtle micro-shadow depth */
+}
