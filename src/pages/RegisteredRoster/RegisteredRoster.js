@@ -836,18 +836,17 @@ const getGenderTagClass = (g) => {
   onClick={(e) => e.stopPropagation()}
 >
         {/* Only Master Admin can Edit Profile */}
-        {userRole === "master_admin" && userRole === "super_admin"(
-          <button
-            onClick={() => {
-              setActiveDropdown(null);
-              handleEditProfile(attendee); 
-            }}
-            className={styles.dropdownItem}
-          >
-            <FaEdit style={{ fontSize: "12px", color: "#3b82f6" }} /> Edit Profile
-          </button>
-        )}
-
+        {(userRole === "master_admin" || userRole === "super_admin") && (
+  <button
+    onClick={() => {
+      setActiveDropdown(null);
+      handleEditProfile(attendee); 
+    }}
+    className={styles.dropdownItem}
+  >
+    <FaEdit style={{ fontSize: "12px", color: "#3b82f6" }} /> Edit Profile
+  </button>
+)}
         {/* Conditional Archive Action */}
         {(userRole === "master_admin" || userRole === "super_admin") && !attendee.is_archived && (
           <button

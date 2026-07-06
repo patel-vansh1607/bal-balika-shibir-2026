@@ -150,40 +150,45 @@ export default function Dashboard() {
           </div>
           <nav className={styles.navigationList}>
             {userRole && userRole !== "operator" && (
-              <>
-                <button onClick={() => handleNavigation("/dashboard/overview")} className={`${styles.navLink} ${location.pathname === "/dashboard/overview" ? styles.navLinkActive : ""}`}>
-                  <FaChartBar className={styles.iconMargin} /> Overview Metrics
-                </button>
-                <button onClick={() => handleNavigation("/dashboard/roster")} className={`${styles.navLink} ${location.pathname === "/dashboard/roster" ? styles.navLinkActive : ""}`}>
-                  <FaUsers className={styles.iconMargin} /> Registered Roster
-                </button>
-                <button onClick={() => handleNavigation("/dashboard/add-new")} className={`${styles.navLink} ${location.pathname === "/dashboard/add-new" ? styles.navLinkActive : ""}`}>
-                  <FaUserPlus className={styles.iconMargin} /> Register Attendee
-                </button>
-                <button onClick={() => handleNavigation("/dashboard/roster/karyakar")} className={`${styles.navLink} ${location.pathname === "/dashboard/roster/karyakar" ? styles.navLinkActive : ""}`}>
-                  <FaUsers className={styles.iconMargin} /> Karyakar List
-                </button>
-                <button onClick={() => handleNavigation("/dashboard/add-new-karyakar")} className={`${styles.navLink} ${location.pathname === "/dashboard/add-new-karyakar" ? styles.navLinkActive : ""}`}>
-                  <FaUserPlus className={styles.iconMargin} /> Add Karyakar
-                </button>
-                {userRole === "master_admin" && userRole === "super_admin"(
-                  <>
-                    <button onClick={() => handleNavigation("/dashboard/archive")} className={`${styles.navLink} ${location.pathname === "/dashboard/archive" ? styles.navLinkActive : ""}`}>
-                      <FaArchive className={styles.iconMargin} /> Archive Manager
-                    </button>
-                    <button onClick={() => handleNavigation("/dashboard/admin-control")} className={`${styles.navLink} ${location.pathname === "/dashboard/admin-control" ? styles.navLinkActive : ""}`}>
-                      <FaUserShield className={styles.iconMargin} /> Admin Control
-                    </button>
-                  </>
-                )}
-                <button onClick={() => handleNavigation("/dashboard/session/master")} className={`${styles.navLink} ${location.pathname === "/dashboard/session/master" ? styles.navLinkActive : ""}`}>
-                  <FaChartBar className={styles.iconMargin} /> Session Master
-                </button>
-                <button onClick={() => handleNavigation("/dashboard/session/add-session")} className={`${styles.navLink} ${location.pathname === "/dashboard/session/add-session" ? styles.navLinkActive : ""}`}>
-                  <IoIosAddCircleOutline className={styles.iconMargin} /> Add Session
-                </button>
-              </>
-            )}
+  <>
+    <button onClick={() => handleNavigation("/dashboard/overview")} className={`${styles.navLink} ${location.pathname === "/dashboard/overview" ? styles.navLinkActive : ""}`}>
+      <FaChartBar className={styles.iconMargin} /> Overview Metrics
+    </button>
+    <button onClick={() => handleNavigation("/dashboard/roster")} className={`${styles.navLink} ${location.pathname === "/dashboard/roster" ? styles.navLinkActive : ""}`}>
+      <FaUsers className={styles.iconMargin} /> Registered Roster
+    </button>
+    <button onClick={() => handleNavigation("/dashboard/add-new")} className={`${styles.navLink} ${location.pathname === "/dashboard/add-new" ? styles.navLinkActive : ""}`}>
+      <FaUserPlus className={styles.iconMargin} /> Register Attendee
+    </button>
+    <button onClick={() => handleNavigation("/dashboard/roster/karyakar")} className={`${styles.navLink} ${location.pathname === "/dashboard/roster/karyakar" ? styles.navLinkActive : ""}`}>
+      <FaUsers className={styles.iconMargin} /> Karyakar List
+    </button>
+    <button onClick={() => handleNavigation("/dashboard/add-new-karyakar")} className={`${styles.navLink} ${location.pathname === "/dashboard/add-new-karyakar" ? styles.navLinkActive : ""}`}>
+      <FaUserPlus className={styles.iconMargin} /> Add Karyakar
+    </button>
+
+    {/* Archive Manager: Accessible by both master_admin and super_admin */}
+    {(userRole === "master_admin" || userRole === "super_admin") && (
+      <button onClick={() => handleNavigation("/dashboard/archive")} className={`${styles.navLink} ${location.pathname === "/dashboard/archive" ? styles.navLinkActive : ""}`}>
+        <FaArchive className={styles.iconMargin} /> Archive Manager
+      </button>
+    )}
+
+    {/* Admin Control: Only accessible by master_admin */}
+    {userRole === "master_admin" && (
+      <button onClick={() => handleNavigation("/dashboard/admin-control")} className={`${styles.navLink} ${location.pathname === "/dashboard/admin-control" ? styles.navLinkActive : ""}`}>
+        <FaUserShield className={styles.iconMargin} /> Admin Control
+      </button>
+    )}
+
+    <button onClick={() => handleNavigation("/dashboard/session/master")} className={`${styles.navLink} ${location.pathname === "/dashboard/session/master" ? styles.navLinkActive : ""}`}>
+      <FaChartBar className={styles.iconMargin} /> Session Master
+    </button>
+    <button onClick={() => handleNavigation("/dashboard/session/add-session")} className={`${styles.navLink} ${location.pathname === "/dashboard/session/add-session" ? styles.navLinkActive : ""}`}>
+      <IoIosAddCircleOutline className={styles.iconMargin} /> Add Session
+    </button>
+  </>
+)}
             {userRole && (
               <button onClick={() => handleNavigation("/dashboard/session/attendance")} className={`${styles.navLink} ${location.pathname.startsWith("/dashboard/session/attendance") ? styles.navLinkActive : ""}`}>
                 <TfiStatsUp className={styles.iconMargin} /> Sessions Attendance
@@ -268,8 +273,7 @@ export default function Dashboard() {
             <Route path="add-new-karyakar" element={userRole !== "operator" ? <KarayakarForm /> : <NotFound />} />
 
             <Route path="roster/karyakar" element={userRole !== "operator" ? <KarayakarList defaultRegion={regionScope !== "All" ? regionScope : ""} /> : <NotFound />} />
-            <Route path="archive" element={userRole === "master_admin" ? <ArchiveManager regionScope={regionScope} /> : <NotFound />} />
-            <Route path="session/master" element={userRole !== "operator" ? <SessionMasterDashboard activeRegion={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} /> : <NotFound />} />
+<Route path="archive" element={(userRole === "master_admin" || userRole === "super_admin") ? <ArchiveManager regionScope={regionScope} /> : <NotFound />} />            <Route path="session/master" element={userRole !== "operator" ? <SessionMasterDashboard activeRegion={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} /> : <NotFound />} />
             <Route path="session/attendance/:sessionId" element={<Sessions regionScope={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} />} />
             <Route path="session/add-session" element={userRole !== "operator" ? <AddSession /> : <NotFound />} />
             <Route path="session/attendance" element={<Sessions regionScope={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} />} />
