@@ -137,6 +137,12 @@ export default function PublicRegister() {
         "Busia",
         "Iganga",
         "Wakiso",
+        "Mityana",
+        "Mubende",
+        "Luwero",
+        "Kyenjojo",
+        "Masindi",
+        "Kitgum"
       ],
     },
     Zambia: {
