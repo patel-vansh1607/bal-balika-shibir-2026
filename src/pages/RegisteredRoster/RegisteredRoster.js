@@ -594,7 +594,76 @@ const getGenderTagClass = (g) => {
           </div>
         </div>
       </div>
+{/* --- Fixed 25-Record Pagination Footer Control --- */}
+{filteredAttendees.length > 0 && (
+  <div 
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "16px",
+      borderTop: "1px solid #e2e8f0",
+      backgroundColor: "#ffffff",
+      flexWrap: "wrap",
+      gap: "12px"
+    }}
+  >
+    {/* Record Metrics Counter */}
+    <div style={{ color: "#475569", fontSize: "14px" }}>
+      Showing <strong>{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredAttendees.length)}</strong> to{" "}
+      <strong>{Math.min(currentPage * ITEMS_PER_PAGE, filteredAttendees.length)}</strong> of{" "}
+      <strong>{filteredAttendees.length}</strong> records
+    </div>
 
+    {/* Navigation Button Layout Controls */}
+    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      {/* Previous Page Navigation */}
+      <button
+        type="button"
+        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+        disabled={currentPage === 1}
+        style={{
+          padding: "6px 14px",
+          borderRadius: "6px",
+          border: "1px solid #cbd5e1",
+          backgroundColor: currentPage === 1 ? "#f1f5f9" : "#ffffff",
+          color: currentPage === 1 ? "#94a3b8" : "#334155",
+          cursor: currentPage === 1 ? "not-allowed" : "pointer",
+          fontSize: "14px",
+          fontWeight: "500",
+          transition: "all 0.15s ease"
+        }}
+      >
+        Previous
+      </button>
+
+      {/* Page Sequence Context Tracker */}
+      <span style={{ fontSize: "14px", color: "#334155" }}>
+        Page <strong>{currentPage}</strong> of <strong>{totalPages || 1}</strong>
+      </span>
+
+      {/* Next Page Navigation */}
+      <button
+        type="button"
+        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+        disabled={currentPage === totalPages || totalPages === 0}
+        style={{
+          padding: "6px 14px",
+          borderRadius: "6px",
+          border: "1px solid #cbd5e1",
+          backgroundColor: currentPage === totalPages || totalPages === 0 ? "#f1f5f9" : "#ffffff",
+          color: currentPage === totalPages || totalPages === 0 ? "#94a3b8" : "#334155",
+          cursor: currentPage === totalPages || totalPages === 0 ? "not-allowed" : "pointer",
+          fontSize: "14px",
+          fontWeight: "500",
+          transition: "all 0.15s ease"
+        }}
+      >
+        Next
+      </button>
+    </div>
+  </div>
+)}
       <div className={styles.contentCard}>
         {dataFetching ? (
           <div className={styles.tableMessageBlock}>
@@ -633,7 +702,7 @@ const getGenderTagClass = (g) => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedAttendees.map((attendee) => {
+                {paginatedAttendees.map((attendee, index) => {
                   const systemIdCode =
                     attendee.member_id || `MTRC-${attendee.id}`;
                   const parentContactDisplay = attendee.parent_contact;
@@ -739,10 +808,17 @@ const getGenderTagClass = (g) => {
       />
 
       <div 
-        className={styles.actionDropdown} 
-        style={{ zIndex: 999 }}
-        onClick={(e) => e.stopPropagation()}
-      >
+  className={styles.actionDropdown} 
+  style={{ 
+    zIndex: 2000, /* Higher z-index to lift it above the footer */
+    /* If it's one of the last 3 rows on the page, position it above the button */
+    ...(index >= paginatedAttendees.length - 3 
+      ? { bottom: "100%", top: "auto", marginBottom: "4px" } 
+      : {}
+    )
+  }}
+  onClick={(e) => e.stopPropagation()}
+>
         {/* Only Master Admin can Edit Profile */}
         {userRole === "master_admin" && (
           <button
@@ -835,76 +911,7 @@ const getGenderTagClass = (g) => {
           </div>
         )}
       </div>
-{/* --- Fixed 25-Record Pagination Footer Control --- */}
-{filteredAttendees.length > 0 && (
-  <div 
-    style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "16px",
-      borderTop: "1px solid #e2e8f0",
-      backgroundColor: "#ffffff",
-      flexWrap: "wrap",
-      gap: "12px"
-    }}
-  >
-    {/* Record Metrics Counter */}
-    <div style={{ color: "#475569", fontSize: "14px" }}>
-      Showing <strong>{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredAttendees.length)}</strong> to{" "}
-      <strong>{Math.min(currentPage * ITEMS_PER_PAGE, filteredAttendees.length)}</strong> of{" "}
-      <strong>{filteredAttendees.length}</strong> records
-    </div>
 
-    {/* Navigation Button Layout Controls */}
-    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-      {/* Previous Page Navigation */}
-      <button
-        type="button"
-        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-        disabled={currentPage === 1}
-        style={{
-          padding: "6px 14px",
-          borderRadius: "6px",
-          border: "1px solid #cbd5e1",
-          backgroundColor: currentPage === 1 ? "#f1f5f9" : "#ffffff",
-          color: currentPage === 1 ? "#94a3b8" : "#334155",
-          cursor: currentPage === 1 ? "not-allowed" : "pointer",
-          fontSize: "14px",
-          fontWeight: "500",
-          transition: "all 0.15s ease"
-        }}
-      >
-        Previous
-      </button>
-
-      {/* Page Sequence Context Tracker */}
-      <span style={{ fontSize: "14px", color: "#334155" }}>
-        Page <strong>{currentPage}</strong> of <strong>{totalPages || 1}</strong>
-      </span>
-
-      {/* Next Page Navigation */}
-      <button
-        type="button"
-        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-        disabled={currentPage === totalPages || totalPages === 0}
-        style={{
-          padding: "6px 14px",
-          borderRadius: "6px",
-          border: "1px solid #cbd5e1",
-          backgroundColor: currentPage === totalPages || totalPages === 0 ? "#f1f5f9" : "#ffffff",
-          color: currentPage === totalPages || totalPages === 0 ? "#94a3b8" : "#334155",
-          cursor: currentPage === totalPages || totalPages === 0 ? "not-allowed" : "pointer",
-          fontSize: "14px",
-          fontWeight: "500",
-          transition: "all 0.15s ease"
-        }}
-      >
-        Next
-      </button>
-    </div>
-  </div>
-)}
       {activeQrModalUser && (
         <div
           className={styles.modalOverlay}
@@ -1026,7 +1033,7 @@ const getGenderTagClass = (g) => {
   <div className={styles.modalOverlay}>
     <div className={styles.modalContent}>
       <div className={styles.modalHeader}>
-        <h3>Edit Profile Records (Master Admin Access)</h3>
+        <h3>Edit Profile Records</h3>
         <button 
           className={styles.modalCloseBtn} 
           onClick={() => setIsEditModalOpen(false)}
@@ -1040,11 +1047,11 @@ const getGenderTagClass = (g) => {
         {/* Read-Only Fixed Structural System Elements */}
         <div className={styles.formRow}>
           <div className={styles.formGroup}>
-            <label>Database Row ID (Locked)</label>
+            <label>Database Row ID </label>
             <input type="text" value={editingAttendee.id} disabled className={styles.disabledInput} />
           </div>
           <div className={styles.formGroup}>
-            <label>Member Identification Token (Locked)</label>
+            <label>Member Identification Token </label>
             <input type="text" value={editingAttendee.member_id} disabled className={styles.disabledInput} />
           </div>
         </div>
@@ -1091,7 +1098,7 @@ const getGenderTagClass = (g) => {
             />
           </div>
           <div className={styles.formGroup} style={{ flex: 1 }}>
-            <label>T-Shirt Apparel Size</label>
+            <label>T-Shirt Size</label>
             <input 
               type="text" 
               placeholder="e.g. M, L, XL"
@@ -1106,26 +1113,26 @@ const getGenderTagClass = (g) => {
         
         <div className={styles.formRow}>
           <div className={styles.formGroup}>
-            <label>Mandal Categorization (Locked)</label>
+            <label>Mandal</label>
             <input type="text" value={editingAttendee.gender} disabled className={styles.disabledInput} />
           </div>
           <div className={styles.formGroup}>
-            <label>Registered Age (Locked)</label>
+            <label>Age</label>
             <input type="text" value={editingAttendee.age} disabled className={styles.disabledInput} />
           </div>
         </div>
 
         <div className={styles.formRow}>
           <div className={styles.formGroup}>
-            <label>Country (Locked)</label>
+            <label>Country </label>
             <input type="text" value={editingAttendee.country} disabled className={styles.disabledInput} />
           </div>
           <div className={styles.formGroup}>
-            <label>Center Branch (Locked)</label>
+            <label>Center  </label>
             <input type="text" value={editingAttendee.center} disabled className={styles.disabledInput} />
           </div>
           <div className={styles.formGroup}>
-            <label>Parent Contact Link (Locked)</label>
+            <label>Parent Contact  </label>
             <input type="text" value={editingAttendee.parent_contact} disabled className={styles.disabledInput} />
           </div>
         </div>
