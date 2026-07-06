@@ -1,42 +1,39 @@
 import React, { useState, useEffect } from "react";
-import { FaUsers, FaUserPlus, FaChartBar } from "react-icons/fa";
+import { FaUsers, FaUserPlus, FaChartBar, FaSpinner } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+// Import your established API instance
+import { userRoles } from "../../apiClient"; 
 import styles from "../Dashboard/Dashboard.module.css";
 
 export default function OverviewMetrics() {
   const navigate = useNavigate();
-  const [userName, setUserName] = useState("Admin"); // Default fallback while loading
+  const [userName, setUserName] = useState("Admin"); 
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      // 1. Retrieve the token stored during login (adjust 'token' to match your localStorage key)
-      const token = localStorage.getItem("token"); 
-      
-      if (!token) return;
+    // Call the profile endpoint directly from your API client engine
+    userRoles.me()
+      .then((res) => {
+        // Read from your unified data structure wrapper
+        const rawName = res?.data?.name || res?.name;
+        
+        if (rawName) {
+          // Force proper clean capitalization for the visual greeting
+          const cleanName = rawName
+            .trim()
+            .split(/\s+/)
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(" ");
 
-      try {
-        // 2. Fetch from your PHP endpoint (replace API_BASE_URL with your actual backend URL)
-        const response = await fetch("/api/user-roles/me", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}` // Ensure it matches what require_auth() expects
-          }
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          // 3. Map to data.name based on your PHP format_user_role() response structural output
-          if (result?.data?.name) {
-            setUserName(result.data.name);
-          }
+          setUserName(cleanName);
         }
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-      }
-    };
-
-    fetchUserProfile();
+      })
+      .catch((error) => {
+        console.error("Error matching admin session details via apiClient:", error);
+      })
+      .finally(() => {
+        setIsLoadingProfile(false);
+      });
   }, []);
 
   const navOptions = [
@@ -48,8 +45,12 @@ export default function OverviewMetrics() {
   return (
     <>
       <section className={styles.welcomeSection} style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "28px", color: "#202124", marginBottom: "8px" }}>
-          Jay Swaminarayan, {userName}
+        <h1 style={{ fontSize: "28px", color: "#202124", marginBottom: "8px", display: "flex", alignItems: "center", gap: "10px" }}>
+          Jay Swaminarayan, {isLoadingProfile ? (
+            <FaSpinner className={styles.spinAnimation} style={{ fontSize: "20px", color: "#e78524" }} />
+          ) : (
+            userName
+          )}
         </h1>
         <p style={{ color: "#5f6368" }}>Select an option below to manage the event portal.</p>
       </section>
@@ -78,6 +79,16 @@ export default function OverviewMetrics() {
           </button>
         ))}
       </section>
+
+      {/* Global spinning keyframes in case it's not defined in your CSS module */}
+      <style>{`
+        .${styles.spinAnimation} {
+          animation: overviewSpin 1s linear infinite;
+        }
+        @keyframes overviewSpin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </>
   );
 }
