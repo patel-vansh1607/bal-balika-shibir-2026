@@ -166,7 +166,7 @@ export default function Dashboard() {
                 <button onClick={() => handleNavigation("/dashboard/add-new-karyakar")} className={`${styles.navLink} ${location.pathname === "/dashboard/add-new-karyakar" ? styles.navLinkActive : ""}`}>
                   <FaUserPlus className={styles.iconMargin} /> Add Karyakar
                 </button>
-                {userRole === "master_admin" && (
+                {userRole === "master_admin" && userRole === "super_admin"(
                   <>
                     <button onClick={() => handleNavigation("/dashboard/archive")} className={`${styles.navLink} ${location.pathname === "/dashboard/archive" ? styles.navLinkActive : ""}`}>
                       <FaArchive className={styles.iconMargin} /> Archive Manager
