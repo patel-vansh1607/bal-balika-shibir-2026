@@ -890,12 +890,12 @@ const getGenderTagClass = (g) => {
 
 {/* --- Refined Action Confirmation Modal --- */}
 {confirmAction && (
-  <div className={styles.modalOverlay} onClick={() => setConfirmAction(null)}>
-    <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+  <div className={styles.modalOverlay2} onClick={() => setConfirmAction(null)}>
+    <div className={styles.modalCard2} onClick={(e) => e.stopPropagation()}>
       
       {/* Dynamic Header Icon Frame */}
       <div 
-        className={styles.modalIconHeader} 
+        className={styles.modalIconHeader2} 
         style={{
           backgroundColor: confirmAction.shouldArchive ? "#fef3c7" : "#dcfce7",
           color: confirmAction.shouldArchive ? "#d97706" : "#16a34a"
@@ -905,10 +905,10 @@ const getGenderTagClass = (g) => {
       </div>
 
       {/* Text Context Content */}
-      <h3 className={styles.modalTitle}>
+      <h3 className={styles.modalTitle2}>
         {confirmAction.shouldArchive ? "Archive Record?" : "Restore Record?"}
       </h3>
-      <p className={styles.modalDescription}>
+      <p className={styles.modalDescription2}>
         Are you sure you want to {confirmAction.shouldArchive ? "archive" : "restore"}{" "}
         <strong>{confirmAction.attendee.name}</strong>? 
         {confirmAction.shouldArchive 
@@ -918,7 +918,7 @@ const getGenderTagClass = (g) => {
       </p>
 
       {/* Button Action Controls Group */}
-      <div className={styles.modalActionGroup}>
+      <div className={styles.modalActionGroup2}>
         <button
           type="button"
           onClick={() => setConfirmAction(null)}
@@ -1201,7 +1201,7 @@ const getGenderTagClass = (g) => {
             className={styles.saveBtn} 
             disabled={isSavingProfile}
           >
-            {isSavingProfile ? <><FaSpinner className={styles.spinner} /> Processing Save...</> : "Commit Changes"}
+            {isSavingProfile ? <><FaSpinner className={styles.spinner} /> Processing Save...</> : "Save New Changes"}
           </button>
         </div>
       </form>
