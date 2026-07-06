@@ -266,7 +266,7 @@ const handleExportPDF = (
   }
 
   const safeFileNameToken = String(currentCountry || "All").replace(/\s+/g, "_");
-  doc.save(`Shibir_Roster_${safeFileNameToken}.pdf`);
+  doc.save(`Registered_${safeFileNameToken}.pdf`);
 };
 const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;
@@ -352,7 +352,7 @@ const exportToCSV = () => {
       
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `Roster_${(regionScope||"All").replace(/\s+/g,"_")}_${selectedGender||"Export"}.csv`);
+      link.setAttribute("download", `Registered_${(regionScope||"All").replace(/\s+/g,"_")}_${selectedGender||"Export"}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
