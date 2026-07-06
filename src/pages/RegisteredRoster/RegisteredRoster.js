@@ -836,7 +836,7 @@ const getGenderTagClass = (g) => {
   onClick={(e) => e.stopPropagation()}
 >
         {/* Only Master Admin can Edit Profile */}
-        {userRole === "master_admin" && (
+        {userRole === "master_admin" && userRole === "super_admin"(
           <button
             onClick={() => {
               setActiveDropdown(null);
