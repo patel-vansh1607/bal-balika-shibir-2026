@@ -27,3 +27,4 @@ yarn-error.log*
 # Backend secrets — never commit real credentials
 backend/config.php
 cpanel/
+GENERATE_SOURCEMAP=false

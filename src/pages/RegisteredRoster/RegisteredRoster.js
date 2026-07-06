@@ -1,4 +1,4 @@
-import React, {useState, useMemo} from "react";
+import React, {useState, useMemo, useEffect} from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import QRCode from "qrcode";
@@ -43,7 +43,41 @@ export default function RegisteredRoster({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 const [editingAttendee, setEditingAttendee] = useState(null);
 const [isSavingProfile, setIsSavingProfile] = useState(false);
+// A. State variables go at the very top of the function hook block
+const [currentPage, setCurrentPage] = useState(1);
+const ITEMS_PER_PAGE = 25;
 
+// B. First Memo calculates the base dataset filters
+const filteredAttendees = useMemo(() => {
+  return attendees.filter((attendee) => {
+    const nameSafe = attendee.name?.toLowerCase() || "";
+    const contactSafe = String(attendee.parent_contact || "");
+    const idSafe = String(attendee.member_id || "").toLowerCase();
+    return (
+      attendee.is_archived === showArchived &&
+      (nameSafe.includes(searchTerm.toLowerCase()) ||
+        contactSafe.includes(searchTerm) ||
+        idSafe.includes(searchTerm.toLowerCase())) &&
+      (selectedCenter === "All" || attendee.center === selectedCenter) &&
+      (selectedGender === "All" || attendee.gender === selectedGender)
+    );
+  });
+}, [attendees, searchTerm, selectedCenter, selectedGender, showArchived]);
+
+// C. Reset the active page layout index when filters change
+useEffect(() => {
+  setCurrentPage(1);
+}, [searchTerm, selectedCenter, selectedGender, showArchived]);
+
+// D. Second Memo slices the filtered rows down into 25-row segments
+const paginatedAttendees = useMemo(() => {
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  return filteredAttendees.slice(startIndex, endIndex);
+}, [filteredAttendees, currentPage]);
+
+// E. Compute total page layout limits
+const totalPages = Math.ceil(filteredAttendees.length / ITEMS_PER_PAGE);
   const centersList = [
     "All",
     ...new Set(attendees.map((a) => a.center).filter(Boolean)),
@@ -252,21 +286,6 @@ const downloadBatchQR = async () => {
     }
   };
 
-  const filteredAttendees = useMemo(() => {
-    return attendees.filter((attendee) => {
-      const nameSafe = attendee.name?.toLowerCase() || "";
-      const contactSafe = String(attendee.parent_contact || "");
-      const idSafe = String(attendee.member_id || "").toLowerCase();
-      return (
-        attendee.is_archived === showArchived &&
-        (nameSafe.includes(searchTerm.toLowerCase()) ||
-          contactSafe.includes(searchTerm) ||
-          idSafe.includes(searchTerm.toLowerCase())) &&
-        (selectedCenter === "All" || attendee.center === selectedCenter) &&
-        (selectedGender === "All" || attendee.gender === selectedGender)
-      );
-    });
-  }, [attendees, searchTerm, selectedCenter, selectedGender, showArchived]);
 
 const exportToCSV = () => {
     if (filteredAttendees.length === 0) { 
@@ -614,7 +633,7 @@ const getGenderTagClass = (g) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredAttendees.map((attendee) => {
+                {paginatedAttendees.map((attendee) => {
                   const systemIdCode =
                     attendee.member_id || `MTRC-${attendee.id}`;
                   const parentContactDisplay = attendee.parent_contact;
@@ -692,7 +711,9 @@ const getGenderTagClass = (g) => {
   <button
     onClick={(e) => {
       e.stopPropagation();
-      setActiveDropdown(activeDropdown === attendee.id ? null : attendee.id);
+      // Type safe string mapping preserves exact match states during filters
+      const currentId = String(attendee.id);
+      setActiveDropdown(String(activeDropdown) === currentId ? null : attendee.id);
     }}
     className={styles.menuTriggerBtn}
     title="Actions"
@@ -701,7 +722,7 @@ const getGenderTagClass = (g) => {
   </button>
 
   {/* Dropdown Action Menu */}
-  {activeDropdown === attendee.id && (
+  {String(activeDropdown) === String(attendee.id) && (
     <>
       {/* Global transparent overlay to catch clicks outside the menu */}
       <div
@@ -809,11 +830,81 @@ const getGenderTagClass = (g) => {
                   );
                 })}
               </tbody>
+              
             </table>
           </div>
         )}
       </div>
+{/* --- Fixed 25-Record Pagination Footer Control --- */}
+{filteredAttendees.length > 0 && (
+  <div 
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "16px",
+      borderTop: "1px solid #e2e8f0",
+      backgroundColor: "#ffffff",
+      flexWrap: "wrap",
+      gap: "12px"
+    }}
+  >
+    {/* Record Metrics Counter */}
+    <div style={{ color: "#475569", fontSize: "14px" }}>
+      Showing <strong>{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredAttendees.length)}</strong> to{" "}
+      <strong>{Math.min(currentPage * ITEMS_PER_PAGE, filteredAttendees.length)}</strong> of{" "}
+      <strong>{filteredAttendees.length}</strong> records
+    </div>
 
+    {/* Navigation Button Layout Controls */}
+    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      {/* Previous Page Navigation */}
+      <button
+        type="button"
+        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+        disabled={currentPage === 1}
+        style={{
+          padding: "6px 14px",
+          borderRadius: "6px",
+          border: "1px solid #cbd5e1",
+          backgroundColor: currentPage === 1 ? "#f1f5f9" : "#ffffff",
+          color: currentPage === 1 ? "#94a3b8" : "#334155",
+          cursor: currentPage === 1 ? "not-allowed" : "pointer",
+          fontSize: "14px",
+          fontWeight: "500",
+          transition: "all 0.15s ease"
+        }}
+      >
+        Previous
+      </button>
+
+      {/* Page Sequence Context Tracker */}
+      <span style={{ fontSize: "14px", color: "#334155" }}>
+        Page <strong>{currentPage}</strong> of <strong>{totalPages || 1}</strong>
+      </span>
+
+      {/* Next Page Navigation */}
+      <button
+        type="button"
+        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+        disabled={currentPage === totalPages || totalPages === 0}
+        style={{
+          padding: "6px 14px",
+          borderRadius: "6px",
+          border: "1px solid #cbd5e1",
+          backgroundColor: currentPage === totalPages || totalPages === 0 ? "#f1f5f9" : "#ffffff",
+          color: currentPage === totalPages || totalPages === 0 ? "#94a3b8" : "#334155",
+          cursor: currentPage === totalPages || totalPages === 0 ? "not-allowed" : "pointer",
+          fontSize: "14px",
+          fontWeight: "500",
+          transition: "all 0.15s ease"
+        }}
+      >
+        Next
+      </button>
+    </div>
+  </div>
+)}
       {activeQrModalUser && (
         <div
           className={styles.modalOverlay}
