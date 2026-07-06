@@ -81,6 +81,14 @@ export default function PublicRegister() {
         "Embu",
         "Lamu",
         "Nanyuki",
+        "Athi River",
+        "Nyahururu",
+        "Bomet",
+        "Busia",
+        "Homabay",
+        "Kisii",
+        "Bungoma"
+
       ],
     },
     Tanzania: {
