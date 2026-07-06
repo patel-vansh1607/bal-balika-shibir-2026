@@ -18,6 +18,7 @@ FaSearch,
   FaArchive,
   FaEllipsisV,
   FaEdit,
+  FaCheckCircle
 } from "react-icons/fa";
 import styles from "./RegisteredRoster.module.css";
 
@@ -46,6 +47,7 @@ const [isSavingProfile, setIsSavingProfile] = useState(false);
 // A. State variables go at the very top of the function hook block
 const [currentPage, setCurrentPage] = useState(1);
 const ITEMS_PER_PAGE = 25;
+const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
 // B. First Memo calculates the base dataset filters
 const filteredAttendees = useMemo(() => {
@@ -93,6 +95,20 @@ const totalPages = Math.ceil(filteredAttendees.length / ITEMS_PER_PAGE);
   const executeArchive = async () => {
     if (!confirmAction) return;
     setIsProcessing(true);
+    // Inside your try block where executeArchive resolves successfully:
+const wasArchiving = confirmAction.shouldArchive;
+
+setConfirmAction(null);
+setToast({
+  show: true,
+  message: wasArchiving ? "Record archived successfully!" : "Record restored successfully!",
+  type: wasArchiving ? "archive" : "restore"
+});
+
+// Auto-hide the success popup banner after 3 seconds
+setTimeout(() => {
+  setToast({ show: false, message: "", type: "" });
+}, 3000);
     const { attendee, shouldArchive } = confirmAction;
     try {
       await attendeesApi.update(attendee._raw_id || parseInt(attendee.id, 10), {
@@ -862,46 +878,79 @@ const getGenderTagClass = (g) => {
   )}
 </td>
     {/* Confirmation Action Modal Layout */}
-    {confirmAction && (
-      <div className={styles.modalOverlay} onClick={() => setConfirmAction(null)}>
-        <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-          <h3>Confirm {confirmAction.shouldArchive ? "Archive" : "Restore"}</h3>
-          <p>
-            Are you sure you want to {confirmAction.shouldArchive ? "archive" : "restore"}{" "}
-            <strong>{confirmAction.attendee.name}</strong>?
-          </p>
-          <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-            <button onClick={() => setConfirmAction(null)} className={styles.cancelBtn}>
-              Cancel
-            </button>
-            <button
-              onClick={executeArchive}
-              className={styles.confirmBtn}
-              disabled={isProcessing}
-              style={{
-                backgroundColor: confirmAction.shouldArchive ? "#d97706" : "green",
-                opacity: isProcessing ? 0.7 : 1,
-                cursor: isProcessing ? "not-allowed" : "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-              }}
-            >
-              {isProcessing ? (
-                <>
-                  <FaSpinner className={styles.spin} /> Processing...
-                </>
-              ) : confirmAction.shouldArchive ? (
-                "Confirm Archive"
-              ) : (
-                "Confirm Restore"
-              )}
-            </button>
-          </div>
-        </div>
+{/* --- Glassmorphism Toast Notification Success Popup --- */}
+{toast.show && (
+  <div 
+    className={`${styles.toastNotification} ${toast.type === "archive" ? styles.toastArchive : styles.toastRestore}`}
+  >
+    <FaCheckCircle className={styles.toastIcon} />
+    <span>{toast.message}</span>
+  </div>
+)}
+
+{/* --- Refined Action Confirmation Modal --- */}
+{confirmAction && (
+  <div className={styles.modalOverlay} onClick={() => setConfirmAction(null)}>
+    <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+      
+      {/* Dynamic Header Icon Frame */}
+      <div 
+        className={styles.modalIconHeader} 
+        style={{
+          backgroundColor: confirmAction.shouldArchive ? "#fef3c7" : "#dcfce7",
+          color: confirmAction.shouldArchive ? "#d97706" : "#16a34a"
+        }}
+      >
+        <FaArchive size={24} style={{ transform: confirmAction.shouldArchive ? "none" : "rotate(180deg)" }} />
       </div>
-    )}
+
+      {/* Text Context Content */}
+      <h3 className={styles.modalTitle}>
+        {confirmAction.shouldArchive ? "Archive Record?" : "Restore Record?"}
+      </h3>
+      <p className={styles.modalDescription}>
+        Are you sure you want to {confirmAction.shouldArchive ? "archive" : "restore"}{" "}
+        <strong>{confirmAction.attendee.name}</strong>? 
+        {confirmAction.shouldArchive 
+          ? " "
+          : " This will place the record back into the primary active roster view."
+        }
+      </p>
+
+      {/* Button Action Controls Group */}
+      <div className={styles.modalActionGroup}>
+        <button
+          type="button"
+          onClick={() => setConfirmAction(null)}
+          className={styles.cancelBtn}
+          disabled={isProcessing}
+        >
+          Cancel
+        </button>
+        
+        <button
+          type="button"
+          onClick={executeArchive}
+          className={styles.confirmBtn}
+          disabled={isProcessing}
+          style={{
+            backgroundColor: confirmAction.shouldArchive ? "#d97706" : "#16a34a",
+          }}
+        >
+          {isProcessing ? (
+            <>
+              <FaSpinner className={styles.spin} /> Processing...
+            </>
+          ) : confirmAction.shouldArchive ? (
+            "Confirm Archive"
+          ) : (
+            "Confirm Restore"
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
                     </tr>
                   );
                 })}
@@ -922,7 +971,7 @@ const getGenderTagClass = (g) => {
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className={styles.modalCloseBtn}
+              className={styles.modalCloseBtn1}
               onClick={() => setActiveQrModalUser(null)}
             >
               <FaTimes />
