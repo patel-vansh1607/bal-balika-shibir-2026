@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useEffect, useRef} from "react";
+import React, {useState, useMemo} from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import QRCode from "qrcode";
