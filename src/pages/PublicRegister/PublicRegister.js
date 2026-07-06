@@ -350,7 +350,7 @@ const handleSubmit = async (e) => {
   const validated = validateForm();
   if (!validated) return;
   
-  const { constructedFullName: rawFullName, parsedAge, strippedContact, cleanEmail } =
+const { constructedFullName: rawFullName, parsedAge, strippedContact, cleanEmail } =
     validated;
 
   // Title Case Formatting Logic: Converts "vansH vimalkumar patel" -> "Vansh Vimalkumar Patel"
