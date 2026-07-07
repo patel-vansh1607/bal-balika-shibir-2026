@@ -650,20 +650,22 @@ export default function PublicRegister() {
                       />
                     </div>
                     <div className={styles.formGroup} ref={genderRef}>
-  <label className={styles.label}>Mandal *</label>
-  <select
-    className={`${styles.select} ${formError && !gender ? styles.inputError : ""}`}
-    value={gender}
-    onChange={(e) => setGender(e.target.value)}
-    disabled={loading}
-    required
-  >
-    {/* Disabled hidden option forces them to look at the list and click an actual selection */}
-    <option value="" disabled hidden>— Select Mandal —</option>
-    <option value="Balak">Balak</option>
-    <option value="Balika">Balika</option>
-  </select>
-</div>
+                      <label className={styles.label}>Mandal *</label>
+                      <select
+                        className={`${styles.select} ${formError && !gender ? styles.inputError : ""}`}
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
+                        disabled={loading}
+                        required
+                      >
+                        {/* Disabled hidden option forces them to look at the list and click an actual selection */}
+                        <option value="" disabled hidden>
+                          — Select Mandal —
+                        </option>
+                        <option value="Balak">Balak</option>
+                        <option value="Balika">Balika</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div className={styles.rowFieldContainer}>
