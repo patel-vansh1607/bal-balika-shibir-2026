@@ -724,3 +724,8 @@
   transform: translateY(-2px); /* Adds a smooth lift effect matching your transition */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Adds a subtle micro-shadow depth */
 }
+.disabledLink {
+  opacity: 0.4;
+  cursor: not-allowed !important;
+  pointer-events: none; /* Prevents any click behavior completely */
+}
