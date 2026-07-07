@@ -14,6 +14,8 @@ import {
   FaChevronDown,
   FaSearch,
   FaPlusCircle,
+  FaEdit,
+  FaCheck,
 } from "react-icons/fa";
 import styles from "./PublicRegister.module.css";
 
@@ -42,7 +44,9 @@ export default function PublicRegister() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [tshirtSize, setTshirtSize] = useState("");
-  // const [photoPreview, setPhotoPreview] = useState("");
+
+  // Workflow panel state toggle
+  const [formMode, setFormMode] = useState("form"); // "form" | "review"
 
   const phoneRef = useRef(null);
   const shirtRef = useRef(null);
@@ -368,11 +372,25 @@ export default function PublicRegister() {
     };
   };
 
-  const handleSubmit = async (e) => {
+  // Step 1: Open Preview Box Mode
+  const handleTriggerReview = (e) => {
     e.preventDefault();
     setFormError("");
     const validated = validateForm();
     if (!validated) return;
+
+    setFormMode("review");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Step 2: Full Database Transmission Workflow Sequence
+  const handleCommitFinalRegistration = async () => {
+    setFormError("");
+    const validated = validateForm();
+    if (!validated) {
+      setFormMode("form");
+      return;
+    }
 
     const {
       constructedFullName: rawFullName,
@@ -381,7 +399,6 @@ export default function PublicRegister() {
       cleanEmail,
     } = validated;
 
-    // Title Case Formatting Logic: Converts "vansH vimalkumar patel" -> "Vansh Vimalkumar Patel"
     const constructedFullName = rawFullName
       ? rawFullName
           .trim()
@@ -393,13 +410,13 @@ export default function PublicRegister() {
           .join(" ")
       : "";
 
+    // START LOADING WINDOW STATE
     setLoading(true);
-    setSuccess(false);
-    setFinalAttendeeData(null);
 
     try {
+      // 1. Create DB entry
       const { data: insertData } = await attendeesApi.create({
-        name: constructedFullName, // Saves perfectly formatted to your DB
+        name: constructedFullName,
         age: parsedAge,
         gender,
         region: selectedRegion,
@@ -415,11 +432,11 @@ export default function PublicRegister() {
       const trueMemberId = insertData.member_id;
       setGeneratedQRValue(trueMemberId);
 
-      // Uses the clean title-cased string to build the asset filenames safely
       const cleanName = constructedFullName
         .replace(/[^a-zA-Z0-9]/g, "_")
         .toLowerCase();
 
+      // 2. Process image asset dependencies if attached
       let profileUrl = null;
       if (photoFile) {
         const ext = photoFile.name.split(".").pop().toLowerCase();
@@ -428,67 +445,81 @@ export default function PublicRegister() {
         profileUrl = url;
       }
 
-      setTimeout(async () => {
-        const svgElement = qrRef.current?.querySelector("svg");
-        let qrUrl = null;
-        if (svgElement) {
-          const svgString = new XMLSerializer().serializeToString(svgElement);
-          const svgBlob = new Blob([svgString], {
-            type: "image/svg+xml;charset=utf-8",
+      // 3. Process QR generation assets tree inside microtask window
+      await new Promise((resolve) => {
+        setTimeout(async () => {
+          const svgElement = qrRef.current?.querySelector("svg");
+          let qrUrl = null;
+          if (svgElement) {
+            const svgString = new XMLSerializer().serializeToString(svgElement);
+            const svgBlob = new Blob([svgString], {
+              type: "image/svg+xml;charset=utf-8",
+            });
+            const qrFilename = `public_qr_${rawId}_${cleanName}.svg`;
+            const { url } = await upload.qr(svgBlob, qrFilename);
+            qrUrl = url;
+          }
+
+          // Update records with file addresses
+          await attendeesApi.update(rawId, {
+            photo_url: profileUrl,
+            qr_code_url: qrUrl,
           });
-          const qrFilename = `public_qr_${rawId}_${cleanName}.svg`;
-          const { url } = await upload.qr(svgBlob, qrFilename);
-          qrUrl = url;
-        }
 
-        await attendeesApi.update(rawId, {
-          photo_url: profileUrl,
-          qr_code_url: qrUrl,
-        });
+          // Dispatch confirmation alert threads
+          emailApi
+            .sendRegistration({
+              email: cleanEmail,
+              name: constructedFullName,
+              memberId: trueMemberId,
+              region: selectedRegion,
+              center: selectedCenter,
+            })
+            .catch(console.warn);
 
-        emailApi
-          .sendRegistration({
-            email: cleanEmail,
-            name: constructedFullName, // Clean string in notification emails
+          // Populate receipt node data
+          setFinalAttendeeData({
             memberId: trueMemberId,
+            name: constructedFullName,
             region: selectedRegion,
             center: selectedCenter,
-          })
-          .catch(console.warn);
+          });
 
-        setFinalAttendeeData({
-          memberId: trueMemberId,
-          name: constructedFullName, // Clean string for display updates
-          region: selectedRegion,
-          center: selectedCenter,
-        });
-        setSuccess(true);
-        setLoading(false);
+          resolve();
+        }, 600);
+      });
 
-        setFirstName("");
-        setMiddleName("");
-        setLastName("");
-        setAge("");
-        setGender("");
-        setSelectedRegion("");
-        setRegionSearchQuery("");
-        setSelectedCenter("");
-        setCenterSearchQuery("");
-        setParentEmail("");
-        setPhotoFile(null);
-        // setPhotoPreview("");
-        setPhoneNumber("");
-        setTshirtSize("");
-      }, 600);
+      // --- ALL API TASKS ARE DONE SUCCESSFULLY HERE ---
+      setSuccess(true);
+      setFormMode("form"); // Ready for next cycle loop
+
+      // Clear input buffers safely
+      setFirstName("");
+      setMiddleName("");
+      setLastName("");
+      setAge("");
+      setGender("");
+      setSelectedRegion("");
+      setRegionSearchQuery("");
+      setSelectedCenter("");
+      setCenterSearchQuery("");
+      setParentEmail("");
+      setPhotoFile(null);
+      setPhoneNumber("");
+      setTshirtSize("");
     } catch (uploadErr) {
       setFormError(`Registration failed: ${uploadErr.message}`);
+    } finally {
+      // TURN OFF SPINNER SPIN AT THE VERY END
       setLoading(false);
     }
   };
+
   const handleResetFormView = () => {
     setSuccess(false);
     setFinalAttendeeData(null);
     setFormError("");
+    setFormMode("form");
   };
 
   return (
@@ -501,6 +532,9 @@ export default function PublicRegister() {
       <div className={styles.containerSingle}>
         <div className={styles.card}>
           {success && finalAttendeeData ? (
+            /* ==========================================
+               STAGE 1: CONFIRMATION SUCCESS VIEW CARD
+               ========================================== */
             <div
               className={styles.fullSuccessContainer}
               style={{ textAlign: "center", padding: "40px 20px" }}
@@ -582,7 +616,102 @@ export default function PublicRegister() {
                 <FaPlusCircle /> Register Another Person
               </button>
             </div>
+          ) : formMode === "review" ? (
+            /* ==========================================
+               STAGE 2: PRE-SUBMIT PREVIEW WINDOW PANEL
+               ========================================== */
+            <div className={styles.previewContainer}>
+              <div className={styles.previewHeaderBanner}>
+                <FaInfoCircle className={styles.previewHeaderIcon} />
+                <div>
+                  <h3>Review Details / Preview Details</h3>
+                  <p>
+                    Please ensure all details match your identification
+                    documents exactly before confirming.
+                  </p>
+                </div>
+              </div>
+
+              {formError && (
+                <div
+                  className={styles.bannerError}
+                  style={{ marginBottom: "20px" }}
+                >
+                  <FaExclamationTriangle style={{ flexShrink: 0 }} />
+                  <span>{formError}</span>
+                </div>
+              )}
+
+              <div className={styles.previewGridSummary}>
+                <div className={styles.previewRow}>
+                  <span className={styles.previewLabel}>Full Name:</span>
+                  <span className={styles.previewValue}>
+                    {firstName} {middleName} {lastName}
+                  </span>
+                </div>
+                <div className={styles.previewRow}>
+                  <span className={styles.previewLabel}>Age:</span>
+                  <span className={styles.previewValue}>{age} Years Old</span>
+                </div>
+                <div className={styles.previewRow}>
+                  <span className={styles.previewLabel}>Mandal:</span>
+                  <span className={styles.previewValue}>{gender}</span>
+                </div>
+                <div className={styles.previewRow}>
+                  <span className={styles.previewLabel}>Country:</span>
+                  <span className={styles.previewValue}>{selectedRegion}</span>
+                </div>
+                <div className={styles.previewRow}>
+                  <span className={styles.previewLabel}>Center:</span>
+                  <span className={styles.previewValue}>{selectedCenter}</span>
+                </div>
+                <div className={styles.previewRow}>
+                  <span className={styles.previewLabel}>Parents Mobile:</span>
+                  <span className={styles.previewValue}>{phoneNumber}</span>
+                </div>
+                <div className={styles.previewRow}>
+                  <span className={styles.previewLabel}>Parents Email:</span>
+                  <span className={styles.previewValue}>{parentEmail}</span>
+                </div>
+                {tshirtSize && (
+                  <div className={styles.previewRow}>
+                    <span className={styles.previewLabel}>T-Shirt Size:</span>
+                    <span className={styles.previewValue}>{tshirtSize}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.previewActionControlBlock}>
+                <button
+                  type="button"
+                  className={styles.backEditBtn}
+                  onClick={() => setFormMode("form")}
+                  disabled={loading}
+                >
+                  <FaEdit /> Go Back & Change
+                </button>
+                <button
+                  type="button"
+                  className={styles.confirmFinalSubmitBtn}
+                  onClick={handleCommitFinalRegistration}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <FaSpinner className={styles.spin} /> Registering...
+                    </>
+                  ) : (
+                    <>
+                      <FaCheck /> Confirm & Submit Registration
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           ) : (
+            /* ==========================================
+               STAGE 3: STANDARD REGISTRATION FORMS
+               ========================================== */
             <>
               <div className={styles.infoBanner}>
                 <FaInfoCircle style={{ flexShrink: 0, marginTop: "2px" }} />
@@ -597,7 +726,7 @@ export default function PublicRegister() {
                   <span>{formError}</span>
                 </div>
               )}
-              <form onSubmit={handleSubmit} noValidate>
+              <form onSubmit={handleTriggerReview} noValidate>
                 <div className={styles.formGrid}>
                   <div className={styles.rowFieldContainer}>
                     <div className={styles.formGroup} ref={firstNameRef}>
@@ -658,7 +787,6 @@ export default function PublicRegister() {
                         disabled={loading}
                         required
                       >
-                        {/* Disabled hidden option forces them to look at the list and click an actual selection */}
                         <option value="" disabled hidden>
                           — Select Mandal —
                         </option>
@@ -897,22 +1025,10 @@ export default function PublicRegister() {
                   className={styles.submitBtn}
                   disabled={loading}
                 >
-                  {loading ? (
-                    <>
-                      <FaSpinner
-                        className={styles.spin}
-                        style={{ color: "#1b1b1b" }}
-                      />
-                      <span style={{ color: "#1b1b1b" }}>Registering...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaUserPlus style={{ color: "#1b1b1b" }} />
-                      <span style={{ color: "#1b1b1b" }}>
-                        Complete Registration
-                      </span>
-                    </>
-                  )}
+                  <FaUserPlus style={{ color: "#1b1b1b" }} />
+                  <span style={{ color: "#1b1b1b" }}>
+                    Review Registration Details
+                  </span>
                 </button>
               </form>
             </>
