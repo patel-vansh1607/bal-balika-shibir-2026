@@ -1126,3 +1126,230 @@
   from { transform: translateY(16px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.exportModalContent {
+  background-color: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.exportModalContent h3 {
+  margin: 0 0 8px 0;
+  color: #111111;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.exportModalContent p {
+  margin: 0 0 20px 0;
+  color: #666666;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.exportOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.choiceBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btnTitle {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.btnDesc {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.primaryChoice {
+  background-color: #fff0f0;
+  border: 2px solid #0066cc;
+  color: #004499;
+}
+
+.primaryChoice:hover {
+  background-color: #e1f0ff;
+}
+
+.secondaryChoice {
+  background-color: #f9f9f9;
+  border: 2px solid #e0e0e0;
+  color: #333333;
+}
+
+.secondaryChoice:hover {
+  background-color: #f0f0f0;
+  border-color: #cccccc;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cancelBtn {
+  background: none;
+  border: 1px solid #dcdcdc;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #555555;
+  transition: background 0.2s;
+}
+
+.cancelBtn:hover {
+  background-color: #f5f5f5;
+  color: #222222;
+}
+
+/* Spinner rotation animation utilities */
+.spin {
+  animation: loadingSpin 1s linear infinite;
+}
+
+@keyframes loadingSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+
+.exportModalContent {
+  background-color: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.exportModalContent h3 {
+  margin: 0 0 8px 0;
+  color: #111111;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.exportModalContent p {
+  margin: 0 0 20px 0;
+  color: #666666;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.exportOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.choiceBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btnTitle {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.btnDesc {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.primaryChoice {
+  background-color: #f0f7ff;
+  border: 2px solid #0066cc;
+  color: #004499;
+}
+
+.primaryChoice:hover {
+  background-color: #e1f0ff;
+}
+
+.secondaryChoice {
+  background-color: #f9f9f9;
+  border: 2px solid #e0e0e0;
+  color: #333333;
+}
+
+.secondaryChoice:hover {
+  background-color: #f0f0f0;
+  border-color: #cccccc;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cancelBtn {
+  background: none;
+  border: 1px solid #dcdcdc;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #555555;
+  transition: background 0.2s;
+}
+
+.cancelBtn:hover {
+  background-color: #f5f5f5;
+  color: #222222;
+}
+

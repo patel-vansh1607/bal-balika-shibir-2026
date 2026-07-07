@@ -44,6 +44,8 @@ export default function RegisteredRoster({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 const [editingAttendee, setEditingAttendee] = useState(null);
 const [isSavingProfile, setIsSavingProfile] = useState(false);
+const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 // A. State variables go at the very top of the function hook block
 const [currentPage, setCurrentPage] = useState(1);
 const ITEMS_PER_PAGE = 25;
@@ -123,17 +125,23 @@ setTimeout(() => {
       setIsProcessing(false);
     }
   };
-const handleExportPDF = (
-  currentCountry = "All", 
-  currentCenter = "All", 
-  currentMandal = "All", 
-  generatedByName = "Vansh Patel"
-) => {
+/* --- Open PDF Export Modal --- */
+const handleOpenPdfChoice = () => {
   if (filteredAttendees.length === 0) {
     alert("No data available to export based on current filters.");
     return;
   }
+  setIsPdfModalOpen(true);
+};
 
+/* --- Core PDF Export Execution Logic --- */
+const handleExportPDF = (
+  includeContact = true,
+  currentCountry = "All", 
+  currentCenter = "All", 
+  currentMandal = "All", 
+  generatedByName = "" // Fetched from active context data automatically
+) => {
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -142,10 +150,13 @@ const handleExportPDF = (
 
   const isSpecialRegion = ["Botswana", "South Africa", "Malawi", "Zambia"].includes(regionScope);
 
-  const headers = isSpecialRegion
-    ? [["Sr No.", "Member ID", "Full Name", "Mandal", "Age", "Country", "Center Branch", "Parent Contact", "T-Shirt"]]
-    : [["Sr No.", "Member ID", "Full Name", "Mandal", "Age", "Country", "Center Branch", "Parent Contact"]];
+  // 1. Build Dynamic Headers Based on Selections
+  const headersRow = ["Sr No.", "Member ID", "Full Name", "Mandal", "Age", "Country", "Center Branch"];
+  if (includeContact) headersRow.push("Parent Contact");
+  if (isSpecialRegion) headersRow.push("T-Shirt");
+  const headers = [headersRow];
 
+  // 2. Map Body Data Dynamically
   const bodyData = filteredAttendees.map((a, index) => {
     const baseRow = [
       String(index + 1),
@@ -155,15 +166,65 @@ const handleExportPDF = (
       a.age || "—",
       a.country || a.region || "Kenya",
       a.center || "",
-      a.parent_contact || "",
     ];
+    if (includeContact) {
+      baseRow.push(a.parent_contact || "");
+    }
     if (isSpecialRegion) {
       baseRow.push(a.tshirt_size || "");
     }
     return baseRow;
   });
 
-  // Capture the current date and time formatted nicely
+  // 3. Dynamic Column Width Configuration Matrix
+  let columnWidthStyles = {};
+  if (isSpecialRegion && includeContact) {
+    columnWidthStyles = {
+      0: { cellWidth: 10, halign: "center" },
+      1: { cellWidth: 26, fontStyle: "bold" }, 
+      2: { cellWidth: "auto" },                 
+      3: { cellWidth: 14, halign: "center" }, 
+      4: { cellWidth: 10, halign: "center" },
+      5: { cellWidth: 20 }, 
+      6: { cellWidth: 22 },                   
+      7: { cellWidth: 24 },                   
+      8: { cellWidth: 12, halign: "center" }, 
+    };
+  } else if (isSpecialRegion && !includeContact) {
+    columnWidthStyles = {
+      0: { cellWidth: 10, halign: "center" },
+      1: { cellWidth: 28, fontStyle: "bold" }, 
+      2: { cellWidth: "auto" },                 
+      3: { cellWidth: 16, halign: "center" }, 
+      4: { cellWidth: 12, halign: "center" },
+      5: { cellWidth: 26 }, 
+      6: { cellWidth: 28 },                   
+      7: { cellWidth: 16, halign: "center" }, 
+    };
+  } else if (!isSpecialRegion && includeContact) {
+    columnWidthStyles = {
+      0: { cellWidth: 10, halign: "center" },
+      1: { cellWidth: 28, fontStyle: "bold" }, 
+      2: { cellWidth: "auto" },                 
+      3: { cellWidth: 16, halign: "center" }, 
+      4: { cellWidth: 12, halign: "center" },
+      5: { cellWidth: 24 }, 
+      6: { cellWidth: 26 },                   
+      7: { cellWidth: 26 },                   
+    };
+  } else {
+    // !isSpecialRegion && !includeContact
+    columnWidthStyles = {
+      0: { cellWidth: 10, halign: "center" },
+      1: { cellWidth: 32, fontStyle: "bold" }, 
+      2: { cellWidth: "auto" },                 
+      3: { cellWidth: 18, halign: "center" }, 
+      4: { cellWidth: 14, halign: "center" },
+      5: { cellWidth: 28 }, 
+      6: { cellWidth: 32 },                   
+    };
+  }
+
   const exportTimestamp = new Date().toLocaleString("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -189,35 +250,13 @@ const handleExportPDF = (
       fontStyle: "bold",
       fontSize: 8.5,
     },
-    columnStyles: isSpecialRegion
-      ? {
-          0: { cellWidth: 10, halign: "center" },
-          1: { cellWidth: 26, fontStyle: "bold" }, 
-          2: { cellWidth: "auto" },                 
-          3: { cellWidth: 14, halign: "center" }, 
-          4: { cellWidth: 10, halign: "center" },
-          5: { cellWidth: 20 }, 
-          6: { cellWidth: 22 },                   
-          7: { cellWidth: 24 },                   
-          8: { cellWidth: 12, halign: "center" }, 
-        }
-      : {
-          0: { cellWidth: 10, halign: "center" },
-          1: { cellWidth: 28, fontStyle: "bold" }, 
-          2: { cellWidth: "auto" },                 
-          3: { cellWidth: 16, halign: "center" }, 
-          4: { cellWidth: 12, halign: "center" },
-          5: { cellWidth: 24 }, 
-          6: { cellWidth: 26 },                   
-          7: { cellWidth: 26 },                   
-        },
+    columnStyles: columnWidthStyles,
     alternateRowStyles: {
       fillColor: [247, 251, 254],
     },
     margin: { top: 32, left: 10, right: 10 },
     
     didDrawPage: function (data) {
-      // Header Banner
       doc.setFillColor(42, 52, 107);
       doc.rect(0, 0, 210, 24, "F");
 
@@ -237,7 +276,6 @@ const handleExportPDF = (
     }
   });
 
-  // Stamp the final footer on all pages safely
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
@@ -246,15 +284,15 @@ const handleExportPDF = (
     doc.setTextColor(42, 52, 107);
     doc.setFont("helvetica", "normal");
     
-    // Pagination Indicator Left Aligned
     doc.text(
       `Page ${i} of ${totalPages}`, 
       10, 
       doc.internal.pageSize.height - 10
     );
     
-    // Dynamic footer string cleanly aligned to the right edge
-    const footerString = `System report generated by: ${generatedByName} on ${exportTimestamp}`;
+    // Fallback display checks for naming strings
+    const displayName = generatedByName || "Admin";
+    const footerString = `System report generated by: ${displayName} on ${exportTimestamp}`;
     const textWidth = doc.getTextWidth(footerString);
     const rightXPosition = doc.internal.pageSize.width - 10 - textWidth;
 
@@ -266,7 +304,8 @@ const handleExportPDF = (
   }
 
   const safeFileNameToken = String(currentCountry || "All").replace(/\s+/g, "_");
-  doc.save(`Registered_${safeFileNameToken}.pdf`);
+  const contactToken = includeContact ? "" : "";
+  doc.save(`${contactToken}Registered_${safeFileNameToken}.pdf`);
 };
 const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;
@@ -303,66 +342,81 @@ const downloadBatchQR = async () => {
   };
 
 
-const exportToCSV = () => {
-    if (filteredAttendees.length === 0) { 
-      alert("No matched dataset found to extract."); 
-      return; 
-    }
-    setIsExporting(true);
-    try {
-      const isSpecialRegion = ["Botswana", "South Africa", "Malawi", "Zambia"].includes(regionScope);
-      
-      // Plain text headers with Serial Number and Country
-      const headers = ["Sr No.", "Member ID", "Full Name", "Mandal", "Age", "Country", "Center Branch", "Parent Contact"];
-      if (isSpecialRegion) {
-        headers.push("T-Shirt Size");
-      }
 
-      const csvRows = [
-        headers.join(","),
-        ...filteredAttendees.map((row, index) => {
-          const finalId      = row.member_id || row.id;
-          const rawContact   = row.parent_contact || "";
+  /* --- Triggered by the main layout button --- */
+const handleOpenExportChoice = () => {
+  if (filteredAttendees.length === 0) { 
+    alert("No matched dataset found to extract."); 
+    return; 
+  }
+  setIsExportModalOpen(true);
+};
+
+/* --- The Core Export Logic Execution --- */
+const executeExport = (includeContact) => {
+  setIsExporting(true);
+  setIsExportModalOpen(false); // Close choice menu instantly
+
+  try {
+    const isSpecialRegion = ["Botswana", "South Africa", "Malawi", "Zambia"].includes(regionScope);
+    
+    // Set dynamic headers based on contact inclusion rules
+    const headers = ["Sr No.", "Member ID", "Full Name", "Mandal", "Age", "Country", "Center Branch"];
+    if (includeContact) {
+      headers.push("Parent Contact");
+    }
+    if (isSpecialRegion) {
+      headers.push("T-Shirt Size");
+    }
+
+    const csvRows = [
+      headers.join(","),
+      ...filteredAttendees.map((row, index) => {
+        const finalId = row.member_id || row.id;
+        const attendeeCountry = row.country || row.region || (regionScope !== "All" ? regionScope : "");
+
+        const baseFields = [
+          `"${index + 1}"`,
+          `"${finalId}"`, 
+          `"${(row.name || "").replace(/"/g, '""')}"`,
+          `"${row.gender || "Balak"}"`, 
+          `"${row.age}"`, 
+          `"${attendeeCountry}"`,
+          `"${row.center}"`,
+        ];
+
+        // Conditional column payload injection
+        if (includeContact) {
+          const rawContact = row.parent_contact || "";
           const finalContact = rawContact ? `\t${rawContact}` : "";
-          
-          const attendeeCountry = row.country || row.region || (regionScope !== "All" ? regionScope : "");
+          baseFields.push(`"${finalContact}"`);
+        }
 
-          const baseFields = [
-            `"${index + 1}"`, // Sequential number sequence
-            `"${finalId}"`, 
-            `"${(row.name||"").replace(/"/g,'""')}"`,
-            `"${row.gender||"Balak"}"`, 
-            `"${row.age}"`, 
-            `"${attendeeCountry}"`,
-            `"${row.center}"`,
-            `"${finalContact}"`,
-          ];
+        if (isSpecialRegion) {
+          baseFields.push(`"${row.tshirt_size || ""}"`);
+        }
 
-          if (isSpecialRegion) {
-            baseFields.push(`"${row.tshirt_size || ""}"`);
-          }
+        return baseFields.join(",");
+      }),
+    ];
 
-          return baseFields.join(",");
-        }),
-      ];
-
-      // Safe Blob delivery to prevent layout file corruption messages on open
-      const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `Registered_${(regionScope||"All").replace(/\s+/g,"_")}_${selectedGender||"Export"}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Export failed", error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    const filenamePrefix = includeContact ? "" : "";
+    link.setAttribute("download", `${filenamePrefix}Registered_${(regionScope || "All").replace(/\s+/g, "_")}_${selectedGender || "Export"}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Export failed", error);
+  } finally {
+    setIsExporting(false);
+  }
+};
   const downloadQRImg = async (memberId, userName, storedQrUrl) => {
     setIsDownloadingSingle(true);
     try {
@@ -574,18 +628,52 @@ const getGenderTagClass = (g) => {
                 <option value="Balika">Balika</option>
               </select>
             </div>
-            <button
-              onClick={exportToCSV}
-              className={styles.exportBtn}
-              disabled={isExporting}
-            >
-              {isExporting ? (
-                <FaSpinner className={styles.spin} />
-              ) : (
-                <FaFileExport />
-              )}
-              {isExporting ? " Exporting..." : " Export to Excel"}
-            </button>
+            {/* Primary Action Button */}
+<button
+  onClick={handleOpenExportChoice}
+  className={styles.exportBtn}
+  disabled={isExporting}
+>
+  {isExporting ? <FaSpinner className={styles.spin} /> : <FaFileExport />}
+  {isExporting ? " Exporting..." : " Export to Excel"}
+</button>
+
+{/* Export Selection Modal Popup */}
+{isExportModalOpen && (
+  <div className={styles.modalOverlay}>
+    <div className={styles.exportModalContent}>
+      <h3>Export Data - Excel</h3>
+      <p>Please select an option below: </p>
+      
+      <div className={styles.exportOptions}>
+        <button 
+          onClick={() => executeExport(true)} 
+          className={`${styles.choiceBtn} ${styles.primaryChoice}`}
+        >
+          <span className={styles.btnTitle}>EXCEL - With Contact Numbers</span>
+          <span className={styles.btnDesc}></span>
+        </button>
+
+        <button 
+          onClick={() => executeExport(false)} 
+          className={`${styles.choiceBtn} ${styles.secondaryChoice}`}
+        >
+          <span className={styles.btnTitle}>EXCEL - Without Contact Numbers</span>
+          <span className={styles.btnDesc}></span>
+        </button>
+      </div>
+
+      <div className={styles.modalActions}>
+        <button 
+          onClick={() => setIsExportModalOpen(false)} 
+          className={styles.cancelBtn}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
             <button
               onClick={downloadBatchQR}
               className={styles.qrBtn}
@@ -599,13 +687,57 @@ const getGenderTagClass = (g) => {
               {isDownloadingQR ? " Generating Zip..." : " Download All QR"}
             </button>
             <div className={styles.btnWrapper}>
+{/* Primary PDF Action Button Trigger */}
 <button 
   type="button" 
-  onClick={() => handleExportPDF(regionScope || "All", selectedCenter, selectedGender)} 
+  onClick={handleOpenPdfChoice} 
   className={styles.pdfBtn}
 >
   <FaFileExport /> Export to PDF
 </button>
+
+{/* PDF Modal Selection View popup */}
+{isPdfModalOpen && (
+  <div className={styles.modalOverlay}>
+    <div className={styles.exportModalContent}>
+      <h3>Export Data - PDF</h3>
+      <p>Please select an option below:</p>
+      
+      <div className={styles.exportOptions}>
+        <button 
+          onClick={() => {
+            handleExportPDF(true, regionScope || "All", selectedCenter, selectedGender);
+            setIsPdfModalOpen(false);
+          }} 
+          className={`${styles.choiceBtn} ${styles.primaryChoice}`}
+        >
+          <span className={styles.btnTitle}>PDF - With Contact Numbers</span>
+          <span className={styles.btnDesc}></span>
+        </button>
+
+        <button 
+          onClick={() => {
+            handleExportPDF(false, regionScope || "All", selectedCenter, selectedGender);
+            setIsPdfModalOpen(false);
+          }} 
+          className={`${styles.choiceBtn} ${styles.secondaryChoice}`}
+        >
+          <span className={styles.btnTitle}>PDF - Without Contact Numbers</span>
+          <span className={styles.btnDesc}></span>
+        </button>
+      </div>
+
+      <div className={styles.modalActions}>
+        <button 
+          onClick={() => setIsPdfModalOpen(false)} 
+          className={styles.cancelBtn}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
             </div>
           </div>
         </div>
