@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaSpinner, FaTrash, FaUsers, FaFileExport } from 'react-icons/fa';
+import { FaUser, FaSpinner, FaTrash, FaUsers, FaFileExport, FaCheck, FaXmark } from 'react-icons/fa6';
 import { karayakars as karayakarsApi } from '../../apiClient';
-import styles from '../ArchiveManager/ArchiveManager.module.css';
+import styles from './KarayakarList.module.css';
 
 const REGIONS = ['All', 'Kenya', 'Tanzania', 'Uganda', 'Zambia', 'Malawi', 'Botswana', 'South Africa'];
 
@@ -10,17 +10,25 @@ export default function KarayakarList({ defaultRegion = '' }) {
   const [loading, setLoading] = useState(true);
   const [region, setRegion] = useState(defaultRegion || 'All');
   const [deleting, setDeleting] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   const userRole = localStorage.getItem('user_role');
   const canDelete = ['master_admin', 'super_admin'].includes(userRole);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this karyakar?')) return;
-    
+  const handleDeleteClick = (id) => {
+    setConfirmDeleteId(id);
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmDeleteId(null);
+  };
+
+  const handleConfirmDelete = async (id) => {
     setDeleting(id);
     try {
       await karayakarsApi.remove(id);
       setList(prev => prev.filter(k => k.id !== id));
+      setConfirmDeleteId(null);
     } catch (err) {
       console.error('Delete operation failed:', err);
       alert(err.message || 'Failed to remove karyakar.');
@@ -35,13 +43,14 @@ export default function KarayakarList({ defaultRegion = '' }) {
       return;
     }
 
-    // Define columns including the profile image reference URL
-    const headers = ['ID', 'Full Name', 'Region', 'T-Shirt Size', 'Profile Photo URL'];
+    const headers = ['ID', 'Full Name', 'Region', 'Center', 'Seva Designations', 'T-Shirt Size', 'Profile Photo URL'];
     
     const rows = list.map(k => [
       k.id,
       `"${k.full_name?.replace(/"/g, '""') || ''}"`,
       `"${k.region?.replace(/"/g, '""') || ''}"`,
+      `"${k.center?.replace(/"/g, '""') || ''}"`,
+      `"${k.seva_designation?.replace(/"/g, '""') || 'None'}"`,
       `"${k.tshirt_size || 'N/A'}"`,
       `"${k.photo_url || 'No Photo'}"`
     ]);
@@ -81,7 +90,7 @@ export default function KarayakarList({ defaultRegion = '' }) {
               </span>
               Karyakar Directory
             </h2>
-            <p className={styles.viewSubtitle}>Manage registered karyakar profiles</p>
+            <p className={styles.viewSubtitle}>Manage registered karyakar profiles and roles</p>
           </div>
           
           <div className={styles.actionsWrapper}>
@@ -94,9 +103,11 @@ export default function KarayakarList({ defaultRegion = '' }) {
             </button>
 
             {!defaultRegion && (
-              <select value={region} onChange={e => setRegion(e.target.value)} className={styles.inputField} style={{ width: 'auto' }}>
-                {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
+              <div className={styles.selectWrapper}>
+                <select value={region} onChange={e => setRegion(e.target.value)} className={styles.inputField}>
+                  {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
             )}
           </div>
         </div>
@@ -105,41 +116,92 @@ export default function KarayakarList({ defaultRegion = '' }) {
           <table className={styles.dataTable}>
             <thead>
               <tr>
-                <th>Profile</th>
+                <th style={{ width: '80px' }}>Profile</th>
                 <th>Full Name</th>
                 <th>Region</th>
-                <th>T-Shirt</th>
-                {canDelete && <th style={{ textAlign: 'center' }}>Actions</th>}
+                <th>Center</th>
+                <th>Seva Designation</th>
+                <th style={{ width: '120px' }}>T-Shirt</th>
+                {canDelete && <th style={{ textAlign: 'center', width: '140px' }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={canDelete ? 5 : 4} className={styles.emptyTablePlaceholder}>
+                  <td colSpan={canDelete ? 7 : 6} className={styles.emptyTablePlaceholder}>
                     <FaSpinner className={styles.spin} /> Loading records...
                   </td>
                 </tr>
               ) : list.length === 0 ? (
                 <tr>
-                  <td colSpan={canDelete ? 5 : 4} className={styles.emptyTablePlaceholder}>No records found.</td>
+                  <td colSpan={canDelete ? 7 : 6} className={styles.emptyTablePlaceholder}>No records found.</td>
                 </tr>
               ) : list.map(k => (
-                <tr key={k.id}>
+                <tr key={k.id} className={confirmDeleteId === k.id ? styles.rowWarningHighlight : ''}>
                   <td>
-                    {k.photo_url ? <img src={k.photo_url} alt="" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover' }} /> : <FaUser />}
+                    <div className={styles.avatarFrame}>
+                      {k.photo_url ? (
+                        <img src={k.photo_url} alt="" className={styles.tableImage} />
+                      ) : (
+                        <FaUser className={styles.avatarPlaceholder} />
+                      )}
+                    </div>
                   </td>
                   <td className={styles.boldText}>{k.full_name}</td>
                   <td><span className={styles.regionTag}>{k.region}</span></td>
-                  <td className={styles.monospaceText}><code>{k.tshirt_size || 'N/A'}</code></td>
+                  <td><span className={styles.centerText}>{k.center || '—'}</span></td>
+                  <td>
+                    <div className={styles.sevaBadgeContainer}>
+                      {k.seva_designation ? (
+                        k.seva_designation.split(', ').map((role, idx) => (
+                          <span key={idx} className={styles.sevaTableBadge}>{role}</span>
+                        ))
+                      ) : (
+                        <span className={styles.noSevaText}>None assigned</span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    {k.tshirt_size ? (
+                      <span className={styles.tshirtTag}>
+                        <code>{k.tshirt_size}</code>
+                      </span>
+                    ) : (
+                      <span className={styles.textHyphen}>—</span>
+                    )}
+                  </td>
                   {canDelete && (
                     <td style={{ textAlign: 'center' }}>
-                      <button 
-                        onClick={() => handleDelete(k.id)} 
-                        disabled={deleting === k.id}
-                        className={styles.viewPassBtn}
-                      >
-                        {deleting === k.id ? <FaSpinner className={styles.spin} /> : <FaTrash />}
-                      </button>
+                      <div className={styles.actionsCellWrapper}>
+                        {confirmDeleteId === k.id ? (
+                          <div className={styles.inlineConfirmGroup}>
+                            <button 
+                              onClick={() => handleConfirmDelete(k.id)} 
+                              disabled={deleting === k.id}
+                              className={styles.confirmActionBtn}
+                              title="Confirm Removal"
+                            >
+                              {deleting === k.id ? <FaSpinner className={styles.spin} /> : <FaCheck />}
+                            </button>
+                            <button 
+                              onClick={handleCancelDelete} 
+                              disabled={deleting === k.id}
+                              className={styles.cancelActionBtn}
+                              title="Cancel"
+                            >
+                              <FaXmark />
+                            </button>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => handleDeleteClick(k.id)} 
+                            className={styles.deleteActionBtn}
+                            title="Remove Karyakar"
+                          >
+                            <FaTrash />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
