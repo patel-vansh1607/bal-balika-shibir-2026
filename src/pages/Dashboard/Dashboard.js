@@ -160,27 +160,13 @@ export default function Dashboard() {
     <button onClick={() => handleNavigation("/dashboard/add-new")} className={`${styles.navLink} ${location.pathname === "/dashboard/add-new" ? styles.navLinkActive : ""}`}>
       <FaUserPlus className={styles.iconMargin} /> Register Attendee
     </button>
-    {/* <button onClick={() => handleNavigation("/dashboard/roster/karyakar")} className={`${styles.navLink} ${location.pathname === "/dashboard/roster/karyakar" ? styles.navLinkActive : ""}`}>
+    <button onClick={() => handleNavigation("/dashboard/roster/karyakar")} className={`${styles.navLink} ${location.pathname === "/dashboard/roster/karyakar" ? styles.navLinkActive : ""}`}>
       <FaUsers className={styles.iconMargin} /> Karyakar List
     </button>
     <button onClick={() => handleNavigation("/dashboard/add-new-karyakar")} className={`${styles.navLink} ${location.pathname === "/dashboard/add-new-karyakar" ? styles.navLinkActive : ""}`}>
       <FaUserPlus className={styles.iconMargin} /> Add Karyakar
-    </button> */}
-    <button 
-  disabled
-  onClick={() => handleNavigation("/dashboard/roster/karyakar")} 
-  className={`${styles.navLink} ${location.pathname === "/dashboard/roster/karyakar" ? styles.navLinkActive : ""} ${styles.disabledLink}`}
->
-  <FaUsers className={styles.iconMargin} /> Karyakar List
-</button>
+    </button>
 
-<button 
-  disabled
-  onClick={() => handleNavigation("/dashboard/add-new-karyakar")} 
-  className={`${styles.navLink} ${location.pathname === "/dashboard/add-new-karyakar" ? styles.navLinkActive : ""} ${styles.disabledLink}`}
->
-  <FaUserPlus className={styles.iconMargin} /> Add Karyakar
-</button>
     {/* Archive Manager: Accessible by both master_admin and super_admin */}
     {(userRole === "master_admin" || userRole === "super_admin") && (
       <button onClick={() => handleNavigation("/dashboard/archive")} className={`${styles.navLink} ${location.pathname === "/dashboard/archive" ? styles.navLinkActive : ""}`}>
@@ -284,12 +270,9 @@ export default function Dashboard() {
             <Route path="scanner/:sessionId" element={<CameraRouteWrapper regionScope={regionScope} prefixScope={prefixScope} />} />
             <Route path="roster" element={userRole !== "operator" ? <RegisteredRoster attendees={attendeesList} setAttendees={setAttendeesList} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} /> : <NotFound />} />
             <Route path="add-new" element={userRole !== "operator" ? <PublicRegister /> : <NotFound />} />
-            {/* <Route path="add-new-karyakar" element={userRole !== "operator" ? <KarayakarForm /> : <NotFound />} />
+            <Route path="add-new-karyakar" element={userRole !== "operator" ? <KarayakarForm /> : <NotFound />} />
 
-            <Route path="roster/karyakar" element={userRole !== "operator" ? <KarayakarList defaultRegion={regionScope !== "All" ? regionScope : ""} /> : <NotFound />} /> */}
-            <Route path="add-new-karyakar" element={<NotFound />} />
-
-<Route path="roster/karyakar" element={<NotFound />} />
+            <Route path="roster/karyakar" element={userRole !== "operator" ? <KarayakarList defaultRegion={regionScope !== "All" ? regionScope : ""} /> : <NotFound />} />
 <Route path="archive" element={(userRole === "master_admin" || userRole === "super_admin") ? <ArchiveManager regionScope={regionScope} /> : <NotFound />} />            <Route path="session/master" element={userRole !== "operator" ? <SessionMasterDashboard activeRegion={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} /> : <NotFound />} />
             <Route path="session/attendance/:sessionId" element={<Sessions regionScope={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} />} />
             <Route path="session/add-session" element={userRole !== "operator" ? <AddSession /> : <NotFound />} />
