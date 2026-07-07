@@ -933,4 +933,3 @@ export default function PublicRegister() {
     </div>
   );
 }
-
