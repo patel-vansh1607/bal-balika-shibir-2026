@@ -626,8 +626,7 @@ export default function PublicRegister() {
                 <div>
                   <h3>Review Details / Preview Details</h3>
                   <p>
-                    Please ensure all details match your identification
-                    documents exactly before confirming.
+                    Please ensure all details match before confirming.
                   </p>
                 </div>
               </div>
