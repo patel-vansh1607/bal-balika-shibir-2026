@@ -732,28 +732,31 @@
   color: #2d3748;
 }
 
-/* The floating dropdown menu box */
-.actionDropdown {
-  position: absolute;
-  top: 100%;
-  right: 10px;
-  background-color: #ffffff;
-  min-width: 150px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
-  border-radius: 6px;
-  padding: 4px 0;
-  border: 1px solid #e2e8f0;
-  text-align: left;
-  margin-top: 4px;
+
+
+/* Ensure the 3-dots button wrapper container has relative layout context */
+.actionsCellWrapper {
+  position: relative !important;
 }
 
-/* Base style for every option inside the menu */
+.actionDropdown {
+  position: absolute;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: -4px 4px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 6px 0;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+}
+
 .dropdownItem {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px 14px;
+  padding: 10px 14px;
   background: none;
   border: none;
   font-size: 13px;
@@ -761,10 +764,12 @@
   cursor: pointer;
   text-align: left;
   transition: background-color 0.15s ease;
+  box-sizing: border-box;
+  white-space: nowrap; /* Keeps options on a single row line cleanly */
 }
 
 .dropdownItem:hover {
-  background-color: #f7fafc;
+  background-color: var(--bg-main, #f7fafc);
 }
 
 /* Archive item options (Warm amber/red indicator) */

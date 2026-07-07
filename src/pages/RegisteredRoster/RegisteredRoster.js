@@ -1054,77 +1054,74 @@ export default function RegisteredRoster({
                               }}
                             />
 
-                            <div
-                              className={styles.actionDropdown}
-                              style={{
-                                zIndex: 2000 /* Higher z-index to lift it above the footer */,
-                                /* If it's one of the last 3 rows on the page, position it above the button */
-                                ...(index >= paginatedAttendees.length - 3
-                                  ? {
-                                      bottom: "100%",
-                                      top: "auto",
-                                      marginBottom: "4px",
-                                    }
-                                  : {}),
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {/* Only Master Admin can Edit Profile */}
-                              {(userRole === "master_admin" ||
-                                userRole === "super_admin") && (
-                                <button
-                                  onClick={() => {
-                                    setActiveDropdown(null);
-                                    handleEditProfile(attendee);
-                                  }}
-                                  className={styles.dropdownItem}
-                                >
-                                  <FaEdit
-                                    style={{
-                                      fontSize: "12px",
-                                      color: "#3b82f6",
-                                    }}
-                                  />{" "}
-                                  Edit Profile
-                                </button>
-                              )}
-                              {/* Conditional Archive Action */}
-                              {(userRole === "master_admin" ||
-                                userRole === "super_admin") &&
-                                !attendee.is_archived && (
-                                  <button
-                                    onClick={() => {
-                                      setActiveDropdown(null);
-                                      initiateArchive(attendee, true);
-                                    }}
-                                    className={`${styles.dropdownItem} ${styles.archiveItem}`}
-                                  >
-                                    <FaArchive style={{ fontSize: "12px" }} />{" "}
-                                    Archive Record
-                                  </button>
-                                )}
+<div
+  className={styles.actionDropdown}
+  style={{
+    zIndex: 9999,
+    /* Position it horizontally to the left of the 3-dots button */
+    right: "100%",
+    top: "50%",
+    transform: "translateY(-50%)",
+    marginRight: "8px",
+  }}
+  onClick={(e) => e.stopPropagation()}
+>
+  {/* Only Master Admin can Edit Profile */}
+  {(userRole === "master_admin" ||
+    userRole === "super_admin") && (
+    <button
+      onClick={() => {
+        setActiveDropdown(null);
+        handleEditProfile(attendee);
+      }}
+      className={styles.dropdownItem}
+    >
+      <FaEdit
+        style={{
+          fontSize: "12px",
+          color: "#3b82f6",
+        }}
+      />{" "}
+      Edit Profile
+    </button>
+  )}
+  {/* Conditional Archive Action */}
+  {(userRole === "master_admin" ||
+    userRole === "super_admin") &&
+    !attendee.is_archived && (
+      <button
+        onClick={() => {
+          setActiveDropdown(null);
+          initiateArchive(attendee, true);
+        }}
+        className={`${styles.dropdownItem} ${styles.archiveItem}`}
+      >
+        <FaArchive style={{ fontSize: "12px" }} />{" "}
+        Archive Record
+      </button>
+    )}
 
-                              {/* Conditional Restore Action */}
-                              {userRole === "master_admin" &&
-                                attendee.is_archived && (
-                                  <button
-                                    onClick={() => {
-                                      setActiveDropdown(null);
-                                      initiateArchive(attendee, false);
-                                    }}
-                                    className={`${styles.dropdownItem} ${styles.restoreItem}`}
-                                  >
-                                    <FaArchive
-                                      style={{
-                                        fontSize: "12px",
-                                        transform: "rotate(180deg)",
-                                      }}
-                                    />{" "}
-                                    Restore Record
-                                  </button>
-                                )}
-                            </div>
-                          </>
+  {/* Conditional Restore Action */}
+  {userRole === "master_admin" &&
+    attendee.is_archived && (
+      <button
+        onClick={() => {
+          setActiveDropdown(null);
+          initiateArchive(attendee, false);
+        }}
+        className={`${styles.dropdownItem} ${styles.restoreItem}`}
+      >
+        <FaArchive
+          style={{
+            fontSize: "12px",
+            transform: "rotate(180deg)",
+          }}
+        />{" "}
+        Restore Record
+      </button>
+    )}
+</div> 
+                        </>
                         )}
                       </td>
                       {/* Confirmation Action Modal Layout */}
