@@ -20,6 +20,7 @@ import Sessions from "../Sessions/Sessions";
 import SessionDataDetails from "../SessionDataDetails/SessionDataDetails";
 import AdminControl from "../AdminControl/AdminControl";
 import PublicRegister from "../PublicRegister/PublicRegister";
+import TanzaniaApproval from "../TanzaniaApproval/TanzaniaApproval";
 import {
   FaChartBar,
   FaSignOutAlt,
@@ -32,6 +33,7 @@ import {
   FaArrowLeft,
   FaArchive,
   FaSyncAlt,
+  FaEnvelope
 } from "react-icons/fa";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
@@ -166,6 +168,10 @@ export default function Dashboard() {
     <button onClick={() => handleNavigation("/dashboard/add-new-karyakar")} className={`${styles.navLink} ${location.pathname === "/dashboard/add-new-karyakar" ? styles.navLinkActive : ""}`}>
       <FaUserPlus className={styles.iconMargin} /> Add Karyakar
     </button>
+    <button onClick={() => handleNavigation("/dashboard/email/batch")} className={`${styles.navLink} ${location.pathname === "/dashboard/email/batch" ? styles.navLinkActive : ""}`}>
+      <FaEnvelope className={styles.iconMargin} /> Batch Email
+    </button>
+    
 
     {/* Archive Manager: Accessible by both master_admin and super_admin */}
     {(userRole === "master_admin" || userRole === "super_admin") && (
@@ -271,7 +277,19 @@ export default function Dashboard() {
             <Route path="roster" element={userRole !== "operator" ? <RegisteredRoster attendees={attendeesList} setAttendees={setAttendeesList} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} /> : <NotFound />} />
             <Route path="add-new" element={userRole !== "operator" ? <PublicRegister /> : <NotFound />} />
             <Route path="add-new-karyakar" element={userRole !== "operator" ? <KarayakarForm /> : <NotFound />} />
-
+<Route 
+  path="email/batch" 
+  element={
+    (userRole === "master_admin" && regionScope === "Tanzania") ? (
+      <TanzaniaApproval 
+        activeRegion={regionScope} 
+        globalAttendeesList={attendeesList} 
+      />
+    ) : (
+      <NotFound />
+    )
+  } 
+/>
             <Route path="roster/karyakar" element={userRole !== "operator" ? <KarayakarList defaultRegion={regionScope !== "All" ? regionScope : ""} /> : <NotFound />} />
 <Route path="archive" element={(userRole === "master_admin" || userRole === "super_admin") ? <ArchiveManager regionScope={regionScope} /> : <NotFound />} />            <Route path="session/master" element={userRole !== "operator" ? <SessionMasterDashboard activeRegion={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} /> : <NotFound />} />
             <Route path="session/attendance/:sessionId" element={<Sessions regionScope={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} />} />

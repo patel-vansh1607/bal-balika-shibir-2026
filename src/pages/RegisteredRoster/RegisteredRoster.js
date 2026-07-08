@@ -19,6 +19,8 @@ import {
   FaEllipsisV,
   FaEdit,
   FaCheckCircle,
+  FaUserMinus,
+  FaUserCheck,
 } from "react-icons/fa";
 import styles from "./RegisteredRoster.module.css";
 
@@ -50,6 +52,7 @@ export default function RegisteredRoster({
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  const [error, setError] = useState(null);
 
   // B. First Memo calculates the base dataset filters
   const filteredAttendees = useMemo(() => {
@@ -86,7 +89,42 @@ export default function RegisteredRoster({
     "All",
     ...new Set(attendees.map((a) => a.center).filter(Boolean)),
   ];
+  const handleToggleSelection = async (memberId, currentStatus) => {
+    setError(null);
+    try {
+      // Explicitly passing the payload fields the server expects to prevent 400 errors
+      const payload = {
+        statusField: !currentStatus // Change 'statusField' to your exact backend key (e.g., checked, present, selected)
+      };
 
+      // Sending PATCH targeting the resource by its memberId
+      await apiFetch(`https://api.riftkoders.com/mtrc/routes/attendees/${memberId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      // Optimistically update UI state locally
+      setAttendees((prevAttendees) =>
+        prevAttendees.map((item) =>
+          item.memberId === memberId ? { ...item, statusField: !currentStatus } : item
+        )
+      );
+    } catch (err) {
+      console.error("--- SERVER ERROR DETECTED ---", err);
+      setError(`Error updating member ${memberId}: ${err.message}`);
+    }
+  };
+  const apiFetch = async (url, options) => {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || 'API Error');
+  }
+  return res.json();
+};
   const initiateArchive = (attendee, shouldArchive) =>
     setConfirmAction({ attendee, shouldArchive });
   const handleOpenQrModal = (user) => {
@@ -934,6 +972,10 @@ export default function RegisteredRoster({
                   {["Botswana", "South Africa", "Malawi", "Zambia"].includes(
                     regionScope,
                   ) && <th>T-Shirt</th>}
+
+                  {/* Only show Selection Status column header for Tanzania */}
+                  {regionScope === "Tanzania" && <th>Selection Status</th>}
+
                   <th style={{ textAlign: "center" }}>Identity Pass</th>
                   {(userRole === "master_admin" ||
                     userRole === "super_admin") && <th>Actions</th>}
@@ -1010,6 +1052,47 @@ export default function RegisteredRoster({
                           )}
                         </td>
                       )}
+
+                      {/* --- Selection Status Badge Cell (0 = Pending, 1 = Selected, 2 = Not Selected) --- */}
+                      {/* Only render Selection Status data cell for Tanzania */}
+                      {regionScope === "Tanzania" && (
+                        <td>
+                          {attendee.is_selected === 1 ? (
+                            <span
+                              className={styles.badgeGenderTag}
+                              style={{
+                                backgroundColor:
+                                  "var(--success-light, #dcfce7)",
+                                color: "var(--success-dark, #16a34a)",
+                                fontWeight: "600",
+                              }}
+                            >
+                              Selected
+                            </span>
+                          ) : attendee.is_selected === 2 ? (
+                            <span
+                              className={styles.badgeGenderTag}
+                              style={{
+                                backgroundColor: "var(--danger-light, #fee2e2)",
+                                color: "var(--danger-dark, #dc2626)",
+                                fontWeight: "600",
+                              }}
+                            >
+                              Not Selected
+                            </span>
+                          ) : (
+                            <span
+                              style={{
+                                color: "var(--text-muted)",
+                                fontSize: "12px",
+                              }}
+                            >
+                              Pending
+                            </span>
+                          )}
+                        </td>
+                      )}
+
                       <td style={{ textAlign: "center" }}>
                         <button
                           onClick={() => handleOpenQrModal(attendee)}
@@ -1023,7 +1106,6 @@ export default function RegisteredRoster({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Type safe string mapping preserves exact match states during filters
                             const currentId = String(attendee.id);
                             setActiveDropdown(
                               String(activeDropdown) === currentId
@@ -1040,7 +1122,6 @@ export default function RegisteredRoster({
                         {/* Dropdown Action Menu */}
                         {String(activeDropdown) === String(attendee.id) && (
                           <>
-                            {/* Global transparent overlay to catch clicks outside the menu */}
                             <div
                               onClick={() => setActiveDropdown(null)}
                               style={{
@@ -1053,79 +1134,121 @@ export default function RegisteredRoster({
                                 background: "transparent",
                               }}
                             />
+                            <div
+                              className={styles.actionDropdown}
+                              style={{
+                                zIndex: 9999,
+                                right: "100%",
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                marginRight: "8px",
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* --- Selection Actions: ONLY accessible if region is TZ and user is authorized --- */}
+                              {regionScope === "Tanzania" &&
+                                (userRole === "master_admin" ||
+                                  userRole === "super_admin") && (
+                                  <>
+                                    {attendee.is_selected !== 1 && (
+                                      <button
+                                        onClick={() => {
+                                          setActiveDropdown(null);
+                                          handleToggleSelection(attendee, 1);
+                                        }}
+                                        className={styles.dropdownItem}
+                                        style={{ color: "#16a34a" }}
+                                      >
+                                        <FaUserCheck
+                                          style={{
+                                            fontSize: "12px",
+                                            marginRight: "6px",
+                                          }}
+                                        />{" "}
+                                        Mark Selected
+                                      </button>
+                                    )}
 
-<div
-  className={styles.actionDropdown}
-  style={{
-    zIndex: 9999,
-    /* Position it horizontally to the left of the 3-dots button */
-    right: "100%",
-    top: "50%",
-    transform: "translateY(-50%)",
-    marginRight: "8px",
-  }}
-  onClick={(e) => e.stopPropagation()}
->
-  {/* Only Master Admin can Edit Profile */}
-  {(userRole === "master_admin" ||
-    userRole === "super_admin") && (
-    <button
-      onClick={() => {
-        setActiveDropdown(null);
-        handleEditProfile(attendee);
-      }}
-      className={styles.dropdownItem}
-    >
-      <FaEdit
-        style={{
-          fontSize: "12px",
-          color: "#3b82f6",
-        }}
-      />{" "}
-      Edit Profile
-    </button>
-  )}
-  {/* Conditional Archive Action */}
-  {(userRole === "master_admin" ||
-    userRole === "super_admin") &&
-    !attendee.is_archived && (
-      <button
-        onClick={() => {
-          setActiveDropdown(null);
-          initiateArchive(attendee, true);
-        }}
-        className={`${styles.dropdownItem} ${styles.archiveItem}`}
-      >
-        <FaArchive style={{ fontSize: "12px" }} />{" "}
-        Archive Record
-      </button>
-    )}
+                                    {attendee.is_selected !== 2 && (
+                                      <button
+                                        onClick={() => {
+                                          setActiveDropdown(null);
+                                          handleToggleSelection(attendee, 2);
+                                        }}
+                                        className={styles.dropdownItem}
+                                        style={{ color: "#dc2626" }}
+                                      >
+                                        <FaUserMinus
+                                          style={{
+                                            fontSize: "12px",
+                                            marginRight: "6px",
+                                          }}
+                                        />{" "}
+                                        Mark Not Selected
+                                      </button>
+                                    )}
+                                  </>
+                                )}
 
-  {/* Conditional Restore Action */}
-  {userRole === "master_admin" &&
-    attendee.is_archived && (
-      <button
-        onClick={() => {
-          setActiveDropdown(null);
-          initiateArchive(attendee, false);
-        }}
-        className={`${styles.dropdownItem} ${styles.restoreItem}`}
-      >
-        <FaArchive
-          style={{
-            fontSize: "12px",
-            transform: "rotate(180deg)",
-          }}
-        />{" "}
-        Restore Record
-      </button>
-    )}
-</div> 
-                        </>
+                              {/* Only Master Admin can Edit Profile */}
+                              {(userRole === "master_admin" ||
+                                userRole === "super_admin") && (
+                                <button
+                                  onClick={() => {
+                                    setActiveDropdown(null);
+                                    handleEditProfile(attendee);
+                                  }}
+                                  className={styles.dropdownItem}
+                                >
+                                  <FaEdit
+                                    style={{
+                                      fontSize: "12px",
+                                      color: "#3b82f6",
+                                    }}
+                                  />{" "}
+                                  Edit Profile
+                                </button>
+                              )}
+
+                              {/* Conditional Archive Action */}
+                              {(userRole === "master_admin" ||
+                                userRole === "super_admin") &&
+                                !attendee.is_archived && (
+                                  <button
+                                    onClick={() => {
+                                      setActiveDropdown(null);
+                                      initiateArchive(attendee, true);
+                                    }}
+                                    className={`${styles.dropdownItem} ${styles.archiveItem}`}
+                                  >
+                                    <FaArchive style={{ fontSize: "12px" }} />{" "}
+                                    Archive Record
+                                  </button>
+                                )}
+
+                              {/* Conditional Restore Action */}
+                              {userRole === "master_admin" &&
+                                attendee.is_archived && (
+                                  <button
+                                    onClick={() => {
+                                      setActiveDropdown(null);
+                                      initiateArchive(attendee, false);
+                                    }}
+                                    className={`${styles.dropdownItem} ${styles.restoreItem}`}
+                                  >
+                                    <FaArchive
+                                      style={{
+                                        fontSize: "12px",
+                                        transform: "rotate(180deg)",
+                                      }}
+                                    />{" "}
+                                    Restore Record
+                                  </button>
+                                )}
+                            </div>
+                          </>
                         )}
                       </td>
-                      {/* Confirmation Action Modal Layout */}
-                      {/* --- Glassmorphism Toast Notification Success Popup --- */}
                       {toast.show && (
                         <div
                           className={`${styles.toastNotification} ${toast.type === "archive" ? styles.toastArchive : styles.toastRestore}`}
@@ -1135,7 +1258,6 @@ export default function RegisteredRoster({
                         </div>
                       )}
 
-                      {/* --- Refined Action Confirmation Modal --- */}
                       {confirmAction && (
                         <div
                           className={styles.modalOverlay2}
@@ -1145,7 +1267,6 @@ export default function RegisteredRoster({
                             className={styles.modalCard2}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {/* Dynamic Header Icon Frame */}
                             <div
                               className={styles.modalIconHeader2}
                               style={{
@@ -1167,7 +1288,6 @@ export default function RegisteredRoster({
                               />
                             </div>
 
-                            {/* Text Context Content */}
                             <h3 className={styles.modalTitle2}>
                               {confirmAction.shouldArchive
                                 ? "Archive Record?"
@@ -1184,7 +1304,6 @@ export default function RegisteredRoster({
                                 : " This will place the record back into the primary active roster view."}
                             </p>
 
-                            {/* Button Action Controls Group */}
                             <div className={styles.modalActionGroup2}>
                               <button
                                 type="button"
@@ -1223,7 +1342,7 @@ export default function RegisteredRoster({
                       )}
                     </tr>
                   );
-                })}
+                })}{" "}
               </tbody>
             </table>
           </div>
