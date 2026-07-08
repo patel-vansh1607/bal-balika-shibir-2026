@@ -23,7 +23,7 @@ import {
   FaUserCheck,
 } from "react-icons/fa";
 import styles from "./RegisteredRoster.module.css";
-
+import ArchiveConfirmModal from "../ArchiveConfirmModal/ArchiveConfirmModal";
 export default function RegisteredRoster({
   attendees = [],
   dataFetching = false,
@@ -48,6 +48,8 @@ export default function RegisteredRoster({
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAttendee, setSelectedAttendee] = useState(null);
   // A. State variables go at the very top of the function hook block
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
@@ -90,58 +92,92 @@ export default function RegisteredRoster({
     ...new Set(attendees.map((a) => a.center).filter(Boolean)),
   ];
   const apiFetch = async (url, options) => {
-  const res = await fetch(url, options);
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || 'API Error');
-  }
-  return res.json();
-};
-// Function updated to use member_id for the PATCH request
-const handleToggleSelection = async (attendee, newSelectionStatus) => {
-  setIsProcessing(true);
-  setError(null);
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "API Error");
+    }
+    return res.json();
+  };
+  // Function updated to use member_id for the PATCH request
+  const handleToggleSelection = async (attendee, newSelectionStatus) => {
+    setIsProcessing(true);
+    setError(null);
 
-  // Use the raw integer database ID (e.g., 299)
-  const databaseId = attendee._raw_id || attendee.id; 
+    // Use the raw integer database ID (e.g., 299)
+    const databaseId = attendee._raw_id || attendee.id;
 
-  try {
-    const payload = {
-      is_selected: newSelectionStatus
-    };
+    try {
+      const payload = {
+        is_selected: newSelectionStatus,
+      };
 
-    // ─── REMOVED "/routes" FROM THE ENDPOINT PATH ───
-    await apiFetch(`https://api.riftkoders.com/mtrc/attendees/${databaseId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+      // ─── REMOVED "/routes" FROM THE ENDPOINT PATH ───
+      await apiFetch(
+        `https://api.riftkoders.com/mtrc/attendees/${databaseId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
 
-    // Update state locally
-    setAttendees((prevAttendees) =>
-      prevAttendees.map((item) =>
-        item.id === attendee.id ? { ...item, is_selected: newSelectionStatus } : item
-      )
-    );
+      // Update state locally
+      setAttendees((prevAttendees) =>
+        prevAttendees.map((item) =>
+          item.id === attendee.id
+            ? { ...item, is_selected: newSelectionStatus }
+            : item,
+        ),
+      );
 
-    setToast({
-      show: true,
-      type: "selection",
-      message: `Successfully updated status for ${attendee.name}`
-    });
+      setToast({
+        show: true,
+        type: "selection",
+        message: `Successfully updated status for ${attendee.name}`,
+      });
 
-    setTimeout(() => setToast({ show: false, type: "", message: "" }), 4000);
+      setTimeout(() => setToast({ show: false, type: "", message: "" }), 4000);
+    } catch (err) {
+      console.error("--- SERVER ERROR DETECTED ---", err);
+      setError(`Failed to update status: ${err.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  const handleExecuteArchive = async (reason) => {
+    setIsProcessing(true);
+    const databaseId = selectedAttendee._raw_id || selectedAttendee.id;
 
-  } catch (err) {
-    console.error("--- SERVER ERROR DETECTED ---", err);
-    setError(`Failed to update status: ${err.message}`);
-  } finally {
-    setIsProcessing(false);
-  }
-};  const initiateArchive = (attendee, shouldArchive) =>
-    setConfirmAction({ attendee, shouldArchive });
+    try {
+      await fetch(`https://api.riftkoders.com/mtrc/attendees/${databaseId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          is_archived: true,
+          archive_reason: reason.trim(),
+        }),
+      });
+
+      // Update parent dataset list array smoothly
+      setAttendees((prev) =>
+        prev.filter((item) => item.id !== selectedAttendee.id),
+      );
+      setIsModalOpen(false);
+      setSelectedAttendee(null);
+    } catch (err) {
+      console.error("Archive request failed:", err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  const initiateArchive = (attendee) => {
+    setSelectedAttendee(attendee);
+    setIsModalOpen(true);
+    setActiveDropdown(null);
+  };
   const handleOpenQrModal = (user) => {
     setActiveQrModalUser(user);
     setIsQrLoading(true);
@@ -545,7 +581,7 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
   /* --- Save Changes to Database using API Client --- */
   /* --- Open Edit Modal & Populate Form Fields Dynamically --- */
   /* --- Open Edit Modal & Populate Form Fields Dynamically --- */
-  const handleEditProfile = (attendee) => {
+const handleEditProfile = (attendee) => {
     // Debug log to see exactly what properties exist on your attendee object
     console.log("Attendee properties received for editing:", attendee);
 
@@ -581,13 +617,16 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
       "Zambia",
     ].includes(attendeeCountry);
 
+    // Determine if the current operator has Master Admin clearance
+    const isMasterAdminClearance = userRole === "master_admin";
+
     setEditingAttendee({
-      id: attendee.id,
-      member_id: attendee.member_id || `MTRC-${attendee.id}`,
+      id: attendee.id,                         // Always locked in UI
+      member_id: attendee.member_id || `MTRC-${attendee.id}`, // Always locked in UI
       first_name: fName,
       middle_name: mName,
       last_name: lName,
-      email: loadedEmail, // Uses the resolved fallback property string
+      email: loadedEmail, 
       tshirt_size: attendee.tshirt_size || "",
       gender: attendee.gender || "Balak",
       age: attendee.age || "—",
@@ -595,11 +634,14 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
       center: attendee.center || "",
       parent_contact: attendee.parent_contact || "",
       isSpecialRegion: isSpecialRegion,
+      
+      // ─── MASTER ADMIN OVERRIDE FLAG ───
+      isEditableForMaster: isMasterAdminClearance 
     });
 
     setIsEditModalOpen(true);
   };
-  /* --- Save Changes to Database --- */
+     /* --- Save Changes to Database --- */
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (!editingAttendee) return;
@@ -1067,7 +1109,6 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                           )}
                         </td>
                       )}
-
                       {/* --- Selection Status Badge Cell (0 = Pending, 1 = Selected, 2 = Not Selected) --- */}
                       {/* Only render Selection Status data cell for Tanzania */}
                       {regionScope === "Tanzania" && (
@@ -1107,7 +1148,6 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                           )}
                         </td>
                       )}
-
                       <td style={{ textAlign: "center" }}>
                         <button
                           onClick={() => handleOpenQrModal(attendee)}
@@ -1149,7 +1189,7 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                                 background: "transparent",
                               }}
                             />
-<div
+                            <div
                               className={styles.actionDropdown}
                               style={{
                                 zIndex: 9999,
@@ -1206,24 +1246,26 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                                     )}
 
                                     {/* New Option: Mark Pending (Only show if not already pending/0) */}
-                                    {attendee.is_selected !== 0 && attendee.is_selected !== null && attendee.is_selected !== undefined && (
-                                      <button
-                                        onClick={() => {
-                                          setActiveDropdown(null);
-                                          handleToggleSelection(attendee, 0);
-                                        }}
-                                        className={styles.dropdownItem}
-                                        style={{ color: "#64748b" }}
-                                      >
-                                        <FaSpinner
-                                          style={{
-                                            fontSize: "12px",
-                                            marginRight: "6px",
+                                    {attendee.is_selected !== 0 &&
+                                      attendee.is_selected !== null &&
+                                      attendee.is_selected !== undefined && (
+                                        <button
+                                          onClick={() => {
+                                            setActiveDropdown(null);
+                                            handleToggleSelection(attendee, 0);
                                           }}
-                                        />{" "}
-                                        Mark Pending
-                                      </button>
-                                    )}
+                                          className={styles.dropdownItem}
+                                          style={{ color: "#64748b" }}
+                                        >
+                                          <FaSpinner
+                                            style={{
+                                              fontSize: "12px",
+                                              marginRight: "6px",
+                                            }}
+                                          />{" "}
+                                          Mark Pending
+                                        </button>
+                                      )}
                                   </>
                                 )}
 
@@ -1248,13 +1290,14 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                               )}
 
                               {/* Conditional Archive Action */}
+                              {/* Conditional Archive Action */}
                               {(userRole === "master_admin" ||
                                 userRole === "super_admin") &&
                                 !attendee.is_archived && (
                                   <button
                                     onClick={() => {
                                       setActiveDropdown(null);
-                                      initiateArchive(attendee, true);
+                                      initiateArchive(attendee); // 👈 Simply pass the target attendee object directly
                                     }}
                                     className={`${styles.dropdownItem} ${styles.archiveItem}`}
                                   >
@@ -1282,7 +1325,8 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                                     Restore Record
                                   </button>
                                 )}
-                            </div>                          </>
+                            </div>{" "}
+                          </>
                         )}
                       </td>
                       {toast.show && (
@@ -1293,7 +1337,6 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                           <span>{toast.message}</span>
                         </div>
                       )}
-
                       {confirmAction && (
                         <div
                           className={styles.modalOverlay2}
@@ -1336,9 +1379,32 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                                 : "restore"}{" "}
                               <strong>{confirmAction.attendee.name}</strong>?
                               {confirmAction.shouldArchive
-                                ? " "
+                                ? ""
                                 : " This will place the record back into the primary active roster view."}
                             </p>
+
+                            {/* --- Conditional Archive Reason Field --- */}
+                            {confirmAction.shouldArchive && (
+                              <div className={styles.archiveReasonFieldGroup}>
+                                <label className={styles.archiveReasonLabel}>
+                                  Reason for Archiving{" "}
+                                  <span style={{ color: "#dc2626" }}>*</span>
+                                </label>
+                                <textarea
+                                  className={styles.archiveReasonInput}
+                                  placeholder="Provide a specific reason (e.g., Left country, incorrect entry, duplicate)..."
+                                  value={confirmAction.archive_reason || ""}
+                                  onChange={(e) =>
+                                    setConfirmAction((prev) => ({
+                                      ...prev,
+                                      archive_reason: e.target.value,
+                                    }))
+                                  }
+                                  disabled={isProcessing}
+                                  rows={3}
+                                />
+                              </div>
+                            )}
 
                             <div className={styles.modalActionGroup2}>
                               <button
@@ -1354,11 +1420,25 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                                 type="button"
                                 onClick={executeArchive}
                                 className={styles.confirmBtn}
-                                disabled={isProcessing}
+                                disabled={
+                                  isProcessing ||
+                                  (confirmAction.shouldArchive &&
+                                    !confirmAction.archive_reason?.trim())
+                                }
                                 style={{
                                   backgroundColor: confirmAction.shouldArchive
                                     ? "#d97706"
                                     : "#16a34a",
+                                  opacity:
+                                    confirmAction.shouldArchive &&
+                                    !confirmAction.archive_reason?.trim()
+                                      ? "0.6"
+                                      : "1",
+                                  cursor:
+                                    confirmAction.shouldArchive &&
+                                    !confirmAction.archive_reason?.trim()
+                                      ? "not-allowed"
+                                      : "pointer",
                                 }}
                               >
                                 {isProcessing ? (
@@ -1375,7 +1455,7 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                             </div>
                           </div>
                         </div>
-                      )}
+                      )}{" "}
                     </tr>
                   );
                 })}{" "}
@@ -1383,6 +1463,13 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
             </table>
           </div>
         )}
+        <ArchiveConfirmModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onConfirm={handleExecuteArchive}
+          attendeeName={selectedAttendee?.name || ""}
+          isProcessing={isProcessing}
+        />
       </div>
 
       {activeQrModalUser && (
@@ -1502,7 +1589,7 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
         </div>
       )}
       {/* --- Profile Edit Modal Layer --- */}
-      {isEditModalOpen && editingAttendee && (
+{isEditModalOpen && editingAttendee && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
             <div className={styles.modalHeader}>
@@ -1517,7 +1604,7 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
             </div>
 
             <form onSubmit={handleSaveProfile} className={styles.modalForm}>
-              {/* Read-Only Fixed Structural System Elements */}
+              {/* Read-Only Fixed Structural System Elements — Permanently Locked */}
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label>Database Row ID </label>
@@ -1601,7 +1688,7 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                 </div>
               </div>
 
-              {/* Read Only Restricted Metadata Reference Sections */}
+              {/* Dynamic Restricted Metadata Sections — Unlocked ONLY for Master Admin */}
               <hr
                 style={{
                   border: "0",
@@ -1616,8 +1703,11 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                   <input
                     type="text"
                     value={editingAttendee.gender}
-                    disabled
-                    className={styles.disabledInput}
+                    onChange={(e) =>
+                      handleEditFieldChange("gender", e.target.value)
+                    }
+                    disabled={!editingAttendee.isEditableForMaster}
+                    className={!editingAttendee.isEditableForMaster ? styles.disabledInput : ""}
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -1625,8 +1715,11 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                   <input
                     type="text"
                     value={editingAttendee.age}
-                    disabled
-                    className={styles.disabledInput}
+                    onChange={(e) =>
+                      handleEditFieldChange("age", e.target.value)
+                    }
+                    disabled={!editingAttendee.isEditableForMaster}
+                    className={!editingAttendee.isEditableForMaster ? styles.disabledInput : ""}
                   />
                 </div>
               </div>
@@ -1637,8 +1730,11 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                   <input
                     type="text"
                     value={editingAttendee.country}
-                    disabled
-                    className={styles.disabledInput}
+                    onChange={(e) =>
+                      handleEditFieldChange("country", e.target.value)
+                    }
+                    disabled={!editingAttendee.isEditableForMaster}
+                    className={!editingAttendee.isEditableForMaster ? styles.disabledInput : ""}
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -1646,8 +1742,11 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                   <input
                     type="text"
                     value={editingAttendee.center}
-                    disabled
-                    className={styles.disabledInput}
+                    onChange={(e) =>
+                      handleEditFieldChange("center", e.target.value)
+                    }
+                    disabled={!editingAttendee.isEditableForMaster}
+                    className={!editingAttendee.isEditableForMaster ? styles.disabledInput : ""}
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -1655,8 +1754,11 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
                   <input
                     type="text"
                     value={editingAttendee.parent_contact}
-                    disabled
-                    className={styles.disabledInput}
+                    onChange={(e) =>
+                      handleEditFieldChange("parent_contact", e.target.value)
+                    }
+                    disabled={!editingAttendee.isEditableForMaster}
+                    className={!editingAttendee.isEditableForMaster ? styles.disabledInput : ""}
                   />
                 </div>
               </div>
@@ -1689,7 +1791,6 @@ const handleToggleSelection = async (attendee, newSelectionStatus) => {
             </form>
           </div>
         </div>
-      )}
-    </div>
+      )}    </div>
   );
 }

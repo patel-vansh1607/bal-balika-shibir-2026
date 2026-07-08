@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { FaUndo, FaSearch, FaArchive, FaSpinner } from "react-icons/fa";
 import { attendees as attendeesApi } from "../../apiClient";
 import styles from "./ArchiveManager.module.css";
@@ -16,6 +16,10 @@ export default function ArchiveManager({ regionScope }) {
       const params = { archived: 1 };
       if (regionScope && regionScope !== "All") params.region = regionScope;
       const { data } = await attendeesApi.list(params);
+      
+      // DEBUG LOG: Look inside your browser developer tools console (F12) to see exactly what name the database field has!
+      console.log("Archived records payload from DB:", data);
+      
       setRecords(data || []);
     } catch (err) {
       console.error("Archive fetch failed:", err);
@@ -24,19 +28,38 @@ export default function ArchiveManager({ regionScope }) {
     }
   }, [regionScope]);
 
-  useEffect(() => { fetchArchived(); }, [fetchArchived]);
+  useEffect(() => { 
+    fetchArchived(); 
+  }, [fetchArchived]);
 
-  const archivedRecords = records.filter(
-    (a) =>
-      a.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (a.member_id && a.member_id.toString().includes(searchTerm)),
-  );
+  // Helper function to extract whatever name the database is using for the reason field
+  const getArchiveReason = (record) => {
+    if (!record) return "";
+    return record.archive_reason || record.archiveReason || record.reason || record.archive_remarks || "";
+  };
+
+  // Memoized filter calculation
+  const archivedRecords = useMemo(() => {
+    const cleanSearch = searchTerm.trim().toLowerCase();
+    if (!cleanSearch) return records;
+
+    return records.filter((a) => {
+      const nameMatch = a.name?.toLowerCase().includes(cleanSearch);
+      const idMatch = a.member_id?.toString().toLowerCase().includes(cleanSearch);
+      const reasonMatch = getArchiveReason(a).toLowerCase().includes(cleanSearch);
+
+      return nameMatch || idMatch || reasonMatch;
+    });
+  }, [records, searchTerm]);
 
   const handleRestore = async () => {
     if (!confirmAction) return;
     setIsProcessing(true);
     try {
-      await attendeesApi.update(confirmAction._raw_id || parseInt(confirmAction.id, 10), { is_archived: false });
+      await attendeesApi.update(confirmAction._raw_id || parseInt(confirmAction.id, 10), { 
+        is_archived: false,
+        archive_reason: null 
+      });
       setRecords((prev) => prev.filter((item) => item.id !== confirmAction.id));
       setConfirmAction(null);
     } catch (error) {
@@ -65,7 +88,7 @@ export default function ArchiveManager({ regionScope }) {
             <FaSearch className={styles.searchIcon} />
             <input
               className={styles.inputField}
-              placeholder="Search by name or ID..."
+              placeholder="Search by name, ID, or reason..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -79,52 +102,63 @@ export default function ArchiveManager({ regionScope }) {
                 <th>Member ID</th>
                 <th>Full Name</th>
                 <th>Region</th>
+                <th>Reason for Archiving</th>
                 <th style={{ textAlign: "center" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="4" className={styles.emptyTablePlaceholder}>
+                  <td colSpan="5" className={styles.emptyTablePlaceholder}>
                     <FaSpinner className={styles.spin} /> Loading archived records...
                   </td>
                 </tr>
               ) : archivedRecords.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className={styles.emptyTablePlaceholder}>
+                  <td colSpan="5" className={styles.emptyTablePlaceholder}>
                     No archived record tracks match your search filters.
                   </td>
                 </tr>
               ) : (
-                archivedRecords.map((a) => (
-                  <tr key={a.id}>
-                    <td className={styles.monospaceText}>
-                      <code>{a.member_id || "N/A"}</code>
-                    </td>
-                    <td className={styles.boldText}>{a.name}</td>
-                    <td>
-                      <span className={styles.regionTag}>
-                        {a.region || "Global"}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      <button
-                        onClick={() => setConfirmAction(a)}
-                        className={styles.viewPassBtn}
-                        disabled={isProcessing}
-                      >
-                        <FaUndo /> Restore
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                archivedRecords.map((a) => {
+                  const displayReason = getArchiveReason(a);
+
+                  return (
+                    <tr key={a.id}>
+                      <td className={styles.monospaceText}>
+                        <code>{a.member_id || "N/A"}</code>
+                      </td>
+                      <td className={styles.boldText}>{a.name}</td>
+                      <td>
+                        <span className={styles.regionTag}>
+                          {a.region || "Global"}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={displayReason ? styles.reasonText : styles.noReasonText}>
+                          {displayReason || "No explicit reason specified"}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmAction(a)}
+                          className={styles.viewPassBtn}
+                          disabled={isProcessing}
+                        >
+                          <FaUndo /> Restore
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Confirmation Modal Container */}
       {confirmAction && (
         <div
           className={styles.modalOverlay}
@@ -136,30 +170,22 @@ export default function ArchiveManager({ regionScope }) {
           >
             <div className={styles.modalHeader}>
               <h3>Confirm Restoration</h3>
-
               <div className={styles.modalInlineActionBox}>
                 <p>
                   Restore <strong>{confirmAction.name}</strong> to the active
                   registry roster context?
                 </p>
-                <button
-                  onClick={handleRestore}
-                  disabled={isProcessing}
-                  className={styles.inlineTextRestoreBtn}
-                  title="Click to instantly restore record"
-                >
-                  {isProcessing ? (
-                    <FaSpinner className={styles.spin} />
-                  ) : (
-                    <FaUndo />
-                  )}{" "}
-                  Restore
-                </button>
+                {getArchiveReason(confirmAction) && (
+                  <p className={styles.modalReasonContext}>
+                    <strong>Original Reason:</strong> "{getArchiveReason(confirmAction)}"
+                  </p>
+                )}
               </div>
             </div>
 
             <div className={styles.modalActionRow}>
               <button
+                type="button"
                 onClick={() => setConfirmAction(null)}
                 className={styles.cancelBtn}
                 disabled={isProcessing}
@@ -167,6 +193,7 @@ export default function ArchiveManager({ regionScope }) {
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleRestore}
                 className={styles.confirmBtn}
                 disabled={isProcessing}

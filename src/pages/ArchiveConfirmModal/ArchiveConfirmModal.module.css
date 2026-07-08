@@ -1,0 +1,96 @@
+/* --- Fixes visibility, centering, and layer order --- */
+.modalOverlay2 {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.6); /* Semi-transparent dark background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999999; /* Forces it above everything else on the screen */
+}
+
+.modalCard2 {
+  background-color: #ffffff;
+  padding: 28px;
+  border-radius: 12px;
+  width: 440px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  color: #1e293b;
+}
+
+.archiveReasonFieldGroup {
+  margin: 18px 0;
+  text-align: left;
+}
+
+.archiveReasonLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.archiveReasonInput {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+  background-color: #ffffff;
+}
+
+.modalActionGroup2 {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.cancelBtn, .confirmBtn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.cancelBtn {
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.confirmBtn {
+  background-color: #d97706;
+  color: white;
+  border: none;
+}
+
+.confirmBtn:disabled {
+  background-color: #cbd5e1;
+  cursor: not-allowed;
+}
+/* --- Styles the placeholder text specifically --- */
+.archiveReasonInput::placeholder {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif; /* Your preferred font */
+  font-size: 13px;
+  font-style: italic; /* Makes it italicized to look like an instruction */
+  color: #94a3b8; /* A clean, modern slate-gray color */
+  opacity: 1; /* Ensures the color displays at full opacity on all browsers */
+}
+
+/* Optional: Styles the text when you actually type inside it */
+.archiveReasonInput {
+  font-family: inherit; /* Inherits the standard application text font */
+  font-size: 14px;
+}
