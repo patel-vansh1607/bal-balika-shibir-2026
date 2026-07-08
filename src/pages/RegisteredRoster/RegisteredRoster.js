@@ -50,6 +50,7 @@ export default function RegisteredRoster({
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAttendee, setSelectedAttendee] = useState(null);
+  
   // A. State variables go at the very top of the function hook block
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
@@ -1287,20 +1288,27 @@ const handleSaveProfile = async (e) => {
 
                               {/* Conditional Archive Action */}
                               {/* Conditional Archive Action */}
-                              {(userRole === "master_admin" ||
-                                userRole === "super_admin") &&
-                                !attendee.is_archived && (
-                                  <button
-                                    onClick={() => {
-                                      setActiveDropdown(null);
-                                      initiateArchive(attendee); // 👈 Simply pass the target attendee object directly
-                                    }}
-                                    className={`${styles.dropdownItem} ${styles.archiveItem}`}
-                                  >
-                                    <FaArchive style={{ fontSize: "12px" }} />{" "}
-                                    Archive Record
-                                  </button>
-                                )}
+                              {/* --- ARCHIVE BUTTON: FIX --- */}
+{(userRole === "master_admin" || userRole === "super_admin") && !attendee.is_archived && (
+  <button
+    onClick={(e) => {
+      e.stopPropagation(); // Prevents menu from closing prematurely
+      setActiveDropdown(null);
+      initiateArchive(attendee);
+    }}
+    className={`${styles.dropdownItem} ${styles.archiveItem}`}
+    style={{ 
+      display: "flex", 
+      alignItems: "center", 
+      gap: "8px", 
+      width: "100%",
+      cursor: "pointer" 
+    }}
+  >
+    <FaArchive style={{ fontSize: "12px" }} />
+    <span>Archive Record</span>
+  </button>
+)}
 
                               {/* Conditional Restore Action */}
                               {userRole === "master_admin" &&

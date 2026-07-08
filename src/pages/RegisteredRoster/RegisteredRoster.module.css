@@ -229,7 +229,11 @@
    ========================================================================== */
 .tableContainer {
   width: 100%;
-  overflow-x: auto;
+  /* CRITICAL: Remove 'overflow: hidden' or 'auto' if possible, 
+     or ensure dropdowns have a higher z-index than the table */
+  overflow-x: visible; 
+  overflow-y: visible;
+  position: relative;
 }
 
 .dataTable {
@@ -741,14 +745,16 @@
 
 .actionDropdown {
   position: absolute;
-  background: #ffffff;
-  border: 1px solid var(--border-light);
+  top: 100%; 
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  box-shadow: -4px 4px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
-  padding: 6px 0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  z-index: 999999 !important; /* Forces it to the very top */
   min-width: 160px;
-  display: flex;
-  flex-direction: column;
+  white-space: nowrap;
 }
 
 .dropdownItem {
@@ -973,30 +979,30 @@
 }
 /* Modal Dim Backdrop Layer */
 /* Container wrappers for system modals */
+/* Inside RegisteredRoster.module.css */
+
 .modalOverlay2 {
-  position: fixed;
+  position: fixed; /* This makes it fixed to the screen, NOT the table */
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10500;
+  z-index: 999999; /* Must be the highest thing on the page */
 }
 
-/* Base modal card dimensions and layout */
 .modalCard2 {
-  background-color: #ffffff;
-  padding: 28px;
-  border-radius: 12px;
-  width: 440px; /* Force a solid fixed width instead of percentage metrics */
-  max-width: 90vw;
-  text-align: center;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  transform: translateZ(0); /* Forces GPU composition layering */
+  background-color: white;
+  width: 400px;
+  max-width: 90%;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  /* Ensure it has no parent relative positioning constraints */
+  position: relative; 
 }
 
 /* Form block spacing metrics */
