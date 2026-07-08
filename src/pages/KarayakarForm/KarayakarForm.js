@@ -176,10 +176,7 @@ export default function KarayakarForm() {
       showNotification('error', 'Missing Designation', 'Please select at least one Seva Designation.');
       return;
     }
-    if (needsTshirt && !form.tshirtSize) {
-      showNotification('error', 'Size Required', `T-shirt size is required for ${form.region}.`);
-      return;
-    }
+
 
     setSubmitting(true);
     try {
@@ -370,17 +367,22 @@ export default function KarayakarForm() {
             </div>
           </div>
 
-          {needsTshirt && (
-            <div className={styles.formGroup}>
-              <label className={styles.label}>T-Shirt Size</label>
-              <div className={styles.selectWrapper}>
-                <select className={styles.selectInput} required value={form.tshirtSize} onChange={e => setForm(f => ({ ...f, tshirtSize: e.target.value }))}>
-                  <option value="">Select size</option>
-                  {TSHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-          )}
+
+{needsTshirt && (
+  <div className={styles.formGroup}>
+    <label className={styles.label}>T-Shirt Size <span className={styles.labelOptional}>(Optional)</span></label>
+    <div className={styles.selectWrapper}>
+      <select 
+        className={styles.selectInput} 
+        value={form.tshirtSize} 
+        onChange={e => setForm(f => ({ ...f, tshirtSize: e.target.value }))}
+      >
+        <option value="">Select size</option>
+        {TSHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+      </select>
+    </div>
+  </div>
+)}
 
           <button type="submit" className={styles.submitBtn} disabled={submitting}>
             {submitting ? (

@@ -488,3 +488,9 @@
     min-width: calc(100% - 48px);
   }
 }
+.labelOptional {
+  font-size: 0.8rem;
+  color: #888;
+  font-weight: normal;
+  margin-left: 8px;
+}
