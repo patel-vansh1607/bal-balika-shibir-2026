@@ -689,7 +689,8 @@ const handleSaveProfile = async (e) => {
     } finally {
       setIsSavingProfile(false);
     }
-  };  const getGenderTagClass = (g) => {
+  }; 
+  const getGenderTagClass = (g) => {
     switch (g) {
       case "Balak":
         return styles.tagBalak;
