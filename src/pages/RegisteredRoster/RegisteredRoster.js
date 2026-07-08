@@ -52,7 +52,7 @@ export default function RegisteredRoster({
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
 
   // B. First Memo calculates the base dataset filters
   const filteredAttendees = useMemo(() => {
