@@ -70,7 +70,7 @@ const regionDataset = {
 const ALL_REGIONS     = Object.keys(regionDataset);
 const TSHIRT_REGIONS  = ['South Africa', 'Botswana','Kenya','Tanzania','Uganda','Malawi','Zambia'];
 const TSHIRT_SIZES    = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-const SEVA_DESIGNATIONS = ['Shishu Sanchalak', 'Shishu Sah-Sanchalak', 'Shishu I.C','Shishu Helper', 'Shishika Sanchalak', 'Shishika Sah-Sanchalak', 'Shishika I.C','Shishika Helper', 'Bal Sanchalak', 'Bal Sah-Sanchalak', 'Bal I.C','Bal Helper', 'Balika Sanchalak', 'Balika Sah-Sanchalak', 'Balika I.C','Balika Helper'];
+const SEVA_DESIGNATIONS = ['NC','I-NC','NOC', 'I-NOC','RC', 'I-RC','Shishu Sanchalak', 'Shishu Sah-Sanchalak', 'Shishu I.C','Shishu Helper', 'Shishika Sanchalak', 'Shishika Sah-Sanchalak', 'Shishika I.C','Shishika Helper', 'Bal Sanchalak', 'Bal Sah-Sanchalak', 'Bal I.C','Bal Helper', 'Balika Sanchalak', 'Balika Sah-Sanchalak', 'Balika I.C','Balika Helper'];
 
 export default function KarayakarForm() {
   const currentRegionSetting = localStorage.getItem("selected_shibir_region") || "Kenya";
