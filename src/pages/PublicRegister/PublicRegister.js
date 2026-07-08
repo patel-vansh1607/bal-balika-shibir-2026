@@ -18,7 +18,7 @@ import {
   FaCheck,
 } from "react-icons/fa";
 import styles from "./PublicRegister.module.css";
-import confetti from 'canvas-confetti'
+import confetti from "canvas-confetti";
 export default function PublicRegister() {
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
@@ -44,8 +44,7 @@ export default function PublicRegister() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [tshirtSize, setTshirtSize] = useState("");
-
-  // Workflow panel state toggle
+  const closedRegions = [""]; // Define your list of closed regions
   const [formMode, setFormMode] = useState("form"); // "form" | "review"
 
   const phoneRef = useRef(null);
@@ -264,7 +263,10 @@ export default function PublicRegister() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredCountries = Object.keys(regionDataset).filter((c) =>
+  // NEW CODE
+  const allCountries = Object.keys(regionDataset);
+
+  const filteredCountries = allCountries.filter((c) =>
     c.toLowerCase().includes(regionSearchQuery.toLowerCase().trim()),
   );
   const availableCenters = selectedRegion
@@ -338,7 +340,13 @@ export default function PublicRegister() {
     if (!gender) return fail("Please select a Mandal.", genderRef);
     if (!selectedRegion) return fail("Please select your Country.", regionRef);
     if (!selectedCenter) return fail("Please select your Center.", centerRef);
-
+    const closedRegions = ["Uganda", "Malawi"];
+    if (closedRegions.includes(selectedRegion)) {
+      return fail(
+        "Registration for this region is currently closed.",
+        regionRef,
+      );
+    }
     const strippedPhone = phoneNumber ? phoneNumber.replace(/\s/g, "") : "";
     const currentCode = regionDataset[selectedRegion]?.code || "";
     const digitsAfterPrefix = strippedPhone.substring(currentCode.length);
@@ -384,7 +392,7 @@ export default function PublicRegister() {
   };
 
   // Step 2: Full Database Transmission Workflow Sequence
-const handleCommitFinalRegistration = async () => {
+  const handleCommitFinalRegistration = async () => {
     setFormError("");
     const validated = validateForm();
     if (!validated) {
@@ -483,7 +491,7 @@ const handleCommitFinalRegistration = async () => {
             particleCount: 200,
             spread: 100,
             origin: { y: 0.6 },
-            colors: ['#8a151b', '#ffffff', '#2d2926']
+            colors: ["#8a151b", "#ffffff", "#2d2926"],
           });
 
           setSuccess(true);
@@ -622,9 +630,7 @@ const handleCommitFinalRegistration = async () => {
                 <FaInfoCircle className={styles.previewHeaderIcon} />
                 <div>
                   <h3>Review Details / Preview Details</h3>
-                  <p>
-                    Please ensure all details match before confirming.
-                  </p>
+                  <p>Please ensure all details match before confirming.</p>
                 </div>
               </div>
 
@@ -824,15 +830,36 @@ const handleCommitFinalRegistration = async () => {
                             </div>
                             <ul className={styles.dropdownListOptions}>
                               {filteredCountries.length > 0 ? (
-                                filteredCountries.map((country) => (
-                                  <li
-                                    key={country}
-                                    className={`${styles.dropdownOptionItem} ${selectedRegion === country ? styles.itemSelected : ""}`}
-                                    onClick={() => handleSelectCountry(country)}
-                                  >
-                                    {country}
-                                  </li>
-                                ))
+                                filteredCountries.map((country) => {
+                                  const isClosed =
+                                    closedRegions.includes(country);
+
+                                  return (
+                                    <li
+                                      key={country}
+                                      className={`${styles.dropdownOptionItem} ${isClosed ? styles.itemDisabled : ""} ${selectedRegion === country ? styles.itemSelected : ""}`}
+                                      onClick={() =>
+                                        !isClosed &&
+                                        handleSelectCountry(country)
+                                      }
+                                    >
+                                      {country}
+                                      {isClosed && (
+                                        <span
+                                          style={{
+                                            marginLeft: "10px",
+                                            fontSize: "10px",
+                                            color: "#d93025",
+                                            fontWeight: "bold",
+                                          }}
+                                        >
+                                          REGISTRATION CLOSED - CONTACT YOUR
+                                          NOC/NC
+                                        </span>
+                                      )}
+                                    </li>
+                                  );
+                                })
                               ) : (
                                 <li className={styles.noResultsFoundItem}>
                                   No matching countries found
