@@ -32,7 +32,6 @@ import {
   FaArrowLeft,
   FaArchive,
   FaSyncAlt,
-  FaEnvelope
 } from "react-icons/fa";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
@@ -167,9 +166,7 @@ export default function Dashboard() {
     <button onClick={() => handleNavigation("/dashboard/add-new-karyakar")} className={`${styles.navLink} ${location.pathname === "/dashboard/add-new-karyakar" ? styles.navLinkActive : ""}`}>
       <FaUserPlus className={styles.iconMargin} /> Add Karyakar
     </button>
-    <button onClick={() => handleNavigation("/dashboard/email/batch")} className={`${styles.navLink} ${location.pathname === "/dashboard/email/batch" ? styles.navLinkActive : ""}`}>
-      <FaEnvelope className={styles.iconMargin} /> Batch Email
-    </button>
+
     
 
     {/* Archive Manager: Accessible by both master_admin and super_admin */}
