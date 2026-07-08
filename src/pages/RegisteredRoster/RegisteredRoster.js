@@ -89,16 +89,31 @@ export default function RegisteredRoster({
     "All",
     ...new Set(attendees.map((a) => a.center).filter(Boolean)),
   ];
-  const handleToggleSelection = async (memberId, currentStatus) => {
+  const handleToggleSelection = async (attendee) => {
     setError(null);
+    
+    // 1. Target the raw database numeric primary key
+    const targetId = attendee._raw_id || attendee.id;
+    if (!targetId) {
+      console.error("Missing valid numeric identifier for attendee:", attendee);
+      return;
+    }
+
+    // 2. Cycle or toggle the is_selected state logic safely
+    // If it's 0 or undefined, move to 1. If 1, move to 2. If 2, cycle back to 0.
+    const currentVal = parseInt(attendee.is_selected || 0, 10);
+    let nextVal = 1;
+    if (currentVal === 1) nextVal = 2;
+    if (currentVal === 2) nextVal = 0;
+
     try {
-      // Explicitly passing the payload fields the server expects to prevent 400 errors
+      // 3. Match payload keys precisely with the PHP whitelisted fields array
       const payload = {
-        statusField: !currentStatus // Change 'statusField' to your exact backend key (e.g., checked, present, selected)
+        is_selected: nextVal
       };
 
-      // Sending PATCH targeting the resource by its memberId
-      await apiFetch(`https://api.riftkoders.com/mtrc/routes/attendees/${memberId}`, {
+      // Sending PATCH targeting the resource by its raw numeric ID path token
+      await apiFetch(`https://api.riftkoders.com/mtrc/routes/attendees/${targetId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -106,15 +121,15 @@ export default function RegisteredRoster({
         body: JSON.stringify(payload),
       });
 
-      // Optimistically update UI state locally
+      // 4. Optimistically update UI array state locally 
       setAttendees((prevAttendees) =>
         prevAttendees.map((item) =>
-          item.memberId === memberId ? { ...item, statusField: !currentStatus } : item
+          item.id === attendee.id ? { ...item, is_selected: nextVal } : item
         )
       );
     } catch (err) {
       console.error("--- SERVER ERROR DETECTED ---", err);
-      setError(`Error updating member ${memberId}: ${err.message}`);
+      setError(`Error updating attendee status profile: ${err.message}`);
     }
   };
   const apiFetch = async (url, options) => {
