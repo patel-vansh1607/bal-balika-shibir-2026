@@ -18,7 +18,7 @@ import {
   FaCheck,
 } from "react-icons/fa";
 import styles from "./PublicRegister.module.css";
-
+import confetti from 'canvas-confetti'
 export default function PublicRegister() {
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
@@ -384,7 +384,7 @@ export default function PublicRegister() {
   };
 
   // Step 2: Full Database Transmission Workflow Sequence
-  const handleCommitFinalRegistration = async () => {
+const handleCommitFinalRegistration = async () => {
     setFormError("");
     const validated = validateForm();
     if (!validated) {
@@ -410,11 +410,9 @@ export default function PublicRegister() {
           .join(" ")
       : "";
 
-    // START LOADING WINDOW STATE
     setLoading(true);
 
     try {
-      // 1. Create DB entry
       const { data: insertData } = await attendeesApi.create({
         name: constructedFullName,
         age: parsedAge,
@@ -436,7 +434,6 @@ export default function PublicRegister() {
         .replace(/[^a-zA-Z0-9]/g, "_")
         .toLowerCase();
 
-      // 2. Process image asset dependencies if attached
       let profileUrl = null;
       if (photoFile) {
         const ext = photoFile.name.split(".").pop().toLowerCase();
@@ -445,7 +442,6 @@ export default function PublicRegister() {
         profileUrl = url;
       }
 
-      // 3. Process QR generation assets tree inside microtask window
       await new Promise((resolve) => {
         setTimeout(async () => {
           const svgElement = qrRef.current?.querySelector("svg");
@@ -460,13 +456,11 @@ export default function PublicRegister() {
             qrUrl = url;
           }
 
-          // Update records with file addresses
           await attendeesApi.update(rawId, {
             photo_url: profileUrl,
             qr_code_url: qrUrl,
           });
 
-          // Dispatch confirmation alert threads
           emailApi
             .sendRegistration({
               email: cleanEmail,
@@ -477,7 +471,6 @@ export default function PublicRegister() {
             })
             .catch(console.warn);
 
-          // Populate receipt node data
           setFinalAttendeeData({
             memberId: trueMemberId,
             name: constructedFullName,
@@ -485,36 +478,40 @@ export default function PublicRegister() {
             center: selectedCenter,
           });
 
+          // --- SUCCESS CELEBRATION ---
+          confetti({
+            particleCount: 200,
+            spread: 100,
+            origin: { y: 0.6 },
+            colors: ['#8a151b', '#ffffff', '#2d2926']
+          });
+
+          setSuccess(true);
+          setFormMode("form");
+
+          setFirstName("");
+          setMiddleName("");
+          setLastName("");
+          setAge("");
+          setGender("");
+          setSelectedRegion("");
+          setRegionSearchQuery("");
+          setSelectedCenter("");
+          setCenterSearchQuery("");
+          setParentEmail("");
+          setPhotoFile(null);
+          setPhoneNumber("");
+          setTshirtSize("");
+
           resolve();
         }, 600);
       });
-
-      // --- ALL API TASKS ARE DONE SUCCESSFULLY HERE ---
-      setSuccess(true);
-      setFormMode("form"); // Ready for next cycle loop
-
-      // Clear input buffers safely
-      setFirstName("");
-      setMiddleName("");
-      setLastName("");
-      setAge("");
-      setGender("");
-      setSelectedRegion("");
-      setRegionSearchQuery("");
-      setSelectedCenter("");
-      setCenterSearchQuery("");
-      setParentEmail("");
-      setPhotoFile(null);
-      setPhoneNumber("");
-      setTshirtSize("");
     } catch (uploadErr) {
       setFormError(`Registration failed: ${uploadErr.message}`);
     } finally {
-      // TURN OFF SPINNER SPIN AT THE VERY END
       setLoading(false);
     }
   };
-
   const handleResetFormView = () => {
     setSuccess(false);
     setFinalAttendeeData(null);
