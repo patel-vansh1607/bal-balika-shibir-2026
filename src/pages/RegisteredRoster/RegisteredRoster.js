@@ -642,44 +642,41 @@ const handleEditProfile = (attendee) => {
     setIsEditModalOpen(true);
   };
      /* --- Save Changes to Database --- */
-  const handleSaveProfile = async (e) => {
+const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (!editingAttendee) return;
 
     setIsSavingProfile(true);
     try {
+      // 1. Build a complete payload that includes EVERY editable field
       const updatePayload = {
         first_name: editingAttendee.first_name,
         middle_name: editingAttendee.middle_name,
         last_name: editingAttendee.last_name,
-        name: `${editingAttendee.first_name} ${editingAttendee.middle_name} ${editingAttendee.last_name}`
+        name: `${editingAttendee.first_name} ${editingAttendee.middle_name || ""} ${editingAttendee.last_name}`
           .replace(/\s+/g, " ")
           .trim(),
-        email: editingAttendee.email || null, // Saves clean null state to the database if left empty
+        email: editingAttendee.email || null,
+        
+        // 2. ADD THESE FIELDS so the backend actually receives them
+        gender: editingAttendee.gender,
+        age: editingAttendee.age,
+        center: editingAttendee.center,
+        parent_contact: editingAttendee.parent_contact,
+        country: editingAttendee.country,
+        tshirt_size: editingAttendee.tshirt_size || null
       };
 
-      // Append t-shirt parameters only if the attendee falls into the specific geographic list
-      if (editingAttendee.isSpecialRegion) {
-        updatePayload.tshirt_size = editingAttendee.tshirt_size || null;
-      }
-
+      // 3. Send the full payload to your API
       await attendeesApi.update(editingAttendee.id, updatePayload);
 
-      // Sync UI changes instantly down to the roster record list array
+      // 4. Update the local UI state with the exact payload we sent
       setAttendees((prev) =>
         prev.map((item) =>
           item.id === editingAttendee.id
-            ? {
-                ...item,
-                ...editingAttendee,
-                name: updatePayload.name,
-                email: updatePayload.email,
-                ...(editingAttendee.isSpecialRegion && {
-                  tshirt_size: updatePayload.tshirt_size,
-                }),
-              }
-            : item,
-        ),
+            ? { ...item, ...updatePayload }
+            : item
+        )
       );
 
       setIsEditModalOpen(false);
@@ -691,8 +688,7 @@ const handleEditProfile = (attendee) => {
     } finally {
       setIsSavingProfile(false);
     }
-  };
-  const getGenderTagClass = (g) => {
+  };  const getGenderTagClass = (g) => {
     switch (g) {
       case "Balak":
         return styles.tagBalak;
