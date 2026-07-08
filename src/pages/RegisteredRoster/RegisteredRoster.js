@@ -89,49 +89,6 @@ export default function RegisteredRoster({
     "All",
     ...new Set(attendees.map((a) => a.center).filter(Boolean)),
   ];
-  const handleToggleSelection = async (attendee) => {
-    setError(null);
-    
-    // 1. Target the raw database numeric primary key
-    const targetId = attendee._raw_id || attendee.id;
-    if (!targetId) {
-      console.error("Missing valid numeric identifier for attendee:", attendee);
-      return;
-    }
-
-    // 2. Cycle or toggle the is_selected state logic safely
-    // If it's 0 or undefined, move to 1. If 1, move to 2. If 2, cycle back to 0.
-    const currentVal = parseInt(attendee.is_selected || 0, 10);
-    let nextVal = 1;
-    if (currentVal === 1) nextVal = 2;
-    if (currentVal === 2) nextVal = 0;
-
-    try {
-      // 3. Match payload keys precisely with the PHP whitelisted fields array
-      const payload = {
-        is_selected: nextVal
-      };
-
-      // Sending PATCH targeting the resource by its raw numeric ID path token
-      await apiFetch(`https://api.riftkoders.com/mtrc/routes/attendees/${targetId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      // 4. Optimistically update UI array state locally 
-      setAttendees((prevAttendees) =>
-        prevAttendees.map((item) =>
-          item.id === attendee.id ? { ...item, is_selected: nextVal } : item
-        )
-      );
-    } catch (err) {
-      console.error("--- SERVER ERROR DETECTED ---", err);
-      setError(`Error updating attendee status profile: ${err.message}`);
-    }
-  };
   const apiFetch = async (url, options) => {
   const res = await fetch(url, options);
   if (!res.ok) {
@@ -140,7 +97,50 @@ export default function RegisteredRoster({
   }
   return res.json();
 };
-  const initiateArchive = (attendee, shouldArchive) =>
+// Function updated to use member_id for the PATCH request
+const handleToggleSelection = async (attendee, newSelectionStatus) => {
+  setIsProcessing(true);
+  setError(null);
+
+  // Use the raw integer database ID (e.g., 299)
+  const databaseId = attendee._raw_id || attendee.id; 
+
+  try {
+    const payload = {
+      is_selected: newSelectionStatus
+    };
+
+    // ─── REMOVED "/routes" FROM THE ENDPOINT PATH ───
+    await apiFetch(`https://api.riftkoders.com/mtrc/attendees/${databaseId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    // Update state locally
+    setAttendees((prevAttendees) =>
+      prevAttendees.map((item) =>
+        item.id === attendee.id ? { ...item, is_selected: newSelectionStatus } : item
+      )
+    );
+
+    setToast({
+      show: true,
+      type: "selection",
+      message: `Successfully updated status for ${attendee.name}`
+    });
+
+    setTimeout(() => setToast({ show: false, type: "", message: "" }), 4000);
+
+  } catch (err) {
+    console.error("--- SERVER ERROR DETECTED ---", err);
+    setError(`Failed to update status: ${err.message}`);
+  } finally {
+    setIsProcessing(false);
+  }
+};  const initiateArchive = (attendee, shouldArchive) =>
     setConfirmAction({ attendee, shouldArchive });
   const handleOpenQrModal = (user) => {
     setActiveQrModalUser(user);
@@ -1149,7 +1149,7 @@ export default function RegisteredRoster({
                                 background: "transparent",
                               }}
                             />
-                            <div
+<div
                               className={styles.actionDropdown}
                               style={{
                                 zIndex: 9999,
@@ -1165,6 +1165,7 @@ export default function RegisteredRoster({
                                 (userRole === "master_admin" ||
                                   userRole === "super_admin") && (
                                   <>
+                                    {/* Mark Selected Option */}
                                     {attendee.is_selected !== 1 && (
                                       <button
                                         onClick={() => {
@@ -1184,6 +1185,7 @@ export default function RegisteredRoster({
                                       </button>
                                     )}
 
+                                    {/* Mark Not Selected Option */}
                                     {attendee.is_selected !== 2 && (
                                       <button
                                         onClick={() => {
@@ -1200,6 +1202,26 @@ export default function RegisteredRoster({
                                           }}
                                         />{" "}
                                         Mark Not Selected
+                                      </button>
+                                    )}
+
+                                    {/* New Option: Mark Pending (Only show if not already pending/0) */}
+                                    {attendee.is_selected !== 0 && attendee.is_selected !== null && attendee.is_selected !== undefined && (
+                                      <button
+                                        onClick={() => {
+                                          setActiveDropdown(null);
+                                          handleToggleSelection(attendee, 0);
+                                        }}
+                                        className={styles.dropdownItem}
+                                        style={{ color: "#64748b" }}
+                                      >
+                                        <FaSpinner
+                                          style={{
+                                            fontSize: "12px",
+                                            marginRight: "6px",
+                                          }}
+                                        />{" "}
+                                        Mark Pending
                                       </button>
                                     )}
                                   </>
@@ -1260,8 +1282,7 @@ export default function RegisteredRoster({
                                     Restore Record
                                   </button>
                                 )}
-                            </div>
-                          </>
+                            </div>                          </>
                         )}
                       </td>
                       {toast.show && (
