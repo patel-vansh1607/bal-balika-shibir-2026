@@ -869,14 +869,28 @@ select:focus,
   }
 }
 .itemDisabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
-  background-color: #dadcde;
+  background-color: #f1f3f4;
   color: #383a3c;
+  
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center; /* This centers everything horizontally */
+  padding: 10px;
+  gap: 4px;
+  text-align: center; /* Ensures text inside is centered */
 }
 
+/* Optional: Keep it left-aligned on desktop if you prefer */
+@media (min-width: 768px) {
+  .itemDisabled {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+  }
+}
 .closedBadge {
   font-size: 10px;
   background: #fce8e6;
