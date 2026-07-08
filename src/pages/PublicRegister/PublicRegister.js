@@ -340,7 +340,7 @@ export default function PublicRegister() {
     if (!gender) return fail("Please select a Mandal.", genderRef);
     if (!selectedRegion) return fail("Please select your Country.", regionRef);
     if (!selectedCenter) return fail("Please select your Center.", centerRef);
-    const closedRegions = ["Uganda", "Malawi"];
+    const closedRegions = [""];
     if (closedRegions.includes(selectedRegion)) {
       return fail(
         "Registration for this region is currently closed.",
