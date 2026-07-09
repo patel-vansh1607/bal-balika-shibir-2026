@@ -21,6 +21,8 @@ import {
   FaCheckCircle,
   FaUserMinus,
   FaUserCheck,
+  FaCreditCard,
+  FaMoneyBillWave
 } from "react-icons/fa";
 import styles from "./RegisteredRoster.module.css";
 import ArchiveConfirmModal from "../ArchiveConfirmModal/ArchiveConfirmModal";
@@ -50,7 +52,7 @@ export default function RegisteredRoster({
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAttendee, setSelectedAttendee] = useState(null);
-  
+
   // A. State variables go at the very top of the function hook block
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
@@ -225,7 +227,33 @@ export default function RegisteredRoster({
     }
     setIsPdfModalOpen(true);
   };
+  const handleTogglePayment = async (attendee, nextStatus) => {
+    try {
+      // 1. Fire off the patch request to your API client layer
+      await attendeesApi.update(attendee.id, { is_paid: Number(nextStatus) });
 
+      // 2. React runtime local state sync
+      setAttendees((prev) =>
+        prev.map((item) =>
+          item.id === attendee.id ? { ...item, is_paid: nextStatus } : item,
+        ),
+      );
+
+      // 3. Mount confirmation feedback toast toast notification
+      setToast({
+        show: true,
+        type: "success",
+        message: `${attendee.name} has been marked as ${nextStatus === 1 ? "Paid" : "Not Paid"}.`,
+      });
+
+      setTimeout(() => setToast({ show: false, type: "", message: "" }), 3000);
+    } catch (err) {
+      console.error("Error patching payment status field attribute:", err);
+      alert(
+        "Failed to update payment status on server. Remember to whitelist 'is_paid' on your backend first!",
+      );
+    }
+  };
   /* --- Core PDF Export Execution Logic --- */
   const handleExportPDF = (
     includeContact = true,
@@ -582,7 +610,7 @@ export default function RegisteredRoster({
   /* --- Save Changes to Database using API Client --- */
   /* --- Open Edit Modal & Populate Form Fields Dynamically --- */
   /* --- Open Edit Modal & Populate Form Fields Dynamically --- */
-const handleEditProfile = (attendee) => {
+  const handleEditProfile = (attendee) => {
     // Debug log to see exactly what properties exist on your attendee object
     console.log("Attendee properties received for editing:", attendee);
 
@@ -622,12 +650,12 @@ const handleEditProfile = (attendee) => {
     const isMasterAdminClearance = userRole === "master_admin";
 
     setEditingAttendee({
-      id: attendee.id,                         // Always locked in UI
+      id: attendee.id, // Always locked in UI
       member_id: attendee.member_id || `MTRC-${attendee.id}`, // Always locked in UI
       first_name: fName,
       middle_name: mName,
       last_name: lName,
-      email: loadedEmail, 
+      email: loadedEmail,
       tshirt_size: attendee.tshirt_size || "",
       gender: attendee.gender || "Balak",
       age: attendee.age || "—",
@@ -635,15 +663,15 @@ const handleEditProfile = (attendee) => {
       center: attendee.center || "",
       parent_contact: attendee.parent_contact || "",
       isSpecialRegion: isSpecialRegion,
-      
+
       // ─── MASTER ADMIN OVERRIDE FLAG ───
-      isEditableForMaster: isMasterAdminClearance 
+      isEditableForMaster: isMasterAdminClearance,
     });
 
     setIsEditModalOpen(true);
   };
-     /* --- Save Changes to Database --- */
-const handleSaveProfile = async (e) => {
+  /* --- Save Changes to Database --- */
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (!editingAttendee) return;
 
@@ -658,14 +686,14 @@ const handleSaveProfile = async (e) => {
           .replace(/\s+/g, " ")
           .trim(),
         email: editingAttendee.email || null,
-        
+
         // 2. ADD THESE FIELDS so the backend actually receives them
         gender: editingAttendee.gender,
         age: editingAttendee.age,
         center: editingAttendee.center,
         parent_contact: editingAttendee.parent_contact,
         country: editingAttendee.country,
-        tshirt_size: editingAttendee.tshirt_size || null
+        tshirt_size: editingAttendee.tshirt_size || null,
       };
 
       // 3. Send the full payload to your API
@@ -674,10 +702,8 @@ const handleSaveProfile = async (e) => {
       // 4. Update the local UI state with the exact payload we sent
       setAttendees((prev) =>
         prev.map((item) =>
-          item.id === editingAttendee.id
-            ? { ...item, ...updatePayload }
-            : item
-        )
+          item.id === editingAttendee.id ? { ...item, ...updatePayload } : item,
+        ),
       );
 
       setIsEditModalOpen(false);
@@ -689,7 +715,7 @@ const handleSaveProfile = async (e) => {
     } finally {
       setIsSavingProfile(false);
     }
-  }; 
+  };
   const getGenderTagClass = (g) => {
     switch (g) {
       case "Balak":
@@ -725,7 +751,6 @@ const handleSaveProfile = async (e) => {
           </p>
         </div>
       </section>
-
       <div
         className={styles.contentCard}
         style={{ marginBottom: "24px", padding: "20px" }}
@@ -1027,10 +1052,8 @@ const handleSaveProfile = async (e) => {
                   {["Botswana", "South Africa", "Malawi", "Zambia"].includes(
                     regionScope,
                   ) && <th>T-Shirt</th>}
-
-                  {/* Only show Selection Status column header for Tanzania */}
                   {regionScope === "Tanzania" && <th>Selection Status</th>}
-
+                  {regionScope === "Kenya" && <th>Payment Status</th>}
                   <th style={{ textAlign: "center" }}>Identity Pass</th>
                   {(userRole === "master_admin" ||
                     userRole === "super_admin") && <th>Actions</th>}
@@ -1107,8 +1130,8 @@ const handleSaveProfile = async (e) => {
                           )}
                         </td>
                       )}
-                      {/* --- Selection Status Badge Cell (0 = Pending, 1 = Selected, 2 = Not Selected) --- */}
-                      {/* Only render Selection Status data cell for Tanzania */}
+
+                      {/* --- Tanzania Specific Column --- */}
                       {regionScope === "Tanzania" && (
                         <td>
                           {attendee.is_selected === 1 ? (
@@ -1146,6 +1169,37 @@ const handleSaveProfile = async (e) => {
                           )}
                         </td>
                       )}
+
+                      {/* --- Kenya Specific Column --- */}
+                      {regionScope === "Kenya" && (
+                        <td>
+                          {attendee.is_paid === 1 ? (
+                            <span
+                              className={styles.badgeGenderTag}
+                              style={{
+                                backgroundColor:
+                                  "var(--success-light, #dcfce7)",
+                                color: "var(--success-dark, #16a34a)",
+                                fontWeight: "600",
+                              }}
+                            >
+                              Paid
+                            </span>
+                          ) : (
+                            <span
+                              className={styles.badgeGenderTag}
+                              style={{
+                                backgroundColor: "var(--danger-light, #fee2e2)",
+                                color: "var(--danger-dark, #dc2626)",
+                                fontWeight: "600",
+                              }}
+                            >
+                              Not Paid
+                            </span>
+                          )}
+                        </td>
+                      )}
+
                       <td style={{ textAlign: "center" }}>
                         <button
                           onClick={() => handleOpenQrModal(attendee)}
@@ -1198,12 +1252,11 @@ const handleSaveProfile = async (e) => {
                               }}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              {/* --- Selection Actions: ONLY accessible if region is TZ and user is authorized --- */}
+                              {/* --- Tanzania Selection Actions --- */}
                               {regionScope === "Tanzania" &&
                                 (userRole === "master_admin" ||
                                   userRole === "super_admin") && (
                                   <>
-                                    {/* Mark Selected Option */}
                                     {attendee.is_selected !== 1 && (
                                       <button
                                         onClick={() => {
@@ -1223,7 +1276,6 @@ const handleSaveProfile = async (e) => {
                                       </button>
                                     )}
 
-                                    {/* Mark Not Selected Option */}
                                     {attendee.is_selected !== 2 && (
                                       <button
                                         onClick={() => {
@@ -1243,7 +1295,6 @@ const handleSaveProfile = async (e) => {
                                       </button>
                                     )}
 
-                                    {/* New Option: Mark Pending (Only show if not already pending/0) */}
                                     {attendee.is_selected !== 0 &&
                                       attendee.is_selected !== null &&
                                       attendee.is_selected !== undefined && (
@@ -1267,7 +1318,53 @@ const handleSaveProfile = async (e) => {
                                   </>
                                 )}
 
-                              {/* Only Master Admin can Edit Profile */}
+                              {/* --- Kenya Payment Actions --- */}
+                              {regionScope === "Kenya" &&
+                                (userRole === "master_admin" ||
+                                  userRole === "super_admin") && (
+                                  <button
+                                    onClick={() => {
+                                      setActiveDropdown(null);
+                                      const nextPaymentStatus =
+                                        attendee.is_paid === 1 ? 0 : 1;
+                                      handleTogglePayment(
+                                        attendee,
+                                        nextPaymentStatus,
+                                      );
+                                    }}
+                                    className={styles.dropdownItem}
+                                    style={{
+                                      color:
+                                        attendee.is_paid === 1
+                                          ? "#dc2626"
+                                          : "#16a34a",
+                                    }}
+                                  >
+                                    {attendee.is_paid === 1 ? (
+                                      <>
+                                        <FaCreditCard
+                                          style={{
+                                            fontSize: "12px",
+                                            marginRight: "6px",
+                                          }}
+                                        />{" "}
+                                        Mark Not Paid
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FaMoneyBillWave
+                                          style={{
+                                            fontSize: "12px",
+                                            marginRight: "6px",
+                                          }}
+                                        />{" "}
+                                        Mark Paid
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+
+                              {/* Only Admin can Edit Profile */}
                               {(userRole === "master_admin" ||
                                 userRole === "super_admin") && (
                                 <button
@@ -1287,31 +1384,31 @@ const handleSaveProfile = async (e) => {
                                 </button>
                               )}
 
-                              {/* Conditional Archive Action */}
-                              {/* Conditional Archive Action */}
-                              {/* --- ARCHIVE BUTTON: FIX --- */}
-{(userRole === "master_admin" || userRole === "super_admin") && !attendee.is_archived && (
-  <button
-    onClick={(e) => {
-      e.stopPropagation(); // Prevents menu from closing prematurely
-      setActiveDropdown(null);
-      initiateArchive(attendee);
-    }}
-    className={`${styles.dropdownItem} ${styles.archiveItem}`}
-    style={{ 
-      display: "flex", 
-      alignItems: "center", 
-      gap: "8px", 
-      width: "100%",
-      cursor: "pointer" 
-    }}
-  >
-    <FaArchive style={{ fontSize: "12px" }} />
-    <span>Archive Record</span>
-  </button>
-)}
+                              {/* Archive Action */}
+                              {(userRole === "master_admin" ||
+                                userRole === "super_admin") &&
+                                !attendee.is_archived && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveDropdown(null);
+                                      initiateArchive(attendee);
+                                    }}
+                                    className={`${styles.dropdownItem} ${styles.archiveItem}`}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "8px",
+                                      width: "100%",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    <FaArchive style={{ fontSize: "12px" }} />
+                                    <span>Archive Record</span>
+                                  </button>
+                                )}
 
-                              {/* Conditional Restore Action */}
+                              {/* Restore Action */}
                               {userRole === "master_admin" &&
                                 attendee.is_archived && (
                                   <button
@@ -1330,142 +1427,141 @@ const handleSaveProfile = async (e) => {
                                     Restore Record
                                   </button>
                                 )}
-                            </div>{" "}
+                            </div>
                           </>
                         )}
                       </td>
-                      {toast.show && (
-                        <div
-                          className={`${styles.toastNotification} ${toast.type === "archive" ? styles.toastArchive : styles.toastRestore}`}
-                        >
-                          <FaCheckCircle className={styles.toastIcon} />
-                          <span>{toast.message}</span>
-                        </div>
-                      )}
-                      {confirmAction && (
-                        <div
-                          className={styles.modalOverlay2}
-                          onClick={() => setConfirmAction(null)}
-                        >
-                          <div
-                            className={styles.modalCard2}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div
-                              className={styles.modalIconHeader2}
-                              style={{
-                                backgroundColor: confirmAction.shouldArchive
-                                  ? "#fef3c7"
-                                  : "#dcfce7",
-                                color: confirmAction.shouldArchive
-                                  ? "#d97706"
-                                  : "#16a34a",
-                              }}
-                            >
-                              <FaArchive
-                                size={24}
-                                style={{
-                                  transform: confirmAction.shouldArchive
-                                    ? "none"
-                                    : "rotate(180deg)",
-                                }}
-                              />
-                            </div>
-
-                            <h3 className={styles.modalTitle2}>
-                              {confirmAction.shouldArchive
-                                ? "Archive Record?"
-                                : "Restore Record?"}
-                            </h3>
-                            <p className={styles.modalDescription2}>
-                              Are you sure you want to{" "}
-                              {confirmAction.shouldArchive
-                                ? "archive"
-                                : "restore"}{" "}
-                              <strong>{confirmAction.attendee.name}</strong>?
-                              {confirmAction.shouldArchive
-                                ? ""
-                                : " This will place the record back into the primary active roster view."}
-                            </p>
-
-                            {/* --- Conditional Archive Reason Field --- */}
-                            {confirmAction.shouldArchive && (
-                              <div className={styles.archiveReasonFieldGroup}>
-                                <label className={styles.archiveReasonLabel}>
-                                  Reason for Archiving{" "}
-                                  <span style={{ color: "#dc2626" }}>*</span>
-                                </label>
-                                <textarea
-                                  className={styles.archiveReasonInput}
-                                  placeholder="Provide a specific reason (e.g., Left country, incorrect entry, duplicate)..."
-                                  value={confirmAction.archive_reason || ""}
-                                  onChange={(e) =>
-                                    setConfirmAction((prev) => ({
-                                      ...prev,
-                                      archive_reason: e.target.value,
-                                    }))
-                                  }
-                                  disabled={isProcessing}
-                                  rows={3}
-                                />
-                              </div>
-                            )}
-
-                            <div className={styles.modalActionGroup2}>
-                              <button
-                                type="button"
-                                onClick={() => setConfirmAction(null)}
-                                className={styles.cancelBtn}
-                                disabled={isProcessing}
-                              >
-                                Cancel
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={executeArchive}
-                                className={styles.confirmBtn}
-                                disabled={
-                                  isProcessing ||
-                                  (confirmAction.shouldArchive &&
-                                    !confirmAction.archive_reason?.trim())
-                                }
-                                style={{
-                                  backgroundColor: confirmAction.shouldArchive
-                                    ? "#d97706"
-                                    : "#16a34a",
-                                  opacity:
-                                    confirmAction.shouldArchive &&
-                                    !confirmAction.archive_reason?.trim()
-                                      ? "0.6"
-                                      : "1",
-                                  cursor:
-                                    confirmAction.shouldArchive &&
-                                    !confirmAction.archive_reason?.trim()
-                                      ? "not-allowed"
-                                      : "pointer",
-                                }}
-                              >
-                                {isProcessing ? (
-                                  <>
-                                    <FaSpinner className={styles.spin} />{" "}
-                                    Processing...
-                                  </>
-                                ) : confirmAction.shouldArchive ? (
-                                  "Confirm Archive"
-                                ) : (
-                                  "Confirm Restore"
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}{" "}
                     </tr>
                   );
-                })}{" "}
+                })}
               </tbody>
             </table>
+
+            {/* UI Toast and Action Modals remain positioned underneath cleanly */}
+            {toast.show && (
+              <div
+                className={`${styles.toastNotification} ${toast.type === "archive" ? styles.toastArchive : styles.toastRestore}`}
+              >
+                <FaCheckCircle className={styles.toastIcon} />
+                <span>{toast.message}</span>
+              </div>
+            )}
+
+            {confirmAction && (
+              <div
+                className={styles.modalOverlay2}
+                onClick={() => setConfirmAction(null)}
+              >
+                <div
+                  className={styles.modalCard2}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div
+                    className={styles.modalIconHeader2}
+                    style={{
+                      backgroundColor: confirmAction.shouldArchive
+                        ? "#fef3c7"
+                        : "#dcfce7",
+                      color: confirmAction.shouldArchive
+                        ? "#d97706"
+                        : "#16a34a",
+                    }}
+                  >
+                    <FaArchive
+                      size={24}
+                      style={{
+                        transform: confirmAction.shouldArchive
+                          ? "none"
+                          : "rotate(180deg)",
+                      }}
+                    />
+                  </div>
+
+                  <h3 className={styles.modalTitle2}>
+                    {confirmAction.shouldArchive
+                      ? "Archive Record?"
+                      : "Restore Record?"}
+                  </h3>
+                  <p className={styles.modalDescription2}>
+                    Are you sure you want to{" "}
+                    {confirmAction.shouldArchive ? "archive" : "restore"}{" "}
+                    <strong>{confirmAction.attendee.name}</strong>?
+                    {confirmAction.shouldArchive
+                      ? ""
+                      : " This will place the record back into the primary active roster view."}
+                  </p>
+
+                  {confirmAction.shouldArchive && (
+                    <div className={styles.archiveReasonFieldGroup}>
+                      <label className={styles.archiveReasonLabel}>
+                        Reason for Archiving{" "}
+                        <span style={{ color: "#dc2626" }}>*</span>
+                      </label>
+                      <textarea
+                        className={styles.archiveReasonInput}
+                        placeholder="Provide a specific reason..."
+                        value={confirmAction.archive_reason || ""}
+                        onChange={(e) =>
+                          setConfirmAction((prev) => ({
+                            ...prev,
+                            archive_reason: e.target.value,
+                          }))
+                        }
+                        disabled={isProcessing}
+                        rows={3}
+                      />
+                    </div>
+                  )}
+
+                  <div className={styles.modalActionGroup2}>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmAction(null)}
+                      className={styles.cancelBtn}
+                      disabled={isProcessing}
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={executeArchive}
+                      className={styles.confirmBtn}
+                      disabled={
+                        isProcessing ||
+                        (confirmAction.shouldArchive &&
+                          !confirmAction.archive_reason?.trim())
+                      }
+                      style={{
+                        backgroundColor: confirmAction.shouldArchive
+                          ? "#d97706"
+                          : "#16a34a",
+                        opacity:
+                          confirmAction.shouldArchive &&
+                          !confirmAction.archive_reason?.trim()
+                            ? "0.6"
+                            : "1",
+                        cursor:
+                          confirmAction.shouldArchive &&
+                          !confirmAction.archive_reason?.trim()
+                            ? "not-allowed"
+                            : "pointer",
+                      }}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <FaSpinner className={styles.spin} /> Processing...
+                        </>
+                      ) : confirmAction.shouldArchive ? (
+                        "Confirm Archive"
+                      ) : (
+                        "Confirm Restore"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
         <ArchiveConfirmModal
@@ -1476,7 +1572,6 @@ const handleSaveProfile = async (e) => {
           isProcessing={isProcessing}
         />
       </div>
-
       {activeQrModalUser && (
         <div
           className={styles.modalOverlay}
@@ -1594,7 +1689,7 @@ const handleSaveProfile = async (e) => {
         </div>
       )}
       {/* --- Profile Edit Modal Layer --- */}
-{isEditModalOpen && editingAttendee && (
+      {isEditModalOpen && editingAttendee && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
             <div className={styles.modalHeader}>
@@ -1712,7 +1807,11 @@ const handleSaveProfile = async (e) => {
                       handleEditFieldChange("gender", e.target.value)
                     }
                     disabled={!editingAttendee.isEditableForMaster}
-                    className={!editingAttendee.isEditableForMaster ? styles.disabledInput : ""}
+                    className={
+                      !editingAttendee.isEditableForMaster
+                        ? styles.disabledInput
+                        : ""
+                    }
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -1724,7 +1823,11 @@ const handleSaveProfile = async (e) => {
                       handleEditFieldChange("age", e.target.value)
                     }
                     disabled={!editingAttendee.isEditableForMaster}
-                    className={!editingAttendee.isEditableForMaster ? styles.disabledInput : ""}
+                    className={
+                      !editingAttendee.isEditableForMaster
+                        ? styles.disabledInput
+                        : ""
+                    }
                   />
                 </div>
               </div>
@@ -1739,7 +1842,11 @@ const handleSaveProfile = async (e) => {
                       handleEditFieldChange("country", e.target.value)
                     }
                     disabled={!editingAttendee.isEditableForMaster}
-                    className={!editingAttendee.isEditableForMaster ? styles.disabledInput : ""}
+                    className={
+                      !editingAttendee.isEditableForMaster
+                        ? styles.disabledInput
+                        : ""
+                    }
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -1751,7 +1858,11 @@ const handleSaveProfile = async (e) => {
                       handleEditFieldChange("center", e.target.value)
                     }
                     disabled={!editingAttendee.isEditableForMaster}
-                    className={!editingAttendee.isEditableForMaster ? styles.disabledInput : ""}
+                    className={
+                      !editingAttendee.isEditableForMaster
+                        ? styles.disabledInput
+                        : ""
+                    }
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -1763,7 +1874,11 @@ const handleSaveProfile = async (e) => {
                       handleEditFieldChange("parent_contact", e.target.value)
                     }
                     disabled={!editingAttendee.isEditableForMaster}
-                    className={!editingAttendee.isEditableForMaster ? styles.disabledInput : ""}
+                    className={
+                      !editingAttendee.isEditableForMaster
+                        ? styles.disabledInput
+                        : ""
+                    }
                   />
                 </div>
               </div>
@@ -1796,6 +1911,7 @@ const handleSaveProfile = async (e) => {
             </form>
           </div>
         </div>
-      )}    </div>
+      )}
+    </div>
   );
 }
