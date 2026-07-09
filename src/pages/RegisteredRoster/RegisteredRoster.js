@@ -52,6 +52,7 @@ export default function RegisteredRoster({
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAttendee, setSelectedAttendee] = useState(null);
+  const [paymentFilter, setPaymentFilter] = useState("All");
 
   // A. State variables go at the very top of the function hook block
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,26 +61,39 @@ export default function RegisteredRoster({
   const [, setError] = useState(null);
 
   // B. First Memo calculates the base dataset filters
+// B. First Memo calculates the base dataset filters including your Payment Filter
   const filteredAttendees = useMemo(() => {
     return attendees.filter((attendee) => {
       const nameSafe = attendee.name?.toLowerCase() || "";
       const contactSafe = String(attendee.parent_contact || "");
       const idSafe = String(attendee.member_id || "").toLowerCase();
-      return (
+      
+      // Check standard criteria
+      const matchesBaseFilters =
         attendee.is_archived === showArchived &&
         (nameSafe.includes(searchTerm.toLowerCase()) ||
           contactSafe.includes(searchTerm) ||
           idSafe.includes(searchTerm.toLowerCase())) &&
         (selectedCenter === "All" || attendee.center === selectedCenter) &&
-        (selectedGender === "All" || attendee.gender === selectedGender)
-      );
+        (selectedGender === "All" || attendee.gender === selectedGender);
+
+      // Check conditional payment criteria specifically for Kenya context values
+      // Check conditional payment criteria specifically for Kenya context values
+      if (regionScope === "Kenya" && paymentFilter !== "All") {
+        // If it's missing or null, treat it as 0 (not paid)
+        const currentPaymentStatus = attendee.is_paid === 1 ? 1 : 0;
+        return matchesBaseFilters && String(currentPaymentStatus) === paymentFilter;
+      }
+
+      return matchesBaseFilters;
     });
-  }, [attendees, searchTerm, selectedCenter, selectedGender, showArchived]);
+  }, [attendees, searchTerm, selectedCenter, selectedGender, showArchived, regionScope, paymentFilter]);
 
   // C. Reset the active page layout index when filters change
+// C. Reset the active page layout index when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCenter, selectedGender, showArchived]);
+  }, [searchTerm, selectedCenter, selectedGender, showArchived, paymentFilter]);
 
   // D. Second Memo slices the filtered rows down into 25-row segments
   const paginatedAttendees = useMemo(() => {
@@ -755,179 +769,199 @@ export default function RegisteredRoster({
         className={styles.contentCard}
         style={{ marginBottom: "24px", padding: "20px" }}
       >
-        <div className={styles.toolbarRow}>
-          <div className={styles.searchWrapper}>
-            <input
-              type="text"
-              placeholder="Search by name, ID or contacts..."
-              className={styles.inputField}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <FaSearch className={styles.searchIcon} />
+<div className={styles.toolbarRow}>
+  <div className={styles.searchWrapper}>
+    <input
+      type="text"
+      placeholder="Search by name, ID or contacts..."
+      className={styles.inputField}
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+    />
+    <FaSearch className={styles.searchIcon} />
+  </div>
+  <div className={styles.filterGroup}>
+    <div className={styles.filterSelectContainer}>
+      <FaMapMarkerAlt style={{ color: "var(--accent-primary)" }} />
+      <select
+        value={selectedCenter}
+        onChange={(e) => setSelectedCenter(e.target.value)}
+        className={styles.selectDropdown}
+      >
+        {centersList.map((c) => (
+          <option key={c} value={c}>
+            {c === "All" ? "All Center Branches" : c}
+          </option>
+        ))}
+      </select>
+    </div>
+    
+    <div className={styles.filterSelectContainer}>
+      <FaUserFriends style={{ color: "var(--accent-primary)" }} />
+      <select
+        value={selectedGender}
+        onChange={(e) => setSelectedGender(e.target.value)}
+        className={styles.selectDropdown}
+      >
+        <option value="All">All Mandals</option>
+        <option value="Balak">Balak</option>
+        <option value="Balika">Balika</option>
+      </select>
+    </div>
+
+    {/* --- NEW KENYA-ONLY PAYMENT FILTER DROPDOWN --- */}
+    {regionScope === "Kenya" && (
+      <div className={styles.filterSelectContainer}>
+        <FaMoneyBillWave style={{ color: "var(--accent-primary)" }} />
+        <select
+          value={paymentFilter} // Make sure this state is defined in your parent component setup
+          onChange={(e) => setPaymentFilter(e.target.value)}
+          className={styles.selectDropdown}
+        >
+          <option value="All">All Payments</option>
+          <option value="1">Paid Only</option>
+          <option value="0">Not Paid Only</option>
+        </select>
+      </div>
+    )}
+
+    {/* Primary Action Button */}
+    <button
+      onClick={handleOpenExportChoice}
+      className={styles.exportBtn}
+      disabled={isExporting}
+    >
+      {isExporting ? (
+        <FaSpinner className={styles.spin} />
+      ) : (
+        <FaFileExport />
+      )}
+      {isExporting ? " Exporting..." : " Export to Excel"}
+    </button>
+
+    {/* Export Selection Modal Popup */}
+    {isExportModalOpen && (
+      <div className={styles.modalOverlay}>
+        <div className={styles.exportModalContent}>
+          <h3>Export Data - Excel</h3>
+          <p>Please select an option below: </p>
+
+          <div className={styles.exportOptions}>
+            <button
+              onClick={() => executeExport(true)}
+              className={`${styles.choiceBtn} ${styles.primaryChoice}`}
+            >
+              <span className={styles.btnTitle}>
+                EXCEL - With Contact Numbers
+              </span>
+              <span className={styles.btnDesc}></span>
+            </button>
+
+            <button
+              onClick={() => executeExport(false)}
+              className={`${styles.choiceBtn} ${styles.secondaryChoice}`}
+            >
+              <span className={styles.btnTitle}>
+                EXCEL - Without Contact Numbers
+              </span>
+              <span className={styles.btnDesc}></span>
+            </button>
           </div>
-          <div className={styles.filterGroup}>
-            <div className={styles.filterSelectContainer}>
-              <FaMapMarkerAlt style={{ color: "var(--accent-primary)" }} />
-              <select
-                value={selectedCenter}
-                onChange={(e) => setSelectedCenter(e.target.value)}
-                className={styles.selectDropdown}
-              >
-                {centersList.map((c) => (
-                  <option key={c} value={c}>
-                    {c === "All" ? "All Center Branches" : c}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className={styles.filterSelectContainer}>
-              <FaUserFriends style={{ color: "var(--accent-primary)" }} />
-              <select
-                value={selectedGender}
-                onChange={(e) => setSelectedGender(e.target.value)}
-                className={styles.selectDropdown}
-              >
-                <option value="All">All Mandals</option>
-                <option value="Balak">Balak</option>
-                <option value="Balika">Balika</option>
-              </select>
-            </div>
-            {/* Primary Action Button */}
+
+          <div className={styles.modalActions}>
             <button
-              onClick={handleOpenExportChoice}
-              className={styles.exportBtn}
-              disabled={isExporting}
+              onClick={() => setIsExportModalOpen(false)}
+              className={styles.cancelBtn}
             >
-              {isExporting ? (
-                <FaSpinner className={styles.spin} />
-              ) : (
-                <FaFileExport />
-              )}
-              {isExporting ? " Exporting..." : " Export to Excel"}
+              Cancel
             </button>
+          </div>
+        </div>
+      </div>
+    )}
+    
+    <button
+      onClick={downloadBatchQR}
+      className={styles.qrBtn}
+      disabled={isDownloadingQR}
+    >
+      {isDownloadingQR ? (
+        <FaSpinner className={styles.spin} />
+      ) : (
+        <FaDownload />
+      )}
+      {isDownloadingQR ? " Generating Zip..." : " Download All QR"}
+    </button>
+    
+    <div className={styles.btnWrapper}>
+      {/* Primary PDF Action Button Trigger */}
+      <button
+        type="button"
+        onClick={handleOpenPdfChoice}
+        className={styles.pdfBtn}
+      >
+        <FaFileExport /> Export to PDF
+      </button>
 
-            {/* Export Selection Modal Popup */}
-            {isExportModalOpen && (
-              <div className={styles.modalOverlay}>
-                <div className={styles.exportModalContent}>
-                  <h3>Export Data - Excel</h3>
-                  <p>Please select an option below: </p>
+      {/* PDF Modal Selection View popup */}
+      {isPdfModalOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.exportModalContent}>
+            <h3>Export Data - PDF</h3>
+            <p>Please select an option below:</p>
 
-                  <div className={styles.exportOptions}>
-                    <button
-                      onClick={() => executeExport(true)}
-                      className={`${styles.choiceBtn} ${styles.primaryChoice}`}
-                    >
-                      <span className={styles.btnTitle}>
-                        EXCEL - With Contact Numbers
-                      </span>
-                      <span className={styles.btnDesc}></span>
-                    </button>
-
-                    <button
-                      onClick={() => executeExport(false)}
-                      className={`${styles.choiceBtn} ${styles.secondaryChoice}`}
-                    >
-                      <span className={styles.btnTitle}>
-                        EXCEL - Without Contact Numbers
-                      </span>
-                      <span className={styles.btnDesc}></span>
-                    </button>
-                  </div>
-
-                  <div className={styles.modalActions}>
-                    <button
-                      onClick={() => setIsExportModalOpen(false)}
-                      className={styles.cancelBtn}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-            <button
-              onClick={downloadBatchQR}
-              className={styles.qrBtn}
-              disabled={isDownloadingQR}
-            >
-              {isDownloadingQR ? (
-                <FaSpinner className={styles.spin} />
-              ) : (
-                <FaDownload />
-              )}
-              {isDownloadingQR ? " Generating Zip..." : " Download All QR"}
-            </button>
-            <div className={styles.btnWrapper}>
-              {/* Primary PDF Action Button Trigger */}
+            <div className={styles.exportOptions}>
               <button
-                type="button"
-                onClick={handleOpenPdfChoice}
-                className={styles.pdfBtn}
+                onClick={() => {
+                  handleExportPDF(
+                    true,
+                    regionScope || "All",
+                    selectedCenter,
+                    selectedGender,
+                  );
+                  setIsPdfModalOpen(false);
+                }}
+                className={`${styles.choiceBtn} ${styles.primaryChoice}`}
               >
-                <FaFileExport /> Export to PDF
+                <span className={styles.btnTitle}>
+                  PDF - With Contact Numbers
+                </span>
+                <span className={styles.btnDesc}></span>
               </button>
 
-              {/* PDF Modal Selection View popup */}
-              {isPdfModalOpen && (
-                <div className={styles.modalOverlay}>
-                  <div className={styles.exportModalContent}>
-                    <h3>Export Data - PDF</h3>
-                    <p>Please select an option below:</p>
+              <button
+                onClick={() => {
+                  handleExportPDF(
+                    false,
+                    regionScope || "All",
+                    selectedCenter,
+                    selectedGender,
+                  );
+                  setIsPdfModalOpen(false);
+                }}
+                className={`${styles.choiceBtn} ${styles.secondaryChoice}`}
+              >
+                <span className={styles.btnTitle}>
+                  PDF - Without Contact Numbers
+                </span>
+                <span className={styles.btnDesc}></span>
+              </button>
+            </div>
 
-                    <div className={styles.exportOptions}>
-                      <button
-                        onClick={() => {
-                          handleExportPDF(
-                            true,
-                            regionScope || "All",
-                            selectedCenter,
-                            selectedGender,
-                          );
-                          setIsPdfModalOpen(false);
-                        }}
-                        className={`${styles.choiceBtn} ${styles.primaryChoice}`}
-                      >
-                        <span className={styles.btnTitle}>
-                          PDF - With Contact Numbers
-                        </span>
-                        <span className={styles.btnDesc}></span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          handleExportPDF(
-                            false,
-                            regionScope || "All",
-                            selectedCenter,
-                            selectedGender,
-                          );
-                          setIsPdfModalOpen(false);
-                        }}
-                        className={`${styles.choiceBtn} ${styles.secondaryChoice}`}
-                      >
-                        <span className={styles.btnTitle}>
-                          PDF - Without Contact Numbers
-                        </span>
-                        <span className={styles.btnDesc}></span>
-                      </button>
-                    </div>
-
-                    <div className={styles.modalActions}>
-                      <button
-                        onClick={() => setIsPdfModalOpen(false)}
-                        className={styles.cancelBtn}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+            <div className={styles.modalActions}>
+              <button
+                onClick={() => setIsPdfModalOpen(false)}
+                className={styles.cancelBtn}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
+      )}
+    </div>
+  </div>
+</div>
       </div>
       {/* --- Fixed 25-Record Pagination Footer Control --- */}
       {filteredAttendees.length > 0 && (
