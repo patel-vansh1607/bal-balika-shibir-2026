@@ -6,7 +6,6 @@ import {
 } from "react-icons/fa";
 import { sessions as sessionsApi, sessionLogs, attendees as attendeesApi } from "../../apiClient";
 import styles from "./Sessions.module.css";
-import ManualScanner from "../ManualScanner/ManualScanner";
 
 export default function Sessions({ regionScope, prefixScope, globalAttendeesList, isDataFetching }) {
   const { sessionId } = useParams();
@@ -17,7 +16,6 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
   const [attendanceLogs, setAttendanceLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState({ totalExpected: 0, present: 0, absent: 0 });
-  const [showManual, setShowManual] = useState(false);
   
   const isMenuSelectionMode = !sessionId || sessionId === "attendance";
   const activeRegion = regionScope || localStorage.getItem("selected_shibir_region") || "All";
@@ -151,8 +149,19 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
           <p>Managing for: <strong>{isGlobal ? "Global African Database" : activeRegion}</strong></p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
-          <button className={styles.actionScanFloatingBtn} onClick={() => setShowManual(!showManual)}><FaKeyboard /> Manual Entry</button>
-          <button className={styles.actionScanFloatingBtn} onClick={() => navigate(`/dashboard/scanner/${sessionId}`)}><FaQrcode /> Scan Badge</button>
+          {/* Modified trigger action here to drop down via router pathways */}
+          <button 
+            className={styles.actionScanFloatingBtn} 
+            onClick={() => navigate(`../manual-scanner/${sessionId}`)}
+          >
+            <FaKeyboard /> Manual Entry
+          </button>
+          <button 
+            className={styles.actionScanFloatingBtn} 
+            onClick={() => navigate(`/dashboard/scanner/${sessionId}`)}
+          >
+            <FaQrcode /> Scan Badge
+          </button>
         </div>
       </div>
 
@@ -180,13 +189,6 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
           </tbody>
         </table>
       </div>
-
-      {showManual && (
-        <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 99999, width: "90%", maxWidth: "500px", background: "white", padding: "20px", borderRadius: "16px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)" }}>
-          <button onClick={() => setShowManual(false)} style={{ float: "right" }}>Close</button>
-          <ManualScanner sessionId={sessionId} regionScope={activeRegion} />
-        </div>
-      )}
     </div>
   );
 }

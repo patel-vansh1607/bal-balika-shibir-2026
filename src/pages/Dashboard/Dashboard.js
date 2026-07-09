@@ -37,7 +37,7 @@ import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
 import KarayakarForm from "../KarayakarForm/KarayakarForm";
 import KarayakarList from "../KarayakarList/KarayakarList";
-
+import ManualScanner from "../ManualScanner/ManualScanner";
 export default function Dashboard() {
   const navigate  = useNavigate();
   const location  = useLocation();
@@ -273,7 +273,7 @@ export default function Dashboard() {
             <Route path="roster" element={userRole !== "operator" ? <RegisteredRoster attendees={attendeesList} setAttendees={setAttendeesList} dataFetching={dataFetching} regionScope={regionScope} userRole={userRole} /> : <NotFound />} />
             <Route path="add-new" element={userRole !== "operator" ? <PublicRegister /> : <NotFound />} />
             <Route path="add-new-karyakar" element={userRole !== "operator" ? <KarayakarForm /> : <NotFound />} />
-
+<Route path="manual-scanner/:sessionId" element={<ManualScanner sessionId={null} regionScope={regionScope} />} />
             <Route path="roster/karyakar" element={userRole !== "operator" ? <KarayakarList defaultRegion={regionScope !== "All" ? regionScope : ""} /> : <NotFound />} />
 <Route path="archive" element={(userRole === "master_admin" || userRole === "super_admin") ? <ArchiveManager regionScope={regionScope} /> : <NotFound />} />            <Route path="session/master" element={userRole !== "operator" ? <SessionMasterDashboard activeRegion={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} /> : <NotFound />} />
             <Route path="session/attendance/:sessionId" element={<Sessions regionScope={regionScope} prefixScope={prefixScope} globalAttendeesList={attendeesList} isDataFetching={dataFetching} />} />
