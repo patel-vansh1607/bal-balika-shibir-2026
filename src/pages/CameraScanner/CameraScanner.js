@@ -21,7 +21,6 @@ export default function CameraScanner({
   const [scannerLog, setScannerLog]     = useState([]);
   const [scanResult, setScanResult]     = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [toastMessage, setToastMessage] = useState(null);
 
   const html5QrcodeInstance = useRef(null);
   const isProcessingScan    = useRef(false);
@@ -29,10 +28,11 @@ export default function CameraScanner({
   const operatorRef         = useRef(null);
 
   const statusThemes = {
+    success: { bg: "#f0fdf4", accent: "#22c55e", text: "#14532d", subtext: "#166534" },
     warning: { bg: "#fffbeb", accent: "#eab308", text: "#713f12", subtext: "#854d0e" },
     error:   { bg: "#fef2f2", accent: "#ef4444", text: "#7f1d1d", subtext: "#991b1b" },
   };
-  const currentTheme = scanResult ? statusThemes[scanResult.status] || statusThemes.error : statusThemes.error;
+  const currentTheme = scanResult ? statusThemes[scanResult.status] || statusThemes.success : statusThemes.success;
 
   const stopCameraEngine = useCallback(async () => {
     if (html5QrcodeInstance.current) {
@@ -109,8 +109,9 @@ export default function CameraScanner({
             console.error("Lookup failed:", lookupErr);
           }
 
+          // 1. Unrecognized Badge Error Display
           if (!attendeeRecord) {
-            const errorMsg = `Denied Entry: Token "${scannedId}" is completely unknown to the database.`;
+            const errorMsg = `Denied Entry: Token "${scannedId}" is unknown to the database.`;
             await gateLogs.create({ scanned_id: scannedId, status: "error", message: errorMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: "Unknown Badge" });
             localLogPayload.type = "error"; localLogPayload.text = errorMsg;
             setScanResult({ status: "error", message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
@@ -119,6 +120,7 @@ export default function CameraScanner({
             return;
           }
 
+          // 2. Cross Region Domain Security Display
           const assignedRegion     = attendeeRecord.region || "";
           const targetRegionScope  = regionScope || "All";
           if (targetRegionScope !== "All" && assignedRegion.toLowerCase() !== targetRegionScope.toLowerCase()) {
@@ -131,6 +133,7 @@ export default function CameraScanner({
             return;
           }
 
+          // 3. Duplicate Scan Warning Display WITH Audit Trail Push
           const rawAttendeeId = attendeeRecord._raw_id || attendeeRecord.id;
           let isAlreadyCheckedIn = false;
           if (sessionId) {
@@ -143,11 +146,19 @@ export default function CameraScanner({
           }
 
           if (isAlreadyCheckedIn) {
+            const warnMsg = `Duplicate Flag: ${attendeeRecord.name} scanned again at checkpoint.`;
+            await gateLogs.create({ scanned_id: scannedId, status: "warning", message: warnMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
+            
+            localLogPayload.type = "warning"; 
+            localLogPayload.text = warnMsg;
+            setScannerLog((prev) => [localLogPayload, ...prev]);
+            
             setScanResult({ status: "warning", message: "Duplicate Scan Warning!", attendee: attendeeRecord });
             setIsProcessing(false);
             return;
           }
 
+          // 4. Clean First-Time Success Display
           const successMsg = `Approved Admission: Check-in completed for ${attendeeRecord.name} (${attendeeRecord.center})`;
           try {
             if (sessionId) {
@@ -161,13 +172,11 @@ export default function CameraScanner({
             localLogPayload.text = successMsg;
             setScannerLog((prev) => [localLogPayload, ...prev]);
             
-            // Pop floating super-fast success notification layout
-            setToastMessage(`Verified: ${attendeeRecord.name}`);
+            setScanResult({ status: "success", message: "Checked In Approved!", attendee: attendeeRecord });
           } catch (writeErr) {
             console.error("Write failed:", writeErr);
           } finally {
             setIsProcessing(false);
-            isProcessingScan.current = false;
           }
         },
         onScanFailure,
@@ -189,13 +198,6 @@ export default function CameraScanner({
       isStartingEngine.current = false;
     }
   }, [stopCameraEngine, onScanFailure, regionScope, sessionId]);
-
-  useEffect(() => {
-    if (toastMessage) {
-      const timer = setTimeout(() => setToastMessage(null), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [toastMessage]);
 
   useEffect(() => {
     async function initScannerSession() {
@@ -225,6 +227,7 @@ export default function CameraScanner({
     };
   }, [startCameraEngineDirectly]);
 
+  // Clears active page screen status and unlocks scanning loop pipeline directly
   const handleCloseResult = () => { 
     setScanResult(null); 
     isProcessingScan.current = false; 
@@ -232,13 +235,6 @@ export default function CameraScanner({
 
   return (
     <div className={styles.scannerWorkspaceGrid}>
-      {toastMessage && (
-        <div className={styles.floatingSuccessToast}>
-          <FaCheckCircle />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
       <div className={styles.mainCaptureCard}>
         {isProcessing && !scanResult && (
           <div className={styles.loadingOverlay}>
@@ -249,18 +245,20 @@ export default function CameraScanner({
           </div>
         )}
 
+        {/* Displays Result Page Overlays for all Success, Warning, and Error States */}
         {scanResult && !isProcessing && (
           <div className={styles.resultBannerOverlay} style={{ background: currentTheme.bg }}>
             <div className={styles.resultContentBlock}>
               <div className={styles.resultHeader}>
                 <div style={{ fontSize: "32px", color: currentTheme.accent, display: "flex", alignItems: "center" }}>
+                  {scanResult.status === "success" && <FaCheckCircle />}
                   {scanResult.status === "warning" && <FaExclamationTriangle />}
                   {scanResult.status === "error"   && <FaTimes />}
                 </div>
                 <div style={{ flex: 1 }}>
                   <h4 style={{ color: currentTheme.text }} className={styles.resultTitle}>{scanResult.message}</h4>
                   <p style={{ color: currentTheme.subtext }} className={styles.resultSubtitle}>
-                    {scanResult.customDetail || "Roster Verification Exception Rule Flagged."}
+                    {scanResult.customDetail || (scanResult.status === "success" ? "Check-In Approved Successfully." : "Roster Verification Exception Flagged.")}
                   </p>
                 </div>
               </div>
@@ -281,13 +279,9 @@ export default function CameraScanner({
             <button 
               onClick={handleCloseResult} 
               className={styles.resumePipelineBtn} 
-              style={{ background: scanResult.status === "warning" ? "#713f12" : "#2d2926" }}
+              style={{ background: scanResult.status === "success" ? "#166534" : scanResult.status === "warning" ? "#713f12" : "#2d2926" }}
             >
-              {scanResult.status === "warning" ? (
-                <>Next Scan <FaArrowRight /></>
-              ) : (
-                <><FaUserCheck /> Dismiss Alert</>
-              )}
+              Next Scan <FaArrowRight />
             </button>
           </div>
         )}

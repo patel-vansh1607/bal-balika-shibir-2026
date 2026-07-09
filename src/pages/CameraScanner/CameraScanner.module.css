@@ -36,7 +36,6 @@
   text-align: center;
 }
 
-/* Hard fix block forcing html5-qrcode video layout layers to remain clean and singular */
 .videoStreamContainer {
   position: relative;
   width: 100%;
@@ -60,7 +59,6 @@
   object-fit: cover !important;
 }
 
-/* Hides native html5-qrcode runtime generation buttons */
 .videoStreamBox button, 
 .videoStreamBox img, 
 .videoStreamBox input, 
@@ -81,32 +79,6 @@
   color: #475569;
 }
 
-/* Non-blocking Floating Speed-Pass Toast layout */
-.floatingSuccessToast {
-  position: fixed;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #14532d;
-  color: #f0fdf4;
-  padding: 14px 28px;
-  border-radius: 50px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  z-index: 99999;
-  animation: slideDownFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes slideDownFade {
-  from { top: 0px; opacity: 0; }
-  to { top: 24px; opacity: 1; }
-}
-
-/* Overlays and Exceptions Layout */
 .loadingOverlay {
   position: absolute;
   inset: 0;
@@ -174,7 +146,6 @@
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-/* Audit Logs Container Panels */
 .auditLogPanelCard {
   background: #ffffff;
   border-radius: 12px;
