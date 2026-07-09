@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   FaUser, FaSpinner, FaTrash, FaFileExport, 
   FaCheck, FaXmark, FaPenToSquare, FaListOl, 
-  FaMagnifyingGlass, FaEllipsisVertical, FaCircleCheck, FaCircleXmark, FaCamera
+  FaMagnifyingGlass, FaEllipsisVertical, FaCircleCheck, FaCircleXmark, FaCamera, FaWallet
 } from 'react-icons/fa6';
 import { karayakars as karayakarsApi, upload } from '../../apiClient';
 import styles from './KarayakarList.module.css';
+import toast from 'react-hot-toast';
 
 const REGIONS = ['All', 'Kenya', 'Tanzania', 'Uganda', 'Zambia', 'Malawi', 'Botswana', 'South Africa'];
 
@@ -83,7 +84,19 @@ export default function KarayakarList({ defaultRegion = '' }) {
     document.addEventListener("mousedown", closeDropdownsOutside);
     return () => document.removeEventListener("mousedown", closeDropdownsOutside);
   }, [fetchData]);
-
+const handleTogglePayment = async (karyakar) => {
+  const newStatus = Number(karyakar.is_paid) === 1 ? 0 : 1;
+  try {
+    await karayakarsApi.update(karyakar.id, { ...karyakar, is_paid: newStatus });
+    setList(prev => prev.map(k => k.id === karyakar.id ? { ...k, is_paid: newStatus } : k));
+    setActiveMenuId(null);
+    // Professional Toast Message
+    toast.success(`${karyakar.full_name} is now ${newStatus === 1 ? 'Paid' : 'Unpaid'}`);
+  } catch (err) {
+    console.error(err);
+    toast.error('Failed to update status');
+  }
+};
   const filteredList = list.filter(k => {
     const matchesCenter = centerFilter === 'All' || k.center === centerFilter;
     const matchesSeva = k.seva_designation?.toLowerCase().includes(sevaFilter.toLowerCase().trim());
@@ -109,20 +122,22 @@ export default function KarayakarList({ defaultRegion = '' }) {
 
   const { male: maleCount, female: femaleCount } = getGenderStats();
 
-  const handleConfirmDelete = async (id) => {
-    setDeleting(id);
-    try {
-      await karayakarsApi.remove(id);
-      setList(prev => prev.filter(k => k.id !== id));
-      setConfirmDeleteId(null);
-      setActiveMenuId(null);
-    } catch (err) {
-      console.error(err);
-      alert('Failed to remove karyakar.');
-    } finally {
-      setDeleting(null);
-    }
-  };
+const handleConfirmDelete = async (id) => {
+  setDeleting(id);
+  try {
+    await karayakarsApi.remove(id);
+    setList(prev => prev.filter(k => k.id !== id));
+    setConfirmDeleteId(null);
+    setActiveMenuId(null);
+    // Professional Toast Message
+    toast.success('Member removed from directory');
+  } catch (err) {
+    console.error(err);
+    toast.error('Failed to delete member');
+  } finally {
+    setDeleting(null);
+  }
+};
 
   const handleOpenEditModal = (karyakar) => {
     setEditingItem(karyakar);
@@ -135,7 +150,7 @@ export default function KarayakarList({ defaultRegion = '' }) {
       center: karyakar.center || '',
       sevaDesignation: currentDesignations,
       tshirt_size: karyakar.tshirt_size || '',
-      is_paid: karyakar.is_paid === 1 ? 1 : 0,
+      is_paid: Number(karyakar.is_paid) === 1 ? 1 : 0,
       photo_url: karyakar.photo_url || '',
       newFile: null
     });
@@ -181,7 +196,7 @@ export default function KarayakarList({ defaultRegion = '' }) {
         center: editForm.center,
         seva_designation: editForm.sevaDesignation.join(', '),
         tshirt_size: editForm.tshirt_size || null,
-        is_paid: editForm.is_paid,
+        is_paid: Number(editForm.is_paid),
         photo_url: finalPhotoUrl
       };
 
@@ -210,7 +225,7 @@ export default function KarayakarList({ defaultRegion = '' }) {
       `"${k.center || ''}"`,
       `"${k.seva_designation || 'None'}"`,
       `"${k.tshirt_size || 'N/A'}"`,
-      k.is_paid === 1 ? 'Paid' : 'Unpaid'
+      Number(k.is_paid) === 1 ? 'Paid' : 'Unpaid'
     ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -339,7 +354,7 @@ export default function KarayakarList({ defaultRegion = '' }) {
                     {k.tshirt_size ? <span className={styles.tshirtTag}><code>{k.tshirt_size}</code></span> : <span className={styles.textHyphen}>—</span>}
                   </td>
                   <td className={styles.centerAlignCell}>
-                    {k.is_paid === 1 ? (
+                    {Number(k.is_paid) === 1 ? (
                       <span className={styles.paidBadge}><FaCircleCheck /> Paid</span>
                     ) : (
                       <span className={styles.unpaidBadge}><FaCircleXmark /> Unpaid</span>
@@ -361,29 +376,35 @@ export default function KarayakarList({ defaultRegion = '' }) {
                         {activeMenuId === k.id && (
                           <div className={styles.dropdownActionPopover} ref={menuRef}>
                             {confirmDeleteId === k.id ? (
-                              <div className={styles.menuDeleteConfirmBlock}>
-                                <span className={styles.confirmDeleteMsgLabel}>Confirm Delete?</span>
-                                <div className={styles.confirmActionBtnRow}>
-                                  <button onClick={() => handleConfirmDelete(k.id)} disabled={deleting === k.id} className={styles.popoverConfirmBtn}>
-                                    {deleting === k.id ? <FaSpinner className={styles.spin} /> : 'Yes'}
-                                  </button>
-                                  <button onClick={() => setConfirmDeleteId(null)} disabled={deleting === k.id} className={styles.popoverCancelBtn}>No</button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                {canEdit && (
-                                  <button onClick={() => handleOpenEditModal(k)} className={styles.dropdownOptionRowItem}>
-                                    <FaPenToSquare className={styles.editIconBtn} /> Edit Profile
-                                  </button>
-                                )}
-                                {canDelete && (
-                                  <button onClick={() => setConfirmDeleteId(k.id)} className={styles.dropdownOptionRowItem}>
-                                    <FaTrash className={styles.deleteIconBtn} /> Delete Member
-                                  </button>
-                                )}
-                              </>
-                            )}
+  <div className={styles.menuDeleteConfirmBlock}>
+    <span className={styles.confirmDeleteMsgLabel}>Confirm Delete?</span>
+    <div className={styles.confirmActionBtnRow}>
+      <button onClick={() => handleConfirmDelete(k.id)} disabled={deleting === k.id} className={styles.popoverConfirmBtn}>
+        {deleting === k.id ? <FaSpinner className={styles.spin} /> : 'Yes'}
+      </button>
+      <button onClick={() => setConfirmDeleteId(null)} disabled={deleting === k.id} className={styles.popoverCancelBtn}>No</button>
+    </div>
+  </div>
+) : (
+  <>
+    {canEdit && (
+      <>
+        <button onClick={() => handleOpenEditModal(k)} className={styles.dropdownOptionRowItem}>
+          <FaPenToSquare className={styles.editIconBtn} /> Edit Profile
+        </button>
+        <button onClick={() => handleTogglePayment(k)} className={styles.dropdownOptionRowItem}>
+          <FaWallet className={Number(k.is_paid) === 1 ? styles.statusPaidIcon : styles.statusUnpaidIcon} />
+          {Number(k.is_paid) === 1 ? 'Mark as Unpaid' : 'Mark as Paid'}
+        </button>
+      </>
+    )}
+    {canDelete && (
+      <button onClick={() => setConfirmDeleteId(k.id)} className={styles.dropdownOptionRowItem}>
+        <FaTrash className={styles.deleteIconBtn} /> Delete Member
+      </button>
+    )}
+  </>
+)}
                           </div>
                         )}
                       </div>
@@ -478,14 +499,14 @@ export default function KarayakarList({ defaultRegion = '' }) {
                 </div>
 
                 <div className={styles.modalFormGroup}>
-                  <label>Payment Ledger Status</label>
+                  <label>Payment Status</label>
                   <select 
-                    value={editForm.is_paid} 
-                    onChange={e => setEditForm(p => ({ ...p, is_paid: parseInt(e.target.value) }))}
+                    value={String(editForm.is_paid)} 
+                    onChange={e => setEditForm(p => ({ ...p, is_paid: parseInt(e.target.value, 10) }))}
                     className={styles.modalSelect}
                   >
-                    <option value={0}>Unpaid (0)</option>
-                    <option value={1}>Paid (1)</option>
+                    <option value="0">Unpaid</option>
+                    <option value="1">Paid</option>
                   </select>
                 </div>
               </div>
