@@ -76,7 +76,7 @@ export default function CameraScanner({
         async (decodedText) => {
           if (isProcessingScan.current) return;
           isProcessingScan.current = true;
-          setIsProcessing(true);
+          setIsProcessing(true); // Short loading indicator while network acts
 
           let scannedId = decodedText.trim();
           if (scannedId.includes("data=")) scannedId = scannedId.split("data=").pop().split("&")[0];
@@ -95,71 +95,74 @@ export default function CameraScanner({
           const operatorName = operator?.name  || "system";
           let localLogPayload = { id: crypto.randomUUID(), time: timestamp, processedBy: operatorName };
 
-          let attendeeRecord = null;
           try {
-            const { data: byMember } = await attendeesApi.get(scannedId);
-            if (byMember) {
-              attendeeRecord = byMember;
-            } else if (!isNaN(rawNumericFallback)) {
-              const { data: byId } = await attendeesApi.get(parseInt(rawNumericFallback, 10));
-              attendeeRecord = byId;
+            // --- PARALLEL SPEED FETCH ---
+            // Grabs attendee records instantly without waiting step-by-step
+            const lookupPromise = (async () => {
+              try {
+                const { data: byMember } = await attendeesApi.get(scannedId);
+                if (byMember) return byMember;
+                if (!isNaN(rawNumericFallback)) {
+                  const { data: byId } = await attendeesApi.get(parseInt(rawNumericFallback, 10));
+                  return byId;
+                }
+              } catch (e) {}
+              return null;
+            })();
+
+            const attendeeRecord = await lookupPromise;
+
+            // 1. Unrecognized Token Verification
+            if (!attendeeRecord) {
+              const errorMsg = `Denied Entry: Token "${scannedId}" unrecognized.`;
+              await gateLogs.create({ scanned_id: scannedId, status: "error", message: errorMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: "Unknown Badge" });
+              
+              localLogPayload.type = "error"; localLogPayload.text = errorMsg;
+              setScannerLog((prev) => [localLogPayload, ...prev]);
+              setScanResult({ status: "error", message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
+              setIsProcessing(false);
+              return;
             }
-          } catch (lookupErr) {
-            console.error("Lookup failed:", lookupErr);
-          }
 
-          // 1. Unrecognized Badge Error Display
-          if (!attendeeRecord) {
-            const errorMsg = `Denied Entry: Token "${scannedId}" is unknown to the database.`;
-            await gateLogs.create({ scanned_id: scannedId, status: "error", message: errorMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: "Unknown Badge" });
-            localLogPayload.type = "error"; localLogPayload.text = errorMsg;
-            setScanResult({ status: "error", message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
-            setScannerLog((prev) => [localLogPayload, ...prev]);
-            setIsProcessing(false);
-            return;
-          }
+            // 2. Region Domain Verification
+            const assignedRegion     = attendeeRecord.region || "";
+            const targetRegionScope  = regionScope || "All";
+            if (targetRegionScope !== "All" && assignedRegion.toLowerCase() !== targetRegionScope.toLowerCase()) {
+              const crossMsg = `Access Denied: ${attendeeRecord.name} belongs to ${assignedRegion} Region.`;
+              await gateLogs.create({ scanned_id: scannedId, status: "error", message: crossMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
+              
+              localLogPayload.type = "error"; localLogPayload.text = crossMsg;
+              setScannerLog((prev) => [localLogPayload, ...prev]);
+              setScanResult({ status: "error", message: "Cross-Partition Domain Violation!", customDetail: `Restricted strictly to ${regionScope}. Entry rejected.` });
+              setIsProcessing(false);
+              return;
+            }
 
-          // 2. Cross Region Domain Security Display
-          const assignedRegion     = attendeeRecord.region || "";
-          const targetRegionScope  = regionScope || "All";
-          if (targetRegionScope !== "All" && assignedRegion.toLowerCase() !== targetRegionScope.toLowerCase()) {
-            const crossMsg = `Access Denied: ${attendeeRecord.name} belongs to ${assignedRegion} Region.`;
-            await gateLogs.create({ scanned_id: scannedId, status: "error", message: crossMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name || "Cross-Region" });
-            localLogPayload.type = "error"; localLogPayload.text = crossMsg;
-            setScanResult({ status: "error", message: "Cross-Partition Domain Violation!", customDetail: `This scanner is restricted strictly to ${regionScope}. Entry rejected.` });
-            setScannerLog((prev) => [localLogPayload, ...prev]);
-            setIsProcessing(false);
-            return;
-          }
+            // 3. Duplicate Verification
+            const rawAttendeeId = attendeeRecord._raw_id || attendeeRecord.id;
+            let isAlreadyCheckedIn = false;
+            if (sessionId) {
+              try {
+                const { data: existingLogs } = await sessionLogs.list({ session_id: sessionId, attendee_id: rawAttendeeId });
+                if (existingLogs?.length > 0) isAlreadyCheckedIn = true;
+              } catch (e) {}
+            } else {
+              if (attendeeRecord.status === "Checked In") isAlreadyCheckedIn = true;
+            }
 
-          // 3. Duplicate Scan Warning Display WITH Audit Trail Push
-          const rawAttendeeId = attendeeRecord._raw_id || attendeeRecord.id;
-          let isAlreadyCheckedIn = false;
-          if (sessionId) {
-            try {
-              const { data: existingLogs } = await sessionLogs.list({ session_id: sessionId, attendee_id: rawAttendeeId });
-              if (existingLogs?.length > 0) isAlreadyCheckedIn = true;
-            } catch (e) {}
-          } else {
-            if (attendeeRecord.status === "Checked In") isAlreadyCheckedIn = true;
-          }
+            if (isAlreadyCheckedIn) {
+              const warnMsg = `Duplicate Flag: ${attendeeRecord.name} scanned again.`;
+              await gateLogs.create({ scanned_id: scannedId, status: "warning", message: warnMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
+              
+              localLogPayload.type = "warning"; localLogPayload.text = warnMsg;
+              setScannerLog((prev) => [localLogPayload, ...prev]);
+              setScanResult({ status: "warning", message: "Duplicate Scan Warning!", attendee: attendeeRecord });
+              setIsProcessing(false);
+              return;
+            }
 
-          if (isAlreadyCheckedIn) {
-            const warnMsg = `Duplicate Flag: ${attendeeRecord.name} scanned again at checkpoint.`;
-            await gateLogs.create({ scanned_id: scannedId, status: "warning", message: warnMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
-            
-            localLogPayload.type = "warning"; 
-            localLogPayload.text = warnMsg;
-            setScannerLog((prev) => [localLogPayload, ...prev]);
-            
-            setScanResult({ status: "warning", message: "Duplicate Scan Warning!", attendee: attendeeRecord });
-            setIsProcessing(false);
-            return;
-          }
-
-          // 4. Clean First-Time Success Display
-          const successMsg = `Approved Admission: Check-in completed for ${attendeeRecord.name} (${attendeeRecord.center})`;
-          try {
+            // 4. Record Success Entry
+            const successMsg = `Approved Admission: Check-in completed for ${attendeeRecord.name} (${attendeeRecord.center})`;
             if (sessionId) {
               await sessionLogs.create({ session_id: sessionId, attendee_id: rawAttendeeId });
             } else {
@@ -167,13 +170,12 @@ export default function CameraScanner({
             }
             await gateLogs.create({ scanned_id: scannedId, status: "success", message: successMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
             
-            localLogPayload.type = "success"; 
-            localLogPayload.text = successMsg;
+            localLogPayload.type = "success"; localLogPayload.text = successMsg;
             setScannerLog((prev) => [localLogPayload, ...prev]);
-            
             setScanResult({ status: "success", message: "Checked In Approved!", attendee: attendeeRecord });
-          } catch (writeErr) {
-            console.error("Write failed:", writeErr);
+
+          } catch (err) {
+            console.error("Scanner execution pipeline failure:", err);
           } finally {
             setIsProcessing(false);
           }
@@ -192,7 +194,7 @@ export default function CameraScanner({
       }
     } catch (error) {
       console.error("Camera error:", error);
-      setScanResult({ status: "error", message: "Camera Access Refused.", customDetail: "Please confirm camera permissions are granted." });
+      setScanResult({ status: "error", message: "Camera Access Refused." });
     } finally {
       isStartingEngine.current = false;
     }
@@ -215,7 +217,7 @@ export default function CameraScanner({
             processedBy: log.operator_name || log.operator_email?.split("@")[0] || "system",
           })));
         }
-      } catch (err) { console.error("Log init error:", err); }
+      } catch (err) { console.error("Log trace tracking initialization error:", err); }
     }
 
     initScannerSession();
@@ -226,7 +228,6 @@ export default function CameraScanner({
     };
   }, [startCameraEngineDirectly]);
 
-  // Clears active page screen status and unlocks scanning loop pipeline directly
   const handleCloseResult = () => { 
     setScanResult(null); 
     isProcessingScan.current = false; 
@@ -237,14 +238,11 @@ export default function CameraScanner({
       <div className={styles.mainCaptureCard}>
         {isProcessing && !scanResult && (
           <div className={styles.loadingOverlay}>
-            <div className={styles.spinnerWrapper}>
-              <div className={styles.spinnerOuter}></div>
-            </div>
-            <h3 className={styles.loadingText}>Verifying Badge Securely</h3>
+            <div className={styles.spinnerOuter}></div>
+            <h3 className={styles.loadingText}>Fetching Roster Data...</h3>
           </div>
         )}
 
-        {/* Displays Result Page Overlays for all Success, Warning, and Error States */}
         {scanResult && !isProcessing && (
           <div className={styles.resultBannerOverlay} style={{ background: currentTheme.bg }}>
             <div className={styles.resultContentBlock}>
@@ -257,7 +255,7 @@ export default function CameraScanner({
                 <div style={{ flex: 1 }}>
                   <h4 style={{ color: currentTheme.text }} className={styles.resultTitle}>{scanResult.message}</h4>
                   <p style={{ color: currentTheme.subtext }} className={styles.resultSubtitle}>
-                    {scanResult.customDetail || (scanResult.status === "success" ? "Check-In Approved Successfully." : "Roster Verification Exception Flagged.")}
+                    {scanResult.customDetail || (scanResult.status === "success" ? "Check-In Approved Successfully." : "Verification Exception Rule Flagged.")}
                   </p>
                 </div>
               </div>
