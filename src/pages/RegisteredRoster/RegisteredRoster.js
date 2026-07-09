@@ -429,8 +429,10 @@ export default function RegisteredRoster({
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8.5);
         doc.setTextColor(214, 162, 101);
+        const paymentLabel = paymentFilter === "1" ? "Paid Only" : paymentFilter === "0" ? "Not Paid Only" : "All";
+
         doc.text(
-          `Attendee Roster  |  Filtered Country: ${currentCountry}  |  Center: ${currentCenter}  |  Mandal: ${currentMandal}`,
+          `Attendee Roster  |  Filtered Country: ${currentCountry}  |  Center: ${currentCenter}  |  Mandal: ${currentMandal}  |  Payment Status: ${paymentLabel}`,
           12,
           18,
         );

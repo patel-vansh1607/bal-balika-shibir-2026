@@ -142,7 +142,7 @@ export default function SessionMasterDashboard({ activeRegion }) {
                     <span className={styles.centerRatio}>{item.present} / {item.total} Present</span>
                   </div>
                   <div className={styles.miniTrackBarWrapper}>
-                    <div className={styles.miniTrackBar}><div className={styles.miniBarFill} style={{ width: `${item.percentage}%`, backgroundColor: item.percentage === 100 ? "#137333" : "#8a151b" }} /></div>
+                    <div className={styles.miniTrackBar}><div className={styles.miniBarFill} style={{ width: `${item.percentage}%`, backgroundColor: item.percentage === 100 ? "#137333" : "#e78524" }} /></div>
                     <span className={styles.rankPercentageTag}>{item.percentage}%</span>
                   </div>
                 </div>

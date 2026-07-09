@@ -90,7 +90,7 @@
   justify-content: center;
   font-weight: 800;
   font-size: 14px;
-  color: #8a151b;
+  color: #e78524;
 }
 
 .progressTrackBar {
@@ -104,7 +104,7 @@
 
 .progressBarFill {
   height: 100%;
-  background-color: #8a151b;
+  background-color: #e78524;
   border-radius: 3px;
   transition: width 0.4s ease-out;
 }
@@ -175,7 +175,7 @@
 }
 
 .centerName svg {
-  color: #8a151b;
+  color: #e78524;
   font-size: 12px;
 }
 
@@ -211,7 +211,7 @@
 .focusedCenterBadge h4 {
   margin: 0;
   font-size: 13px;
-  color: #8a151b;
+  color: #e78524;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -269,7 +269,7 @@
 }
 /* Active session selection style block */
 .selectedCard {
-  border: 2px solid #8a151b !important;
+  border: 2px solid #e78524 !important;
   background-color: #fdfcfb !important;
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(138, 21, 27, 0.06) !important;
@@ -284,11 +284,11 @@
 
 .activeSubFocus span {
   font-weight: 700;
-  color: #8a151b;
+  color: #e78524;
 }
 
 .activeLabelDot {
-  background: #8a151b;
+  background: #e78524;
   color: #ffffff;
   font-size: 11px;
   font-weight: 700;
@@ -402,7 +402,7 @@
   gap: 8px;
   background: transparent;
   border: none;
-  color: #8a151b;
+  color: #e78524;
   font-weight: 600;
   font-size: 14px;
   padding: 0;
@@ -434,7 +434,7 @@
   border-radius: 4px;
   font-family: monospace;
   font-size: 12px;
-  color: #8a151b;
+  color: #e78524;
 }
 
 /* Horizontal Cards Grid Setup */
@@ -518,7 +518,7 @@
 
 .tablePrimaryCell {
   font-weight: 700;
-  color: #8a151b !important;
+  color: #e78524 !important;
 }
 
 .centerBadgeTag {
