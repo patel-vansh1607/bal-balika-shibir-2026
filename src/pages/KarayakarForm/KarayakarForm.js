@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaPlus, FaUser, FaCamera, FaMagnifyingGlass, FaCheck, FaCircleCheck, FaCircleXmark, FaXmark } from 'react-icons/fa6';
+import { 
+  FaPlus, FaUser, FaCamera, FaMagnifyingGlass, 
+  FaCheck, FaCircleCheck, FaCircleXmark, FaXmark, FaChevronDown 
+} from 'react-icons/fa6';
 import { karayakars as karayakarsApi, upload } from '../../apiClient';
 import styles from './KarayakarForm.module.css';
 
@@ -88,16 +91,20 @@ export default function KarayakarForm() {
   const [submitting, setSubmitting] = useState(false);
   const [preview, setPreview]       = useState(null);
   
-  // Refactored popup system state structure
   const [toast, setToast] = useState({ show: false, type: '', title: '', message: '' });
 
   const [regionSearch, setRegionSearch] = useState('');
   const [showRegionList, setShowRegionList] = useState(false);
   const [centerSearch, setCenterSearch] = useState('');
   const [showCenterList, setShowCenterList] = useState(false);
+  
+  // Seva multi-select dropdown states
+  const [sevaSearch, setSevaSearch] = useState('');
+  const [showSevaList, setShowSevaList] = useState(false);
 
   const regionRef = useRef(null);
   const centerRef = useRef(null);
+  const sevaRef = useRef(null);
 
   const showNotification = (type, title, message) => {
     setToast({ show: true, type, title, message });
@@ -114,6 +121,7 @@ export default function KarayakarForm() {
     function handleClickOutside(event) {
       if (regionRef.current && !regionRef.current.contains(event.target)) setShowRegionList(false);
       if (centerRef.current && !centerRef.current.contains(event.target)) setShowCenterList(false);
+      if (sevaRef.current && !sevaRef.current.contains(event.target)) setShowSevaList(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -134,6 +142,9 @@ export default function KarayakarForm() {
   );
   const filteredCenters = availableCenters.filter(c => 
     c.toLowerCase().includes(centerSearch.toLowerCase())
+  );
+  const filteredSeva = SEVA_DESIGNATIONS.filter(d =>
+    d.toLowerCase().includes(sevaSearch.toLowerCase())
   );
 
   const handleFileChange = (e) => {
@@ -161,6 +172,11 @@ export default function KarayakarForm() {
     });
   };
 
+  const handleClearAllSeva = (e) => {
+    e.stopPropagation();
+    setForm(f => ({ ...f, sevaDesignation: [] }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -176,7 +192,6 @@ export default function KarayakarForm() {
       showNotification('error', 'Missing Designation', 'Please select at least one Seva Designation.');
       return;
     }
-
 
     setSubmitting(true);
     try {
@@ -210,6 +225,7 @@ export default function KarayakarForm() {
       setPreview(null);
       setRegionSearch(isGlobalAdmin ? '' : currentRegionSetting);
       setCenterSearch('');
+      setSevaSearch('');
     } catch (err) {
       showNotification('error', 'Registration Failed', err.message || 'System encountered an execution error.');
     } finally {
@@ -238,7 +254,7 @@ export default function KarayakarForm() {
       <div className={styles.card}>
         <div className={styles.headerGroup}>
           <h2 className={styles.title}>Register Karayakar</h2>
-          <p className={styles.subtitle}>Fill in credentials to register members securely.</p>
+          <p className={styles.subtitle}>Fill in credentials to register karyakars.</p>
         </div>
 
         <form onSubmit={handleSubmit} className={styles.formElement}>
@@ -347,48 +363,114 @@ export default function KarayakarForm() {
             </div>
           </div>
 
-          <div className={styles.formGroup}>
-            <label className={styles.label}>Seva Designation <span className={styles.labelOptional}>(Select all that apply)</span></label>
-            <div className={styles.badgeGrid}>
-              {SEVA_DESIGNATIONS.map(d => {
-                const isSelected = form.sevaDesignation.includes(d);
-                return (
-                  <button
-                    type="button"
-                    key={d}
-                    className={`${styles.sevaBadge} ${isSelected ? styles.sevaBadgeActive : ''}`}
-                    onClick={() => handleSevaToggle(d)}
-                  >
-                    {isSelected && <FaCheck className={styles.badgeCheckIcon} />}
-                    {d}
-                  </button>
-                );
-              })}
+          {/* Upgraded Premium Multi-Select Seva Dropdown Container */}
+          <div className={styles.formGroup} ref={sevaRef}>
+            <label className={styles.label}>
+              Seva Designation 
+              <span className={styles.labelOptional}>(Select all that apply)</span>
+            </label>
+            
+            <div className={styles.searchDropdownWrapper}>
+              <div 
+                className={`${styles.customDropdownTrigger} ${showSevaList ? styles.dropdownTriggerActive : ''}`}
+                onClick={() => setShowSevaList(!showSevaList)}
+              >
+                <div className={styles.triggerSelectionArea}>
+                  {form.sevaDesignation.length === 0 ? (
+                    <span className={styles.placeholderText}>Choose Designations...</span>
+                  ) : (
+                    <div className={styles.selectedTagsContainer}>
+                      {form.sevaDesignation.map(d => (
+                        <span key={d} className={styles.selectedTagItem} onClick={(e) => e.stopPropagation()}>
+                          {d}
+                          <button 
+                            type="button" 
+                            className={styles.removeTagBtn}
+                            onClick={() => handleSevaToggle(d)}
+                          >
+                            <FaXmark />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                <div className={styles.triggerActionControls}>
+                  {form.sevaDesignation.length > 0 && (
+                    <button 
+                      type="button" 
+                      className={styles.clearAllSelectionsBtn} 
+                      onClick={handleClearAllSeva}
+                      title="Clear all"
+                    >
+                      <FaXmark />
+                    </button>
+                  )}
+                  <FaChevronDown className={`${styles.chevronIndicatorIcon} ${showSevaList ? styles.rotateChevron : ''}`} />
+                </div>
+              </div>
+
+              {showSevaList && (
+                <div className={styles.dropdownResultsPanel}>
+                  <div className={styles.panelSearchContainer} onClick={(e) => e.stopPropagation()}>
+                    <FaMagnifyingGlass className={styles.panelSearchIcon} />
+                    <input 
+                      type="text"
+                      className={styles.panelSearchInput}
+                      placeholder="Filter designations..."
+                      value={sevaSearch}
+                      onChange={(e) => setSevaSearch(e.target.value)}
+                    />
+                  </div>
+                  
+                  <ul className={styles.panelItemsList}>
+                    {filteredSeva.length > 0 ? (
+                      filteredSeva.map(d => {
+                        const isSelected = form.sevaDesignation.includes(d);
+                        return (
+                          <li 
+                            key={d} 
+                            className={`${styles.panelListItem} ${isSelected ? styles.panelListItemActive : ''}`}
+                            onClick={() => handleSevaToggle(d)}
+                          >
+                            <span className={styles.itemCheckbox}>
+                              {isSelected && <FaCheck className={styles.checkboxCheckIcon} />}
+                            </span>
+                            <span className={styles.itemLabelText}>{d}</span>
+                          </li>
+                        );
+                      })
+                    ) : (
+                      <li className={styles.noResults}>No designations found</li>
+                    )}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
 
-
-{needsTshirt && (
-  <div className={styles.formGroup}>
-    <label className={styles.label}>T-Shirt Size <span className={styles.labelOptional}>(Optional)</span></label>
-    <div className={styles.selectWrapper}>
-      <select 
-        className={styles.selectInput} 
-        value={form.tshirtSize} 
-        onChange={e => setForm(f => ({ ...f, tshirtSize: e.target.value }))}
-      >
-        <option value="">Select size</option>
-        {TSHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-      </select>
-    </div>
-  </div>
-)}
+          {needsTshirt && (
+            <div className={styles.formGroup}>
+              <label className={styles.label}>T-Shirt Size <span className={styles.labelOptional}>(Optional)</span></label>
+              <div className={styles.selectWrapper}>
+                <select 
+                  className={styles.selectInput} 
+                  value={form.tshirtSize} 
+                  onChange={e => setForm(f => ({ ...f, tshirtSize: e.target.value }))}
+                >
+                  <option value="">Select size</option>
+                  {TSHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
 
           <button type="submit" className={styles.submitBtn} disabled={submitting}>
             {submitting ? (
               <div className={styles.btnLoadingState}><div className={styles.spinner} /> Processing...</div>
             ) : (
-              <><FaPlus className={styles.btnIcon} /> Add Member</>
+              <><FaPlus className={styles.btnIcon} /> Add Karyakar</>
             )}
           </button>
         </form>
