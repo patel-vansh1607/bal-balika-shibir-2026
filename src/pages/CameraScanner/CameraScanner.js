@@ -4,7 +4,6 @@ import {
   FaCheckCircle,
   FaExclamationTriangle,
   FaTimes,
-  FaUserCheck,
   FaHistory,
   FaShieldAlt,
   FaArrowRight
