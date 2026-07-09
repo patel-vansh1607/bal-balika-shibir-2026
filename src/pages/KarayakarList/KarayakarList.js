@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   FaUser, FaSpinner, FaTrash, FaFileExport, 
   FaCheck, FaXmark, FaPenToSquare, FaListOl, 
@@ -34,13 +34,11 @@ export default function KarayakarList({ defaultRegion = '' }) {
   const [nameSearch, setNameSearch] = useState('');
   const [sevaFilter, setSevaFilter] = useState('');
   
-  // Ellipsis Menu Dropdown Anchor Tracker State
   const [activeMenuId, setActiveMenuId] = useState(null);
   
   const [deleting, setDeleting] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   
-  // Modal Edit Configurations
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [modalUploading, setModalUploading] = useState(false);
@@ -61,6 +59,15 @@ export default function KarayakarList({ defaultRegion = '' }) {
   const canDelete = ['master_admin', 'super_admin'].includes(userRole);
   const canEdit = ['master_admin', 'super_admin', 'admin'].includes(userRole);
 
+  const fetchData = useCallback(() => {
+    setLoading(true);
+    karayakarsApi
+      .list(region && region !== 'All' ? { region } : {})
+      .then(res => setList(res.data || []))
+      .catch(err => console.error('Fetch error:', err))
+      .finally(() => setLoading(false));
+  }, [region]);
+
   useEffect(() => {
     setCenterFilter('All');
   }, [region]);
@@ -75,16 +82,7 @@ export default function KarayakarList({ defaultRegion = '' }) {
     }
     document.addEventListener("mousedown", closeDropdownsOutside);
     return () => document.removeEventListener("mousedown", closeDropdownsOutside);
-  }, [region]);
-
-  const fetchData = () => {
-    setLoading(true);
-    karayakarsApi
-      .list(region && region !== 'All' ? { region } : {})
-      .then(res => setList(res.data || []))
-      .catch(err => console.error('Fetch error:', err))
-      .finally(() => setLoading(false));
-  };
+  }, [fetchData]);
 
   const filteredList = list.filter(k => {
     const matchesCenter = centerFilter === 'All' || k.center === centerFilter;
@@ -225,8 +223,6 @@ export default function KarayakarList({ defaultRegion = '' }) {
 
   return (
     <div className={styles.rosterContainer}>
-      
-      {/* Big Bento Dashboard Overview Metric Layout Blocks */}
       <div className={styles.directoryBentoStats}>
         <div className={styles.statBox}>
           <span className={styles.statLabel}>TOTAL REGISTERED</span>
@@ -287,7 +283,6 @@ export default function KarayakarList({ defaultRegion = '' }) {
           </div>
         </div>
 
-        {/* Centered Theme Data Matrix Table Grid */}
         <div className={styles.tableContainer}>
           <table className={styles.dataTable}>
             <thead>
@@ -401,7 +396,6 @@ export default function KarayakarList({ defaultRegion = '' }) {
         </div>
       </div>
 
-      {/* PopUp Edit Modal Overlay */}
       {isEditModalOpen && editingItem && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContentCard}>
@@ -411,7 +405,6 @@ export default function KarayakarList({ defaultRegion = '' }) {
             </div>
             
             <div className={styles.modalBody}>
-              {/* Profile Image Attachment Area Layer */}
               <div className={styles.modalAvatarSection}>
                 <label className={styles.photoUploadTrigger}>
                   <div className={styles.photoUploadBoxFrame}>
@@ -491,8 +484,8 @@ export default function KarayakarList({ defaultRegion = '' }) {
                     onChange={e => setEditForm(p => ({ ...p, is_paid: parseInt(e.target.value) }))}
                     className={styles.modalSelect}
                   >
-                    <option value={0}>Unpaid</option>
-                    <option value={1}>Paid </option>
+                    <option value={0}>Unpaid (0)</option>
+                    <option value={1}>Paid (1)</option>
                   </select>
                 </div>
               </div>
