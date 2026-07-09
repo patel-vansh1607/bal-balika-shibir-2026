@@ -57,12 +57,10 @@ export default function CameraScanner({
     if (!container) { isStartingEngine.current = false; return; }
 
     try {
-      if (navigator.mediaDevices?.getUserMedia) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-          stream.getTracks().forEach((t) => t.stop());
-        } catch (e) {}
-      }
+      // NOTE: removed the redundant getUserMedia() warm-up/stop cycle that used
+      // to run here before scanner.start(). Html5Qrcode.start() already requests
+      // the camera and surfaces permission errors on its own, so the old warm-up
+      // was just paying for a second camera init/teardown on every mount.
 
       const scanner = new Html5Qrcode("qr-reader-container", {
         formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
@@ -72,7 +70,13 @@ export default function CameraScanner({
 
       await scanner.start(
         { facingMode: "environment" },
-        { fps: 30, qrbox: (w, h) => { const s = Math.min(w, h) * 0.8; return { width: s, height: s }; } },
+        {
+          // Dropped from 30 -> 10 fps. jsQR only needs a couple of frames to lock
+          // onto a steady code, and 30fps decode attempts were costing more in
+          // CPU/frame-drops on mid/low-end Android than they gained in speed.
+          fps: 10,
+          qrbox: (w, h) => { const s = Math.min(w, h) * 0.8; return { width: s, height: s }; },
+        },
         async (decodedText) => {
           if (isProcessingScan.current) return;
           isProcessingScan.current = true;
@@ -95,6 +99,15 @@ export default function CameraScanner({
           const operatorName = operator?.name  || "system";
           let localLogPayload = { id: crypto.randomUUID(), time: timestamp, processedBy: operatorName };
 
+          // Fire-and-forget helper for the audit log write. The operator doesn't
+          // need to wait on this round trip before seeing their result — it's a
+          // secondary record, not the source of truth for check-in state.
+          const logGateEvent = (payload) => {
+            gateLogs.create(payload).catch((e) => {
+              console.error("gateLogs.create failed (non-blocking):", e);
+            });
+          };
+
           try {
             // --- PARALLEL SPEED FETCH ---
             // Grabs attendee records instantly without waiting step-by-step
@@ -115,8 +128,8 @@ export default function CameraScanner({
             // 1. Unrecognized Token Verification
             if (!attendeeRecord) {
               const errorMsg = `Denied Entry: Token "${scannedId}" unrecognized.`;
-              await gateLogs.create({ scanned_id: scannedId, status: "error", message: errorMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: "Unknown Badge" });
-              
+              logGateEvent({ scanned_id: scannedId, status: "error", message: errorMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: "Unknown Badge" });
+
               localLogPayload.type = "error"; localLogPayload.text = errorMsg;
               setScannerLog((prev) => [localLogPayload, ...prev]);
               setScanResult({ status: "error", message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
@@ -129,8 +142,8 @@ export default function CameraScanner({
             const targetRegionScope  = regionScope || "All";
             if (targetRegionScope !== "All" && assignedRegion.toLowerCase() !== targetRegionScope.toLowerCase()) {
               const crossMsg = `Access Denied: ${attendeeRecord.name} belongs to ${assignedRegion} Region.`;
-              await gateLogs.create({ scanned_id: scannedId, status: "error", message: crossMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
-              
+              logGateEvent({ scanned_id: scannedId, status: "error", message: crossMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
+
               localLogPayload.type = "error"; localLogPayload.text = crossMsg;
               setScannerLog((prev) => [localLogPayload, ...prev]);
               setScanResult({ status: "error", message: "Cross-Partition Domain Violation!", customDetail: `Restricted strictly to ${regionScope}. Entry rejected.` });
@@ -152,8 +165,8 @@ export default function CameraScanner({
 
             if (isAlreadyCheckedIn) {
               const warnMsg = `Duplicate Flag: ${attendeeRecord.name} scanned again.`;
-              await gateLogs.create({ scanned_id: scannedId, status: "warning", message: warnMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
-              
+              logGateEvent({ scanned_id: scannedId, status: "warning", message: warnMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
+
               localLogPayload.type = "warning"; localLogPayload.text = warnMsg;
               setScannerLog((prev) => [localLogPayload, ...prev]);
               setScanResult({ status: "warning", message: "Duplicate Scan Warning!", attendee: attendeeRecord });
@@ -162,14 +175,16 @@ export default function CameraScanner({
             }
 
             // 4. Record Success Entry
+            // These two are the source of truth for check-in state, so they
+            // stay awaited — everything below them is just UI + audit trail.
             const successMsg = `Approved Admission: Check-in completed for ${attendeeRecord.name} (${attendeeRecord.center})`;
             if (sessionId) {
               await sessionLogs.create({ session_id: sessionId, attendee_id: rawAttendeeId });
             } else {
               await attendeesApi.update(rawAttendeeId, { status: "Checked In" });
             }
-            await gateLogs.create({ scanned_id: scannedId, status: "success", message: successMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
-            
+            logGateEvent({ scanned_id: scannedId, status: "success", message: successMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
+
             localLogPayload.type = "success"; localLogPayload.text = successMsg;
             setScannerLog((prev) => [localLogPayload, ...prev]);
             setScanResult({ status: "success", message: "Checked In Approved!", attendee: attendeeRecord });
@@ -228,9 +243,9 @@ export default function CameraScanner({
     };
   }, [startCameraEngineDirectly]);
 
-  const handleCloseResult = () => { 
-    setScanResult(null); 
-    isProcessingScan.current = false; 
+  const handleCloseResult = () => {
+    setScanResult(null);
+    isProcessingScan.current = false;
   };
 
   return (
@@ -239,7 +254,7 @@ export default function CameraScanner({
         {isProcessing && !scanResult && (
           <div className={styles.loadingOverlay}>
             <div className={styles.spinnerOuter}></div>
-            <h3 className={styles.loadingText}>Fetching Roster Data...</h3>
+            <h3 className={styles.loadingText}>Fetching...</h3>
           </div>
         )}
 
@@ -266,16 +281,16 @@ export default function CameraScanner({
                     <span className={styles.fieldValueBold}>{scanResult.attendee.name}</span>
                   </div>
                   <div className={styles.dataGridSplit}>
-                    <div><span className={styles.fieldLabel}>Age</span><span className={styles.fieldValueMedium}>{scanResult.attendee.age} Years Old</span></div>
-                    <div><span className={styles.fieldLabel}>Center</span><span className={styles.fieldValueMedium}>{scanResult.attendee.center}</span></div>
+                    <div><span className={styles.fieldLabel}>Age : </span><span className={styles.fieldValueMedium}>{scanResult.attendee.age}</span></div>
+                    <div><span className={styles.fieldLabel}>Center : </span><span className={styles.fieldValueMedium}>{scanResult.attendee.center}</span></div>
                   </div>
                 </div>
               )}
             </div>
-            
-            <button 
-              onClick={handleCloseResult} 
-              className={styles.resumePipelineBtn} 
+
+            <button
+              onClick={handleCloseResult}
+              className={styles.resumePipelineBtn}
               style={{ background: scanResult.status === "success" ? "#166534" : scanResult.status === "warning" ? "#713f12" : "#2d2926" }}
             >
               Next Scan <FaArrowRight />

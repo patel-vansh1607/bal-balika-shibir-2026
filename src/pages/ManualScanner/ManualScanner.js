@@ -256,7 +256,7 @@ export default function ManualScanner({ regionScope = "All", prefixScope = "" })
               <div className={styles.spinnerWrapper}>
                 <div className={styles.spinnerOuter}></div>
               </div>
-              <h3 className={styles.loadingText}>Verifying Record Securely</h3>
+              <h3 className={styles.loadingText}>Verifying Record</h3>
             </div>
           )}
 
