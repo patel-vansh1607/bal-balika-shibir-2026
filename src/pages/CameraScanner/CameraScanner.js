@@ -21,8 +21,6 @@ export default function CameraScanner({
   const [scannerLog, setScannerLog]     = useState([]);
   const [scanResult, setScanResult]     = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  // High-speed transient floating success message state
   const [toastMessage, setToastMessage] = useState(null);
 
   const html5QrcodeInstance = useRef(null);
@@ -111,7 +109,6 @@ export default function CameraScanner({
             console.error("Lookup failed:", lookupErr);
           }
 
-          // 1. Unrecognized Badge Error Intercept
           if (!attendeeRecord) {
             const errorMsg = `Denied Entry: Token "${scannedId}" is completely unknown to the database.`;
             await gateLogs.create({ scanned_id: scannedId, status: "error", message: errorMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: "Unknown Badge" });
@@ -122,7 +119,6 @@ export default function CameraScanner({
             return;
           }
 
-          // 2. Cross Region Domain Security Intercept
           const assignedRegion     = attendeeRecord.region || "";
           const targetRegionScope  = regionScope || "All";
           if (targetRegionScope !== "All" && assignedRegion.toLowerCase() !== targetRegionScope.toLowerCase()) {
@@ -135,7 +131,6 @@ export default function CameraScanner({
             return;
           }
 
-          // 3. Duplicate Scan Warning Intercept
           const rawAttendeeId = attendeeRecord._raw_id || attendeeRecord.id;
           let isAlreadyCheckedIn = false;
           if (sessionId) {
@@ -153,7 +148,6 @@ export default function CameraScanner({
             return;
           }
 
-          // 4. ZERO-DELAY CONCURRENT SUCCESS ROUTE
           const successMsg = `Approved Admission: Check-in completed for ${attendeeRecord.name} (${attendeeRecord.center})`;
           try {
             if (sessionId) {
@@ -167,12 +161,11 @@ export default function CameraScanner({
             localLogPayload.text = successMsg;
             setScannerLog((prev) => [localLogPayload, ...prev]);
             
-            // Instantly deploy floating status banner
+            // Pop floating super-fast success notification layout
             setToastMessage(`Verified: ${attendeeRecord.name}`);
           } catch (writeErr) {
             console.error("Write failed:", writeErr);
           } finally {
-            // Keep pipeline open for immediate back-to-back scanning
             setIsProcessing(false);
             isProcessingScan.current = false;
           }
@@ -187,21 +180,19 @@ export default function CameraScanner({
         videoEl.style.objectFit = "cover";
         videoEl.style.width  = "100%";
         videoEl.style.height = "100%";
+        videoEl.style.display = "block";
       }
     } catch (error) {
       console.error("Camera error:", error);
-      setScanResult({ status: "error", message: "Camera Access Refused.", customDetail: "Please confirm camera permissions are granted for this origin, and that the page is running on HTTPS." });
+      setScanResult({ status: "error", message: "Camera Access Refused.", customDetail: "Please confirm camera permissions are granted." });
     } finally {
       isStartingEngine.current = false;
     }
   }, [stopCameraEngine, onScanFailure, regionScope, sessionId]);
 
-  // Clean-sweep transient toast messages
   useEffect(() => {
     if (toastMessage) {
-      const timer = setTimeout(() => {
-        setToastMessage(null);
-      }, 1500);
+      const timer = setTimeout(() => setToastMessage(null), 1500);
       return () => clearTimeout(timer);
     }
   }, [toastMessage]);
@@ -240,8 +231,7 @@ export default function CameraScanner({
   };
 
   return (
-    <div className={styles.scannerWorkspaceGrid} style={{ position: "relative" }}>
-      {/* Velocity Fast-Pass Floating Toast Pop */}
+    <div className={styles.scannerWorkspaceGrid}>
       {toastMessage && (
         <div className={styles.floatingSuccessToast}>
           <FaCheckCircle />
@@ -249,54 +239,50 @@ export default function CameraScanner({
         </div>
       )}
 
-      <div className={styles.mainCaptureCard} style={{ position: "relative", overflow: "hidden", borderRadius: "12px" }}>
+      <div className={styles.mainCaptureCard}>
         {isProcessing && !scanResult && (
-          <div style={{ position:"absolute",top:0,left:0,right:0,bottom:0,background:"rgba(255,255,255,0.75)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",zIndex:10,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px",animation:"fadeIn 0.25s ease-out" }}>
-            <div style={{ position:"relative",display:"flex",alignItems:"center",justifyContent:"center" }}>
-              <div style={{ width:"60px",height:"60px",border:"3px solid rgba(138,21,27,0.1)",borderTop:"3px solid #e78524",borderRadius:"50%",animation:"spin-loader 0.75s infinite linear" }}></div>
-              <div style={{ position:"absolute",width:"40px",height:"40px",border:"3px solid transparent",borderBottom:"3px solid #2d2926",borderRadius:"50%",animation:"spin-loader 1.2s infinite reverse linear" }}></div>
+          <div className={styles.loadingOverlay}>
+            <div className={styles.spinnerWrapper}>
+              <div className={styles.spinnerOuter}></div>
             </div>
-            <style>{`@keyframes spin-loader{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
-            <h3 style={{ margin:"20px 0 6px 0",color:"#2d2926",fontFamily:"system-ui,sans-serif",fontWeight:"600",letterSpacing:"-0.01em" }}>Verifying Badge Securely</h3>
-            <div style={{ display:"flex",alignItems:"center",gap:"6px",padding:"6px 14px",background:"rgba(0,0,0,0.04)",borderRadius:"20px" }}>
-              <span style={{ width:"6px",height:"6px",borderRadius:"50%",background:"#e78524",animation:"ping 1s infinite" }}></span>
-              <p style={{ margin:"0",color:"#555",fontSize:"12px",fontWeight:"500" }}>Querying Shibir Engine...</p>
-            </div>
-            <style>{`@keyframes ping{0%{transform:scale(1);opacity:1}100%{transform:scale(2.2);opacity:0}}`}</style>
+            <h3 className={styles.loadingText}>Verifying Badge Securely</h3>
           </div>
         )}
 
-        {/* View card overlays exclusively triggered during WARNING or ERROR states */}
         {scanResult && !isProcessing && (
-          <div className={`${styles.resultBannerCard} ${styles[scanResult.status]}`} style={{ position:"absolute",top:0,left:0,right:0,bottom:0,zIndex:9,background:currentTheme.bg,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column",justifyContent:"space-between",boxSizing:"border-box",animation:"fadeIn 0.2s ease-out" }}>
-            <div style={{ width:"100%" }}>
-              <div style={{ display:"flex",alignItems:"flex-start",gap:"14px",borderBottom:"1px solid rgba(0,0,0,0.06)",paddingBottom:"16px",marginBottom:"16px" }}>
-                <div style={{ fontSize:"32px",color:currentTheme.accent,display:"flex",alignItems:"center" }}>
+          <div className={styles.resultBannerOverlay} style={{ background: currentTheme.bg }}>
+            <div className={styles.resultContentBlock}>
+              <div className={styles.resultHeader}>
+                <div style={{ fontSize: "32px", color: currentTheme.accent, display: "flex", alignItems: "center" }}>
                   {scanResult.status === "warning" && <FaExclamationTriangle />}
                   {scanResult.status === "error"   && <FaTimes />}
                 </div>
-                <div style={{ flex:1 }}>
-                  <h4 style={{ margin:"0 0 4px 0",color:currentTheme.text,fontSize:"18px",fontWeight:"700",lineHeight:"1.2" }}>{scanResult.message}</h4>
-                  <p style={{ margin:"0",color:currentTheme.subtext,fontSize:"13px",lineHeight:"1.4",fontWeight:"500" }}>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ color: currentTheme.text }} className={styles.resultTitle}>{scanResult.message}</h4>
+                  <p style={{ color: currentTheme.subtext }} className={styles.resultSubtitle}>
                     {scanResult.customDetail || "Roster Verification Exception Rule Flagged."}
                   </p>
                 </div>
               </div>
               {scanResult.attendee && (
-                <div style={{ background:"rgba(255,255,255,0.65)",borderRadius:"10px",padding:"14px",border:"1px solid rgba(0,0,0,0.04)" }}>
-                  <div style={{ marginBottom:"12px" }}>
-                    <span style={{ display:"block",fontSize:"11px",textTransform:"uppercase",color:"#666",fontWeight:"600",letterSpacing:"0.05em" }}>Full Name</span>
-                    <span style={{ fontSize:"16px",fontWeight:"700",color:"#111" }}>{scanResult.attendee.name}</span>
+                <div className={styles.attendeeDataCard}>
+                  <div className={styles.dataFieldGroup}>
+                    <span className={styles.fieldLabel}>Full Name</span>
+                    <span className={styles.fieldValueBold}>{scanResult.attendee.name}</span>
                   </div>
-                  <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:"12px",marginBottom:"12px",borderTop:"1px dashed rgba(0,0,0,0.08)",paddingTop:"12px" }}>
-                    <div><span style={{ display:"block",fontSize:"11px",textTransform:"uppercase",color:"#666",fontWeight:"600" }}>Age</span><span style={{ fontSize:"14px",fontWeight:"600",color:"#222" }}>{scanResult.attendee.age} Years Old</span></div>
-                    <div><span style={{ display:"block",fontSize:"11px",textTransform:"uppercase",color:"#666",fontWeight:"600" }}>Center</span><span style={{ fontSize:"14px",fontWeight:"600",color:"#222" }}>{scanResult.attendee.center}</span></div>
+                  <div className={styles.dataGridSplit}>
+                    <div><span className={styles.fieldLabel}>Age</span><span className={styles.fieldValueMedium}>{scanResult.attendee.age} Years Old</span></div>
+                    <div><span className={styles.fieldLabel}>Center</span><span className={styles.fieldValueMedium}>{scanResult.attendee.center}</span></div>
                   </div>
                 </div>
               )}
             </div>
             
-            <button onClick={handleCloseResult} className={styles.resumePipelineBtn} style={{ width:"100%",padding:"14px",background: scanResult.status === "warning" ? "#713f12" : "#2d2926",color:"#fff",border:"none",borderRadius:"8px",fontSize:"15px",fontWeight:"600",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",cursor:"pointer",marginTop:"16px",boxShadow:"0 4px 6px -1px rgba(0,0,0,0.1)" }}>
+            <button 
+              onClick={handleCloseResult} 
+              className={styles.resumePipelineBtn} 
+              style={{ background: scanResult.status === "warning" ? "#713f12" : "#2d2926" }}
+            >
               {scanResult.status === "warning" ? (
                 <>Next Scan <FaArrowRight /></>
               ) : (
@@ -308,9 +294,10 @@ export default function CameraScanner({
 
         <div className={styles.cameraWrapperActive}>
           <div className={styles.streamScopeBanner}>Scanning exclusively for <strong>{prefixScope}</strong> identity passes...</div>
-          <div id="qr-reader-container" className={styles.videoStreamBox} style={{ overflow:"hidden",position:"relative",width:"100%",minHeight:"320px",background:"#000" }}></div>
-          <style>{`#qr-reader-container button,#qr-reader-container img,#qr-reader-container input,#qr-reader-container a{display:none!important}`}</style>
-          <div className={styles.activeFenceBadge} style={{ marginTop:"12px",justifyContent:"center" }}>
+          <div className={styles.videoStreamContainer}>
+            <div id="qr-reader-container" className={styles.videoStreamBox}></div>
+          </div>
+          <div className={styles.activeFenceBadge}>
             <FaShieldAlt /> Region: <strong>{regionScope === "All" ? "All Africa" : regionScope}</strong>
           </div>
         </div>
