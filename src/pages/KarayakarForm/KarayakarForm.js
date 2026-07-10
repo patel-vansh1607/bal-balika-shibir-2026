@@ -450,7 +450,7 @@ export default function KarayakarForm() {
             </div>
           </div>
 
-          {needsTshirt && (
+          {/* {needsTshirt && (
             <div className={styles.formGroup}>
               <label className={styles.label}>T-Shirt Size <span className={styles.labelOptional}>(Optional)</span></label>
               <div className={styles.selectWrapper}>
@@ -464,7 +464,7 @@ export default function KarayakarForm() {
                 </select>
               </div>
             </div>
-          )}
+          )} */}
 
           <button type="submit" className={styles.submitBtn} disabled={submitting}>
             {submitting ? (
