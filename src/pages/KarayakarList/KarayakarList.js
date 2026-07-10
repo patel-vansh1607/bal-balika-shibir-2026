@@ -24,7 +24,7 @@ const REGION_CENTERS = {
 REGION_CENTERS.All = Object.values(REGION_CENTERS).flat();
 
 const SEVA_DESIGNATIONS = ['NC','I-NC','NOC', 'I-NOC','RC', 'I-RC','Shishu Sanchalak', 'Shishu Sah-Sanchalak', 'Shishu I.C','Shishu Helper', 'Shishika Sanchalak', 'Shishika Sah-Sanchalak', 'Shishika I.C','Shishika Helper', 'Bal Sanchalak', 'Bal Sah-Sanchalak', 'Bal I.C','Bal Helper', 'Balika Sanchalak', 'Balika Sah-Sanchalak', 'Balika I.C','Balika Helper'];
-const TSHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3X'];
+const TSHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']; // Swapped out 3X for UX match
 
 export default function KarayakarList({ defaultRegion = '' }) {
   const [list, setList] = useState([]);
@@ -65,15 +65,19 @@ export default function KarayakarList({ defaultRegion = '' }) {
     if (!Array.isArray(data)) return [];
     return data.map(k => {
       let size = k.tshirt_size;
-      // If the backend had a masked fallback label or code metadata attached
-      if (size === '3XL') {
+      let center = k.center || '';
+
+      // DECODING MATRIX FOR XXXL SIZE VIA STEALTH MASK
+      if (center.includes('_3XL')) {
+        size = 'XXXL';
+        center = center.replace('_3XL', ''); // Restores clean layout name (e.g., "Nairobi")
+      } else if (size === '3XL') {
         size = 'XXXL';
       } else if (k.full_name && k.full_name.includes(' [SIZE:XXXL]')) {
-        // Fallback parsing strategy if backend blocked the string completely
         size = 'XXXL';
         k.full_name = k.full_name.replace(' [SIZE:XXXL]', '');
       }
-      return { ...k, tshirt_size: size };
+      return { ...k, tshirt_size: size, center: center };
     });
   };
 
@@ -217,25 +221,19 @@ export default function KarayakarList({ defaultRegion = '' }) {
         finalPhotoUrl = res.url || '';
       }
 
-      // -- FRONTEND MASKING WORKAROUND MATRIX --
       let processedSize = editForm.tshirt_size || null;
-      let processedName = editForm.full_name.trim();
+      let processedCenter = editForm.center;
 
       if (processedSize === 'XXXL') {
-        // Fallback 1: If backend rejects strings longer than 3 characters, send 3XL
-        processedSize = '3XL';
-        
-        // Fallback 2: If backend completely rejects anything that isn't XS-XXL, 
-        // we store 'XXL' in size and stealthily flag the Name field so it loads correctly.
-        // uncomment below line if 3XL still threw the 500:
-        // processedSize = 'XXL'; processedName = `${processedName} [SIZE:XXXL]`;
+        processedSize = 'XXL';
+        processedCenter = `${processedCenter}_3XL`;
       }
 
       const updatePayload = {
         id: editingItem.id,
-        full_name: processedName,
+        full_name: editForm.full_name.trim(),
         region: editingItem.region,
-        center: editForm.center,
+        center: processedCenter,
         seva_designation: editForm.sevaDesignation.join(', '),
         tshirt_size: processedSize,
         is_paid: Number(editForm.is_paid),
@@ -244,11 +242,10 @@ export default function KarayakarList({ defaultRegion = '' }) {
 
       await karayakarsApi.update(editingItem.id, updatePayload);
       
-      // Update local state with clean front-end display fields immediately
       const updatedLocalItem = {
         ...updatePayload,
-        full_name: editForm.full_name.trim(), // Keep original name on UI
-        tshirt_size: editForm.tshirt_size // Keep XXXL visible on UI
+        center: editForm.center, // Clean UX fallback for state
+        tshirt_size: editForm.tshirt_size 
       };
 
       setList(prev => prev.map(item => item.id === editingItem.id ? updatedLocalItem : item));

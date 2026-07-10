@@ -98,7 +98,6 @@ export default function KarayakarForm() {
   const [centerSearch, setCenterSearch] = useState('');
   const [showCenterList, setShowCenterList] = useState(false);
   
-  // Seva multi-select dropdown states
   const [sevaSearch, setSevaSearch] = useState('');
   const [showSevaList, setShowSevaList] = useState(false);
 
@@ -203,17 +202,27 @@ export default function KarayakarForm() {
         photo_url = res.url || '';
       }
 
+      // DATA MASKING: Convert XXXL to XXL and tag the center property block string
+      let processedSize = needsTshirt ? form.tshirtSize : null;
+      let processedCenter = form.center;
+
+      if (processedSize === 'XXXL') {
+        processedSize = 'XXL'; 
+        processedCenter = `${processedCenter}_3XL`;
+      }
+
       await karayakarsApi.create({
-        full_name:        form.fullName,
+        full_name:        form.fullName.trim(),
         region:           form.region,
-        center:           form.center,
+        center:           processedCenter,
         seva_designation: form.sevaDesignation.join(', '), 
         photo_url,
-        tshirt_size:      needsTshirt ? form.tshirtSize : null,
+        tshirt_size:      processedSize,
       });
 
       showNotification('success', 'Registration Successful', `${form.fullName} has been added safely to the directory.`);
       
+      // Clean up fields completely back to defaults
       setForm({ 
         fullName: '', 
         region: isGlobalAdmin ? '' : currentRegionSetting, 
@@ -235,7 +244,6 @@ export default function KarayakarForm() {
 
   return (
     <div className={styles.wrapper}>
-      {/* Toast Popup Notification Module */}
       {toast.show && (
         <div className={`${styles.toastPopup} ${toast.type === 'success' ? styles.toastSuccess : styles.toastError}`}>
           <div className={styles.toastIconWrapper}>
@@ -335,7 +343,7 @@ export default function KarayakarForm() {
                     onFocus={() => form.region && setShowCenterList(true)}
                     onChange={(e) => {
                       setCenterSearch(e.target.value);
-                      setForm(f => ({ ...f, center: '' }));
+                      setForm(f => ({ ...f, center: e.target.value }));
                     }}
                   />
                 </div>
@@ -363,7 +371,6 @@ export default function KarayakarForm() {
             </div>
           </div>
 
-          {/* Upgraded Premium Multi-Select Seva Dropdown Container */}
           <div className={styles.formGroup} ref={sevaRef}>
             <label className={styles.label}>
               Seva Designation 
@@ -450,7 +457,7 @@ export default function KarayakarForm() {
             </div>
           </div>
 
-          {/* {needsTshirt && (
+          {needsTshirt && (
             <div className={styles.formGroup}>
               <label className={styles.label}>T-Shirt Size <span className={styles.labelOptional}>(Optional)</span></label>
               <div className={styles.selectWrapper}>
@@ -464,7 +471,7 @@ export default function KarayakarForm() {
                 </select>
               </div>
             </div>
-          )} */}
+          )}
 
           <button type="submit" className={styles.submitBtn} disabled={submitting}>
             {submitting ? (
