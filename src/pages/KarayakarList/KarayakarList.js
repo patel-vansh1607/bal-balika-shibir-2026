@@ -24,7 +24,7 @@ const REGION_CENTERS = {
 REGION_CENTERS.All = Object.values(REGION_CENTERS).flat();
 
 const SEVA_DESIGNATIONS = ['NC','I-NC','NOC', 'I-NOC','RC', 'I-RC','Shishu Sanchalak', 'Shishu Sah-Sanchalak', 'Shishu I.C','Shishu Helper', 'Shishika Sanchalak', 'Shishika Sah-Sanchalak', 'Shishika I.C','Shishika Helper', 'Bal Sanchalak', 'Bal Sah-Sanchalak', 'Bal I.C','Bal Helper', 'Balika Sanchalak', 'Balika Sah-Sanchalak', 'Balika I.C','Balika Helper'];
-const TSHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL','XXXL'];
+const TSHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL','3XL'];
 
 export default function KarayakarList({ defaultRegion = '' }) {
   const [list, setList] = useState([]);
@@ -84,23 +84,24 @@ export default function KarayakarList({ defaultRegion = '' }) {
     document.addEventListener("mousedown", closeDropdownsOutside);
     return () => document.removeEventListener("mousedown", closeDropdownsOutside);
   }, [fetchData]);
-const handleTogglePayment = async (karyakar) => {
-  const newStatus = Number(karyakar.is_paid) === 1 ? 0 : 1;
-  try {
-    await karayakarsApi.update(karyakar.id, { ...karyakar, is_paid: newStatus });
-    setList(prev => prev.map(k => k.id === karyakar.id ? { ...k, is_paid: newStatus } : k));
-    setActiveMenuId(null);
-    // Professional Toast Message
-    toast.success(`${karyakar.full_name} is now ${newStatus === 1 ? 'Paid' : 'Unpaid'}`);
-  } catch (err) {
-    console.error(err);
-    toast.error('Failed to update status');
-  }
-};
+
+  const handleTogglePayment = async (karyakar) => {
+    const newStatus = Number(karyakar.is_paid) === 1 ? 0 : 1;
+    try {
+      await karayakarsApi.update(karyakar.id, { ...karyakar, is_paid: newStatus });
+      setList(prev => prev.map(k => k.id === karyakar.id ? { ...k, is_paid: newStatus } : k));
+      setActiveMenuId(null);
+      toast.success(`${karyakar.full_name} is now ${newStatus === 1 ? 'Paid' : 'Unpaid'}`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update status');
+    }
+  };
+
   const filteredList = list.filter(k => {
     const matchesCenter = centerFilter === 'All' || k.center === centerFilter;
-    const matchesSeva = k.seva_designation?.toLowerCase().includes(sevaFilter.toLowerCase().trim());
-    const matchesName = k.full_name?.toLowerCase().includes(nameSearch.toLowerCase().trim());
+    const matchesSeva = !sevaFilter.trim() || (k.seva_designation?.toLowerCase().includes(sevaFilter.toLowerCase().trim()));
+    const matchesName = !nameSearch.trim() || (k.full_name?.toLowerCase().includes(nameSearch.toLowerCase().trim()));
     return matchesCenter && matchesSeva && matchesName;
   });
 
@@ -109,7 +110,10 @@ const handleTogglePayment = async (karyakar) => {
     let female = 0;
     filteredList.forEach(k => {
       if (!k.seva_designation) return;
-      const designations = k.seva_designation.split(', ');
+      const designations = typeof k.seva_designation === 'string' 
+        ? k.seva_designation.split(', ') 
+        : Array.isArray(k.seva_designation) ? k.seva_designation : [];
+        
       const hasFemaleRole = designations.some(role => {
         const r = role.toUpperCase();
         return r === 'I-NC' || r === 'I-NOC' || r === 'I-RC' || r.includes('SHISHIKA') || r.includes('BALIKA');
@@ -122,28 +126,30 @@ const handleTogglePayment = async (karyakar) => {
 
   const { male: maleCount, female: femaleCount } = getGenderStats();
 
-const handleConfirmDelete = async (id) => {
-  setDeleting(id);
-  try {
-    await karayakarsApi.remove(id);
-    setList(prev => prev.filter(k => k.id !== id));
-    setConfirmDeleteId(null);
-    setActiveMenuId(null);
-    // Professional Toast Message
-    toast.success('Member removed from directory');
-  } catch (err) {
-    console.error(err);
-    toast.error('Failed to delete member');
-  } finally {
-    setDeleting(null);
-  }
-};
+  const handleConfirmDelete = async (id) => {
+    setDeleting(id);
+    try {
+      await karayakarsApi.remove(id);
+      setList(prev => prev.filter(k => k.id !== id));
+      setConfirmDeleteId(null);
+      setActiveMenuId(null);
+      toast.success('Member removed from directory');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete member');
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const handleOpenEditModal = (karyakar) => {
     setEditingItem(karyakar);
-    const currentDesignations = karyakar.seva_designation 
-      ? karyakar.seva_designation.split(', ').filter(Boolean)
-      : [];
+    let currentDesignations = [];
+    if (karyakar.seva_designation) {
+      currentDesignations = typeof karyakar.seva_designation === 'string'
+        ? karyakar.seva_designation.split(', ').filter(Boolean)
+        : Array.isArray(karyakar.seva_designation) ? karyakar.seva_designation : [];
+    }
 
     setEditForm({
       full_name: karyakar.full_name || '',
@@ -177,9 +183,9 @@ const handleConfirmDelete = async (id) => {
   };
 
   const handleSaveModalEdit = async () => {
-    if (!editForm.full_name.trim()) return alert('Name field is required');
-    if (!editForm.center) return alert('Please select a center');
-    if (editForm.sevaDesignation.length === 0) return alert('Select at least one designation');
+    if (!editForm.full_name.trim()) return toast.error('Name field is required');
+    if (!editForm.center) return toast.error('Please select a center');
+    if (editForm.sevaDesignation.length === 0) return toast.error('Select at least one designation');
 
     setModalUploading(true);
     try {
@@ -192,7 +198,9 @@ const handleConfirmDelete = async (id) => {
       }
 
       const updatePayload = {
+        id: editingItem.id,
         full_name: editForm.full_name,
+        region: editingItem.region,
         center: editForm.center,
         seva_designation: editForm.sevaDesignation.join(', '),
         tshirt_size: editForm.tshirt_size || null,
@@ -200,16 +208,15 @@ const handleConfirmDelete = async (id) => {
         photo_url: finalPhotoUrl
       };
 
-      if (karayakarsApi.update) {
-        await karayakarsApi.update(editingItem.id, updatePayload);
-      }
+      await karayakarsApi.update(editingItem.id, updatePayload);
       
       setList(prev => prev.map(item => item.id === editingItem.id ? { ...item, ...updatePayload } : item));
       setIsEditModalOpen(false);
       setEditingItem(null);
+      toast.success('Profile updated successfully');
     } catch (err) {
       console.error(err);
-      alert('Failed to update profile changes.');
+      toast.error('Failed to update profile changes.');
     } finally {
       setModalUploading(false);
     }
@@ -342,7 +349,7 @@ const handleConfirmDelete = async (id) => {
                   <td className={styles.centerAlignCell}>
                     <div className={styles.sevaBadgeContainer}>
                       {k.seva_designation ? (
-                        k.seva_designation.split(', ').map((role, idx) => (
+                        (typeof k.seva_designation === 'string' ? k.seva_designation.split(', ') : k.seva_designation).map((role, idx) => (
                           <span key={idx} className={styles.sevaTableBadge}>{role}</span>
                         ))
                       ) : (
@@ -362,7 +369,7 @@ const handleConfirmDelete = async (id) => {
                   </td>
                   {(canEdit || canDelete) && (
                     <td className={styles.centerAlignCell}>
-                      <div className={styles.actionMenuRelativeAnchor}>
+                      <div className={styles.actionMenuRelativeAnchor} ref={activeMenuId === k.id ? menuRef : null}>
                         <button 
                           className={styles.ellipsisTriggerBtn} 
                           onClick={(e) => {
@@ -374,37 +381,37 @@ const handleConfirmDelete = async (id) => {
                         </button>
                         
                         {activeMenuId === k.id && (
-                          <div className={styles.dropdownActionPopover} ref={menuRef}>
+                          <div className={styles.dropdownActionPopover}>
                             {confirmDeleteId === k.id ? (
-  <div className={styles.menuDeleteConfirmBlock}>
-    <span className={styles.confirmDeleteMsgLabel}>Confirm Delete?</span>
-    <div className={styles.confirmActionBtnRow}>
-      <button onClick={() => handleConfirmDelete(k.id)} disabled={deleting === k.id} className={styles.popoverConfirmBtn}>
-        {deleting === k.id ? <FaSpinner className={styles.spin} /> : 'Yes'}
-      </button>
-      <button onClick={() => setConfirmDeleteId(null)} disabled={deleting === k.id} className={styles.popoverCancelBtn}>No</button>
-    </div>
-  </div>
-) : (
-  <>
-    {canEdit && (
-      <>
-        <button onClick={() => handleOpenEditModal(k)} className={styles.dropdownOptionRowItem}>
-          <FaPenToSquare className={styles.editIconBtn} /> Edit Profile
-        </button>
-        <button onClick={() => handleTogglePayment(k)} className={styles.dropdownOptionRowItem}>
-          <FaWallet className={Number(k.is_paid) === 1 ? styles.statusPaidIcon : styles.statusUnpaidIcon} />
-          {Number(k.is_paid) === 1 ? 'Mark as Unpaid' : 'Mark as Paid'}
-        </button>
-      </>
-    )}
-    {canDelete && (
-      <button onClick={() => setConfirmDeleteId(k.id)} className={styles.dropdownOptionRowItem}>
-        <FaTrash className={styles.deleteIconBtn} /> Delete Member
-      </button>
-    )}
-  </>
-)}
+                              <div className={styles.menuDeleteConfirmBlock}>
+                                <span className={styles.confirmDeleteMsgLabel}>Confirm Delete?</span>
+                                <div className={styles.confirmActionBtnRow}>
+                                  <button onClick={() => handleConfirmDelete(k.id)} disabled={deleting === k.id} className={styles.popoverConfirmBtn}>
+                                    {deleting === k.id ? <FaSpinner className={styles.spin} /> : 'Yes'}
+                                  </button>
+                                  <button onClick={() => setConfirmDeleteId(null)} disabled={deleting === k.id} className={styles.popoverCancelBtn}>No</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                {canEdit && (
+                                  <>
+                                    <button onClick={() => handleOpenEditModal(k)} className={styles.dropdownOptionRowItem}>
+                                      <FaPenToSquare className={styles.editIconBtn} /> Edit Profile
+                                    </button>
+                                    <button onClick={() => handleTogglePayment(k)} className={styles.dropdownOptionRowItem}>
+                                      <FaWallet className={Number(k.is_paid) === 1 ? styles.statusPaidIcon : styles.statusUnpaidIcon} />
+                                      {Number(k.is_paid) === 1 ? 'Mark as Unpaid' : 'Mark as Paid'}
+                                    </button>
+                                  </>
+                                )}
+                                {canDelete && (
+                                  <button onClick={() => setConfirmDeleteId(k.id)} className={styles.dropdownOptionRowItem}>
+                                    <FaTrash className={styles.deleteIconBtn} /> Delete Member
+                                  </button>
+                                )}
+                              </>
+                            )}
                           </div>
                         )}
                       </div>
@@ -489,7 +496,7 @@ const handleConfirmDelete = async (id) => {
                 <div className={styles.modalFormGroup}>
                   <label>T-Shirt Size</label>
                   <select 
-                    value={editForm.tshirt_size} 
+                    value={editForm.tshirt_size || ''} 
                     onChange={e => setEditForm(p => ({ ...p, tshirt_size: e.target.value }))}
                     className={styles.modalSelect}
                   >
