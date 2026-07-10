@@ -179,11 +179,14 @@ export default function KarayakarForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Use the explicit search field state if input has data, fallback to raw property object value
+    const finalCenterInput = centerSearch.trim() || form.center.trim();
+
     if (!form.region) {
       showNotification('error', 'Missing Region', 'Please select a valid region context.');
       return;
     }
-    if (!form.center) {
+    if (!finalCenterInput) {
       showNotification('error', 'Missing Center', 'Please select an active center deployment hub.');
       return;
     }
@@ -202,9 +205,9 @@ export default function KarayakarForm() {
         photo_url = res.url || '';
       }
 
-      // DATA MASKING: Convert XXXL to XXL and tag the center property block string
+      // DATA MASKING: Extract configuration using the explicit field string
       let processedSize = needsTshirt ? form.tshirtSize : null;
-      let processedCenter = form.center;
+      let processedCenter = finalCenterInput;
 
       if (processedSize === 'XXXL') {
         processedSize = 'XXL'; 
