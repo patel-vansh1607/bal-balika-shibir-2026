@@ -133,18 +133,18 @@ export default function Dashboard() {
     if (path.startsWith("/dashboard/overview")) return "Performance Overview";
     if (path.startsWith("/dashboard/roster/karyakar")) return "Karyakar List";
     if (path.startsWith("/dashboard/roster"))
-      return "Registered Attendees Base";
+      return "Registered Attendees";
     if (path.startsWith("/dashboard/add-new-karyakar"))
       return "Register New Karyakar";
     if (path.startsWith("/dashboard/add-new")) return "Register New Attendee";
     if (path.startsWith("/dashboard/archive")) return "Archive Manager";
     if (path.startsWith("/dashboard/admin-control"))
-      return "Admin Control Panel";
+      return "Admin Control";
     if (path.startsWith("/dashboard/session/master")) return "Session Master";
     if (path.startsWith("/dashboard/session/add-session")) return "Add Session";
     if (path.startsWith("/dashboard/session/attendance"))
       return "Sessions Attendance";
-    return "Dashboard";
+    return "";
   };
   if (loading)
     return (
