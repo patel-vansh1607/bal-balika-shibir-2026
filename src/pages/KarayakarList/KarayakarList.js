@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   FaUser, FaSpinner, FaTrash, FaFileExport, 
-  FaCheck, FaXmark, FaPenToSquare, FaListOl, 
+  FaCheck, FaXmark, FaPenToSquare, 
   FaMagnifyingGlass, FaEllipsisVertical, FaCircleCheck, FaCircleXmark, FaCamera, FaWallet
 } from 'react-icons/fa6';
 import { karayakars as karayakarsApi, upload } from '../../apiClient';
@@ -347,7 +347,7 @@ export default function KarayakarList({ defaultRegion = '' }) {
           <table className={styles.dataTable}>
             <thead>
               <tr>
-                <th><FaListOl /> No.</th>
+                <th> No.</th>
                 <th>Profile</th>
                 <th>Full Name</th>
                 <th>Region</th>
