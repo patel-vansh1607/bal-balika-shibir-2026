@@ -414,3 +414,110 @@
   color: #991b1b;
   margin-right: 8px;
 }
+/* --- CUSTOM SEVA MULTI-SELECT DROPDOWN --- */
+.customDropdownContainer {
+  position: relative;
+  width: 100%;
+}
+
+.customDropdownTrigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.customDropdownTrigger:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.customDropdownChevron {
+  font-size: 12px;
+  color: #9ca3af;
+  transition: transform 0.2s ease;
+}
+
+.customDropdownChevronOpen {
+  transform: rotate(180deg);
+}
+
+.customDropdownMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 999; /* Higher than modal content container layers */
+  padding: 4px 0;
+}
+
+.customDropdownOption {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 14px;
+  color: #4b5563;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.customDropdownOption:hover {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+.customDropdownOptionActive {
+  background-color: #eff6ff;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+.customDropdownCheckboxArea {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  margin-right: 10px;
+  background-color: #ffffff;
+  flex-shrink: 0;
+  transition: border-color 0.1s ease, background-color 0.1s ease;
+}
+
+.customDropdownOptionActive .customDropdownCheckboxArea {
+  border-color: #2563eb;
+  background-color: #2563eb;
+}
+
+.customDropdownCheckIcon {
+  font-size: 10px;
+  color: #ffffff;
+}
+
+.customDropdownOptionText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   FaUser, FaSpinner, FaTrash, FaFileExport, 
   FaCheck, FaXmark, FaPenToSquare, 
-  FaMagnifyingGlass, FaEllipsisVertical, FaCircleCheck, FaCircleXmark, FaCamera, FaWallet
+  FaMagnifyingGlass, FaEllipsisVertical, FaCircleCheck, FaCircleXmark, FaCamera, FaWallet,
+  FaChevronDown
 } from 'react-icons/fa6';
 import { karayakars as karayakarsApi, upload } from '../../apiClient';
 import styles from './KarayakarList.module.css';
@@ -23,10 +24,10 @@ const REGION_CENTERS = {
 
 REGION_CENTERS.All = Object.values(REGION_CENTERS).flat();
 
-const SEVA_DESIGNATIONS = ['NC','I-NC','NOC', 'I-NOC','RC', 'I-RC','Tech Team','Shishu Sanchalak', 'Shishu Sah-Sanchalak', 'Shishu I.C','Shishu Helper', 'Shishika Sanchalak', 'Shishika Sah-Sanchalak', 'Shishika I.C','Shishika Helper', 'Bal Sanchalak', 'Bal Sah-Sanchalak', 'Bal I.C','Bal Helper', 'Balika Sanchalak', 'Balika Sah-Sanchalak', 'Balika I.C','Balika Helper'];
+const SEVA_DESIGNATIONS = ['NC','I-NC','NOC', 'I-NOC','RC', 'I-RC','Tech Team','Shishu Sanchalak', 'Shishu Sah-Sanchalak', 'Shishu I.C','Shishu Helper', 'Shishika Sanchalak', 'Shishika Sah-Sanchalak', 'Shishika I.C','Shishika Helper', 'Bal Sanchalak', 'Bal Sah-Sanchalak', 'Bal I.C','Bal Helper','Bal 1 Sanchalak', 'Bal 1 Sah-Sanchalak', 'Bal 1 I.C', 'Bal 1 Helper',  'Bal 2 Sanchalak', 'Bal 2 Sah-Sanchalak', 'Bal 2 I.C', 'Bal 2 Helper','Bal 3 Sanchalak', 'Bal 3 Sah-Sanchalak', 'Bal 3 I.C', 'Bal 3 Helper', 'Balika Sanchalak', 'Balika Sah-Sanchalak', 'Balika I.C','Balika Helper','Balika 1 Sanchalak', 'Balika 1 Sah-Sanchalak', 'Balika 1 I.C', 'Balika 1 Helper','Balika 2 Sanchalak', 'Balika 2 Sah-Sanchalak', 'Balika 2 I.C', 'Balika 2 Helper','Balika 3 Sanchalak', 'Balika 3 Sah-Sanchalak', 'Balika 3 I.C', 'Balika 3 Helper'];
 const TSHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
-export default function KarayakarList({ defaultRegion = '' }) {
+export default function KarayakarList({ defaultRegion = '' }) { 
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -54,23 +55,24 @@ export default function KarayakarList({ defaultRegion = '' }) {
   });
 
   const [editPreview, setEditPreview] = useState(null);
+  const [isSevaDropdownOpen, setIsSevaDropdownOpen] = useState(false);
+  
   const menuRef = useRef(null);
+  const sevaDropdownRef = useRef(null);
 
   const userRole = localStorage.getItem('user_role');
   const canDelete = ['master_admin', 'super_admin'].includes(userRole);
   const canEdit = ['master_admin', 'super_admin', 'admin'].includes(userRole);
 
-  // Helper to parse incoming records from backend API safely
   const parseIncomingList = (data) => {
     if (!Array.isArray(data)) return [];
     return data.map(k => {
       let size = k.tshirt_size;
       let center = k.center || '';
 
-      // DECODING MATRIX FOR XXXL SIZE VIA STEALTH MASK
       if (center.includes('_3XL')) {
         size = 'XXXL';
-        center = center.replace('_3XL', ''); // Restores clean layout name (e.g., "Nairobi")
+        center = center.replace('_3XL', ''); 
       } else if (size === '3XL') {
         size = 'XXXL';
       } else if (k.full_name && k.full_name.includes(' [SIZE:XXXL]')) {
@@ -104,6 +106,9 @@ export default function KarayakarList({ defaultRegion = '' }) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setActiveMenuId(null);
       }
+      if (sevaDropdownRef.current && !sevaDropdownRef.current.contains(e.target)) {
+        setIsSevaDropdownOpen(false);
+      }
     }
     document.addEventListener("mousedown", closeDropdownsOutside);
     return () => document.removeEventListener("mousedown", closeDropdownsOutside);
@@ -112,7 +117,6 @@ export default function KarayakarList({ defaultRegion = '' }) {
   const handleTogglePayment = async (karyakar) => {
     const newStatus = Number(karyakar.is_paid) === 1 ? 0 : 1;
     
-    // Re-apply stealth mask structural conditions to safely pass downstream logic verification
     let processedSize = karyakar.tshirt_size || null;
     let processedCenter = karyakar.center;
 
@@ -202,6 +206,7 @@ export default function KarayakarList({ defaultRegion = '' }) {
       newFile: null
     });
     setEditPreview(karyakar.photo_url || null);
+    setIsSevaDropdownOpen(false);
     setIsEditModalOpen(true);
     setActiveMenuId(null);
   };
@@ -246,7 +251,6 @@ export default function KarayakarList({ defaultRegion = '' }) {
         finalPhotoUrl = res.url || '';
       }
 
-      // ENCODING MATRIX FOR XXXL SIZE VIA STEALTH MASK ON EDIT
       let processedSize = editForm.tshirt_size || null;
       let processedCenter = editForm.center;
 
@@ -270,7 +274,7 @@ export default function KarayakarList({ defaultRegion = '' }) {
       
       const updatedLocalItem = {
         ...updatePayload,
-        center: editForm.center, // Clear layout data context state updates
+        center: editForm.center, 
         tshirt_size: editForm.tshirt_size 
       };
 
@@ -306,6 +310,8 @@ export default function KarayakarList({ defaultRegion = '' }) {
     link.download = `Directory_Report.csv`;
     link.click();
   };
+
+  const selectedSevaCount = editForm.sevaDesignation.length;
 
   return (
     <div className={styles.rosterContainer}>
@@ -536,23 +542,43 @@ export default function KarayakarList({ defaultRegion = '' }) {
                 </select>
               </div>
 
+              {/* Custom Multi-Select Dropdown Replacement */}
               <div className={styles.modalFormGroup}>
                 <label>Seva Designation Badges <span className={styles.subtextLabel}>(Select all that apply)</span></label>
-                <div className={styles.modalBadgeSelectionGrid}>
-                  {SEVA_DESIGNATIONS.map(d => {
-                    const isSelected = editForm.sevaDesignation.includes(d);
-                    return (
-                      <button
-                        type="button"
-                        key={d}
-                        className={`${styles.modalFormBadge} ${isSelected ? styles.modalFormBadgeActive : ''}`}
-                        onClick={() => handleModalSevaToggle(d)}
-                      >
-                        {isSelected && <FaCheck style={{ marginRight: '4px' }} />}
-                        {d}
-                      </button>
-                    );
-                  })}
+                <div className={styles.customDropdownContainer} ref={sevaDropdownRef}>
+                  <button
+                    type="button"
+                    className={styles.customDropdownTrigger}
+                    onClick={() => setIsSevaDropdownOpen(!isSevaDropdownOpen)}
+                  >
+                    <span>
+                      {selectedSevaCount === 0
+                        ? 'Select Seva Designations'
+                        : `${selectedSevaCount} Designation${selectedSevaCount > 1 ? 's' : ''} Selected`}
+                    </span>
+                    <FaChevronDown className={`${styles.customDropdownChevron} ${isSevaDropdownOpen ? styles.customDropdownChevronOpen : ''}`} />
+                  </button>
+
+                  {isSevaDropdownOpen && (
+                    <div className={styles.customDropdownMenu}>
+                      {SEVA_DESIGNATIONS.map(d => {
+                        const isSelected = editForm.sevaDesignation.includes(d);
+                        return (
+                          <button
+                            type="button"
+                            key={d}
+                            className={`${styles.customDropdownOption} ${isSelected ? styles.customDropdownOptionActive : ''}`}
+                            onClick={() => handleModalSevaToggle(d)}
+                          >
+                            <div className={styles.customDropdownCheckboxArea}>
+                              {isSelected && <FaCheck className={styles.customDropdownCheckIcon} />}
+                            </div>
+                            <span className={styles.customDropdownOptionText}>{d}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
