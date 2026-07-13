@@ -44,7 +44,7 @@ export default function PublicRegister() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [tshirtSize, setTshirtSize] = useState("");
-  const closedRegions = ["Malawi"]; // Define your list of closed regions
+  const closedRegions = ["Malawi", "Tanzania"]; // Define your list of closed regions
   const [formMode, setFormMode] = useState("form"); // "form" | "review"
 
   const phoneRef = useRef(null);
@@ -340,7 +340,7 @@ export default function PublicRegister() {
     if (!gender) return fail("Please select a Mandal.", genderRef);
     if (!selectedRegion) return fail("Please select your Country.", regionRef);
     if (!selectedCenter) return fail("Please select your Center.", centerRef);
-    const closedRegions = ["Malawi"];
+    const closedRegions = ["Malawi", "Tanzania"];
     if (closedRegions.includes(selectedRegion)) {
       return fail(
         "Registration for this region is currently closed.",
