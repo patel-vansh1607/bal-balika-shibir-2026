@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userRoles } from '../../apiClient';
-import { FaUserShield, FaSpinner, FaPlus, FaTimes, FaCheckCircle } from 'react-icons/fa';
+import { FaUserShield, FaSpinner, FaPlus, FaTimes, FaCheckCircle, FaPen, FaCheck } from 'react-icons/fa';
 import styles from './AdminControl.module.css';
 
 const REGIONS = ['All', 'Kenya', 'Tanzania', 'Uganda', 'Zambia', 'Malawi', 'Botswana', 'South Africa'];
@@ -36,6 +36,10 @@ export default function AdminControl() {
   const [submitting,   setSubmitting]   = useState(false);
   const [toast,        setToast]        = useState(null);
   const [updatingId,   setUpdatingId]   = useState(null);
+
+  // States for updating an existing user's name
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [editNameValue, setEditNameValue] = useState('');
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -84,6 +88,26 @@ export default function AdminControl() {
       await userRoles.update(userId, { role: newRole });
       setUsersList((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
       showToast('Role updated.');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const startEditingName = (user) => {
+    setEditingUserId(user.id);
+    setEditNameValue(user.name || '');
+  };
+
+  const handleSaveName = async (userId) => {
+    if (!editNameValue.trim()) return showToast('Name cannot be empty', 'error');
+    setUpdatingId(userId);
+    try {
+      await userRoles.update(userId, { name: editNameValue.trim() });
+      setUsersList((prev) => prev.map((u) => (u.id === userId ? { ...u, name: editNameValue.trim() } : u)));
+      showToast('Name updated successfully.');
+      setEditingUserId(null);
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
@@ -189,8 +213,47 @@ export default function AdminControl() {
         )}
         {usersList.map((u) => (
           <div key={u.id} className={styles.userItem}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14, color: '#2d2926' }}>{u.name || '—'}</div>
+            <div style={{ flex: 1 }}>
+              {editingUserId === u.id ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <input
+                    type="text"
+                    value={editNameValue}
+                    onChange={(e) => setEditNameValue(e.target.value)}
+                    style={{ padding: '4px 8px', border: '1px solid #cbd5e0', borderRadius: 4, fontSize: 14, color: '#2d2926', outline: 'none' }}
+                    autoFocus
+                  />
+                  <button 
+                    onClick={() => handleSaveName(u.id)}
+                    disabled={updatingId === u.id}
+                    style={{ background: '#166534', border: 'none', color: '#fff', borderRadius: 4, padding: '5px 8px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                  >
+                    <FaCheck style={{ fontSize: 12 }} />
+                  </button>
+                  <button 
+                    onClick={() => setEditingUserId(null)}
+                    disabled={updatingId === u.id}
+                    style={{ background: '#cbd5e0', border: 'none', color: '#4a5568', borderRadius: 4, padding: '5px 8px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                  >
+                    <FaTimes style={{ fontSize: 12 }} />
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: '#2d2926' }}>{u.name || '—'}</div>
+                  {u.role !== 'master_admin' && (
+                    <button 
+                      onClick={() => startEditingName(u)}
+                      style={{ background: 'none', border: 'none', color: '#a0aec0', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = '#e78524'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#a0aec0'}
+                      title="Edit Name"
+                    >
+                      <FaPen style={{ fontSize: 11 }} />
+                    </button>
+                  )}
+                </div>
+              )}
               <div style={{ fontSize: 13, color: '#718096' }}>{u.email}</div>
               <div style={{ fontSize: 12, color: '#a0aec0', marginTop: 2 }}>Region: {u.region}</div>
             </div>
