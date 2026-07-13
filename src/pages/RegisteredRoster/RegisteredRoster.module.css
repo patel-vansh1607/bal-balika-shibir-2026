@@ -273,7 +273,7 @@
 
 .monospaceText {
   font-family: monospace;
-  font-size: 13.5px;
+  font-size: 1.5px;
   color: var(--text-muted);
 }
 

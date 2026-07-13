@@ -1,0 +1,213 @@
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+.headerTitleBlock {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.headerIcon {
+  font-size: 32px;
+  color: #e78524;
+}
+.headerTitleBlock h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #1e293b;
+  font-weight: 700;
+}
+.headerTitleBlock p {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.statCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.statInfo {
+  display: flex;
+  flex-direction: column;
+}
+.statLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.statNumber {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 4px;
+}
+.cardContextIcon {
+  font-size: 28px;
+  opacity: 0.15;
+}
+
+.totalCard { border-left: 4px solid #64748b; }
+.selectedCard { border-left: 4px solid #16a34a; }
+.selectedCard .cardContextIcon { color: #16a34a; opacity: 0.2; }
+.rejectedCard { border-left: 4px solid #dc2626; }
+.rejectedCard .cardContextIcon { color: #dc2626; opacity: 0.2; }
+.pendingCard { border-left: 4px solid #e78524; }
+.pendingCard .cardContextIcon { color: #e78524; opacity: 0.2; }
+
+.controlBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.searchWrapper {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+}
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 14px;
+}
+.searchInput {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+  color: #334155;
+  transition: border-color 0.15s;
+}
+.searchInput:focus {
+  border-color: #e78524;
+}
+
+.filterTabs {
+  display: flex;
+  gap: 6px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+}
+.tab {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tab:hover {
+  color: #334155;
+}
+.activeTab {
+  background: #ffffff;
+  color: #e78524 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.listTable {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.tableHeader {
+  display: flex;
+  padding: 14px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+  font-size: 13px;
+  color: #64748b;
+}
+.tableRow {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.1s;
+}
+.tableRow:last-child {
+  border-bottom: none;
+}
+.tableRow:hover {
+  background: #f8fafc;
+}
+
+.statusBadge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  display: inline-block;
+}
+.badgeSelected { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.badgeRejected { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+.badgePending { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+
+.actionBtn {
+  border: none;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: transform 0.1s, background 0.15s;
+}
+.actionBtn:hover { transform: scale(1.05); }
+.btnSelect { background: #e6f4ea; color: #137333; }
+.btnSelect:hover { background: #16a34a; color: #fff; }
+.btnReject { background: #fce8e6; color: #c5221f; }
+.btnReject:hover { background: #dc2626; color: #fff; }
+.btnReset { background: #f1f5f9; color: #475569; }
+.btnReset:hover { background: #64748b; color: #fff; }
+
+.emptyState {
+  text-align: center;
+  padding: 48px;
+  color: #94a3b8;
+  font-size: 14px;
+}

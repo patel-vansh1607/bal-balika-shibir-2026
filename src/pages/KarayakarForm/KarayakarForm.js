@@ -72,7 +72,7 @@ const regionDataset = {
 
 const ALL_REGIONS     = Object.keys(regionDataset);
 const TSHIRT_REGIONS  = ['South Africa', 'Botswana','Kenya','Tanzania','Uganda','Malawi','Zambia'];
-const TSHIRT_SIZES    = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+const TSHIRT_SIZES = ['XXXS','XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const SEVA_DESIGNATIONS = ['NC','I-NC','NOC', 'I-NOC','RC', 'I-RC','Tech Team','Shishu Sanchalak', 'Shishu Sah-Sanchalak', 'Shishu I.C','Shishu Helper', 'Shishika Sanchalak', 'Shishika Sah-Sanchalak', 'Shishika I.C','Shishika Helper', 'Bal Sanchalak', 'Bal Sah-Sanchalak', 'Bal I.C','Bal Helper','Bal 1 Sanchalak', 'Bal 1 Sah-Sanchalak', 'Bal 1 I.C', 'Bal 1 Helper',  'Bal 2 Sanchalak', 'Bal 2 Sah-Sanchalak', 'Bal 2 I.C', 'Bal 2 Helper','Bal 3 Sanchalak', 'Bal 3 Sah-Sanchalak', 'Bal 3 I.C', 'Bal 3 Helper', 'Balika Sanchalak', 'Balika Sah-Sanchalak', 'Balika I.C','Balika Helper','Balika 1 Sanchalak', 'Balika 1 Sah-Sanchalak', 'Balika 1 I.C', 'Balika 1 Helper','Balika 2 Sanchalak', 'Balika 2 Sah-Sanchalak', 'Balika 2 I.C', 'Balika 2 Helper','Balika 3 Sanchalak', 'Balika 3 Sah-Sanchalak', 'Balika 3 I.C', 'Balika 3 Helper'];
 
 export default function KarayakarForm() {
@@ -179,7 +179,6 @@ export default function KarayakarForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Use the explicit search field state if input has data, fallback to raw property object value
     const finalCenterInput = centerSearch.trim() || form.center.trim();
 
     if (!form.region) {
@@ -205,13 +204,15 @@ export default function KarayakarForm() {
         photo_url = res.url || '';
       }
 
-      // DATA MASKING: Extract configuration using the explicit field string
       let processedSize = needsTshirt ? form.tshirtSize : null;
       let processedCenter = finalCenterInput;
 
       if (processedSize === 'XXXL') {
         processedSize = 'XXL'; 
         processedCenter = `${processedCenter}_3XL`;
+      } else if (processedSize === 'XXXS') {
+        processedSize = 'XS'; 
+        processedCenter = `${processedCenter}_3XS`;
       }
 
       await karayakarsApi.create({
@@ -225,7 +226,6 @@ export default function KarayakarForm() {
 
       showNotification('success', 'Registration Successful', `${form.fullName} has been added safely to the directory.`);
       
-      // Clean up fields completely back to defaults
       setForm({ 
         fullName: '', 
         region: isGlobalAdmin ? '' : currentRegionSetting, 

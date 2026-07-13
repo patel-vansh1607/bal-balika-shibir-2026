@@ -25,7 +25,7 @@ const REGION_CENTERS = {
 REGION_CENTERS.All = Object.values(REGION_CENTERS).flat();
 
 const SEVA_DESIGNATIONS = ['NC','I-NC','NOC', 'I-NOC','RC', 'I-RC','Tech Team','Shishu Sanchalak', 'Shishu Sah-Sanchalak', 'Shishu I.C','Shishu Helper', 'Shishika Sanchalak', 'Shishika Sah-Sanchalak', 'Shishika I.C','Shishika Helper', 'Bal Sanchalak', 'Bal Sah-Sanchalak', 'Bal I.C','Bal Helper','Bal 1 Sanchalak', 'Bal 1 Sah-Sanchalak', 'Bal 1 I.C', 'Bal 1 Helper',  'Bal 2 Sanchalak', 'Bal 2 Sah-Sanchalak', 'Bal 2 I.C', 'Bal 2 Helper','Bal 3 Sanchalak', 'Bal 3 Sah-Sanchalak', 'Bal 3 I.C', 'Bal 3 Helper', 'Balika Sanchalak', 'Balika Sah-Sanchalak', 'Balika I.C','Balika Helper','Balika 1 Sanchalak', 'Balika 1 Sah-Sanchalak', 'Balika 1 I.C', 'Balika 1 Helper','Balika 2 Sanchalak', 'Balika 2 Sah-Sanchalak', 'Balika 2 I.C', 'Balika 2 Helper','Balika 3 Sanchalak', 'Balika 3 Sah-Sanchalak', 'Balika 3 I.C', 'Balika 3 Helper'];
-const TSHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+const TSHIRT_SIZES = ['XXXS','XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
 export default function KarayakarList({ defaultRegion = '' }) { 
   const [list, setList] = useState([]);
@@ -73,6 +73,9 @@ export default function KarayakarList({ defaultRegion = '' }) {
       if (center.includes('_3XL')) {
         size = 'XXXL';
         center = center.replace('_3XL', ''); 
+      } else if (center.includes('_3XS')) {
+        size = 'XXXS';
+        center = center.replace('_3XS', '');
       } else if (size === '3XL') {
         size = 'XXXL';
       } else if (k.full_name && k.full_name.includes(' [SIZE:XXXL]')) {
@@ -123,6 +126,9 @@ export default function KarayakarList({ defaultRegion = '' }) {
     if (processedSize === 'XXXL') {
       processedSize = 'XXL';
       processedCenter = `${processedCenter}_3XL`;
+    } else if (processedSize === 'XXXS') {
+      processedSize = 'XS';
+      processedCenter = `${processedCenter}_3XS`;
     }
 
     const payload = {
@@ -257,6 +263,9 @@ export default function KarayakarList({ defaultRegion = '' }) {
       if (processedSize === 'XXXL') {
         processedSize = 'XXL';
         processedCenter = `${processedCenter}_3XL`;
+      } else if (processedSize === 'XXXS') {
+        processedSize = 'XS';
+        processedCenter = `${processedCenter}_3XS`;
       }
 
       const updatePayload = {
@@ -542,7 +551,6 @@ export default function KarayakarList({ defaultRegion = '' }) {
                 </select>
               </div>
 
-              {/* Custom Multi-Select Dropdown Replacement */}
               <div className={styles.modalFormGroup}>
                 <label>Seva Designation Badges <span className={styles.subtextLabel}>(Select all that apply)</span></label>
                 <div className={styles.customDropdownContainer} ref={sevaDropdownRef}>

@@ -11,6 +11,8 @@ import { useAuth } from "../../context/AuthContext";
 import OverviewMetrics from "../OverviewMetrics/OverviewMetrics";
 import CameraScanner from "../CameraScanner/CameraScanner";
 import RegisteredRoster from "../RegisteredRoster/RegisteredRoster";
+import TanzaniaSelectionRoster from "../TanzaniaSelectionRoster/TanzaniaSelectionRoster";
+import BroadcastDashboard from "../BroadcastDashboard/BroadcastDashboard"; 
 import NotFound from "../NotFound/NotFound";
 import styles from "./Dashboard.module.css";
 import ArchiveManager from "../ArchiveManager/ArchiveManager";
@@ -32,12 +34,15 @@ import {
   FaArrowLeft,
   FaArchive,
   FaSyncAlt,
+  FaGlobeAfrica,
+  // FaEnvelope, 
 } from "react-icons/fa";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
 import KarayakarForm from "../KarayakarForm/KarayakarForm";
 import KarayakarList from "../KarayakarList/KarayakarList";
 import ManualScanner from "../ManualScanner/ManualScanner";
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,8 +67,6 @@ export default function Dashboard() {
   const [attendeesList, setAttendeesList] = useState([]);
   const [regionScope, setRegionScope] = useState("All");
   const [prefixScope, setPrefixScope] = useState("MTRC-");
-
-  // We use this key to force React to remount child components on refresh
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -91,7 +94,6 @@ export default function Dashboard() {
     }
   }, [regionScope]);
 
-  // Runs only once on component mount when initialization loading completes
   useEffect(() => {
     if (!loading && regionScope) {
       fetchIsolatedDataset();
@@ -101,9 +103,24 @@ export default function Dashboard() {
   const handleManualRefresh = () => {
     if (!dataFetching) {
       fetchIsolatedDataset();
-      // This forces the <Routes> component below to remount, triggering
-      // internal fetch logic inside your other components (Sessions, Overview, etc.)
       setRefreshKey((prevKey) => prevKey + 1);
+    }
+  };
+
+  const handleUpdateSelectionStatus = async (attendee, newStatusValue) => {
+    try {
+      setDataFetching(true);
+      await attendeesApi.update(attendee.id, { is_selected: newStatusValue });
+      
+      setAttendeesList((prevList) =>
+        prevList.map((item) =>
+          item.id === attendee.id ? { ...item, is_selected: newStatusValue } : item
+        )
+      );
+    } catch (err) {
+      console.error("Failed to update status parameters:", err.message);
+    } finally {
+      setDataFetching(false);
     }
   };
 
@@ -125,27 +142,28 @@ export default function Dashboard() {
     navigate(targetPath);
     setIsMobileMenuOpen(false);
   };
+
   useEffect(() => {
     const pageName = getPageTitle(location.pathname);
     document.title = `${pageName} | Bal Balika Shibir 2026`;
   }, [location.pathname]);
+
   const getPageTitle = (path) => {
     if (path.startsWith("/dashboard/overview")) return "Performance Overview";
     if (path.startsWith("/dashboard/roster/karyakar")) return "Karyakar List";
-    if (path.startsWith("/dashboard/roster"))
-      return "Registered Attendees";
-    if (path.startsWith("/dashboard/add-new-karyakar"))
-      return "Register New Karyakar";
+    if (path.startsWith("/dashboard/tanzania-roster")) return "Tanzania Selection Roster";
+    if (path.startsWith("/dashboard/tanzania-broadcast")) return "Communications Hub";
+    if (path.startsWith("/dashboard/roster")) return "Registered Attendees";
+    if (path.startsWith("/dashboard/add-new-karyakar")) return "Register New Karyakar";
     if (path.startsWith("/dashboard/add-new")) return "Register New Attendee";
     if (path.startsWith("/dashboard/archive")) return "Archive Manager";
-    if (path.startsWith("/dashboard/admin-control"))
-      return "Admin Control";
+    if (path.startsWith("/dashboard/admin-control")) return "Admin Control";
     if (path.startsWith("/dashboard/session/master")) return "Session Master";
     if (path.startsWith("/dashboard/session/add-session")) return "Add Session";
-    if (path.startsWith("/dashboard/session/attendance"))
-      return "Sessions Attendance";
+    if (path.startsWith("/dashboard/session/attendance")) return "Sessions Attendance";
     return "";
   };
+
   if (loading)
     return (
       <div
@@ -212,6 +230,24 @@ export default function Dashboard() {
                 >
                   <FaUsers className={styles.iconMargin} /> Registered Roster
                 </button>
+                
+                {regionScope === "Tanzania" && (
+                  <>
+                    <button
+                      onClick={() => handleNavigation("/dashboard/tanzania-roster")}
+                      className={`${styles.navLink} ${location.pathname === "/dashboard/tanzania-roster" ? styles.navLinkActive : ""}`}
+                    >
+                      <FaGlobeAfrica className={styles.iconMargin} /> TZ Selection Roster
+                    </button>
+                    {/* <button
+                      onClick={() => handleNavigation("/dashboard/tanzania-broadcast")}
+                      className={`${styles.navLink} ${location.pathname === "/dashboard/tanzania-broadcast" ? styles.navLinkActive : ""}`}
+                    >
+                      <FaEnvelope className={styles.iconMargin} /> TZ Email Hub
+                    </button> */}
+                  </>
+                )}
+
                 <button
                   onClick={() => handleNavigation("/dashboard/add-new")}
                   className={`${styles.navLink} ${location.pathname === "/dashboard/add-new" ? styles.navLinkActive : ""}`}
@@ -233,7 +269,6 @@ export default function Dashboard() {
                   <FaUserPlus className={styles.iconMargin} /> Add Karyakar
                 </button>
 
-                {/* Archive Manager: Accessible by both master_admin and super_admin */}
                 {(userRole === "master_admin" ||
                   userRole === "super_admin") && (
                   <button
@@ -244,7 +279,6 @@ export default function Dashboard() {
                   </button>
                 )}
 
-                {/* Admin Control: Only accessible by master_admin */}
                 {userRole === "master_admin" && (
                   <button
                     onClick={() => handleNavigation("/dashboard/admin-control")}
@@ -266,8 +300,7 @@ export default function Dashboard() {
                   }
                   className={`${styles.navLink} ${location.pathname === "/dashboard/session/add-session" ? styles.navLinkActive : ""}`}
                 >
-                  <IoIosAddCircleOutline className={styles.iconMargin} /> Add
-                  Session
+                  <IoIosAddCircleOutline className={styles.iconMargin} /> Add Session
                 </button>
               </>
             )}
@@ -364,7 +397,6 @@ export default function Dashboard() {
         </header>
 
         <div className={styles.viewWrapper}>
-          {/* Passing the refreshKey here forces React to cleanly remount whichever child view is currently open, triggering all internal API calls anew */}
           <Routes key={refreshKey}>
             <Route
               path="overview"
@@ -419,6 +451,31 @@ export default function Dashboard() {
                 )
               }
             />
+            <Route 
+              path="tanzania-roster"
+              element={
+                userRole !== "operator" && regionScope === "Tanzania" ? (
+                  <TanzaniaSelectionRoster 
+                    attendees={attendeesList}
+                    onUpdateStatus={handleUpdateSelectionStatus}
+                  />
+                ) : (
+                  <NotFound />
+                )
+              }
+            />
+            <Route 
+              path="tanzania-broadcast"
+              element={
+                userRole !== "operator" && regionScope === "Tanzania" ? (
+                  <BroadcastDashboard 
+                    attendees={attendeesList}
+                  />
+                ) : (
+                  <NotFound />
+                )
+              }
+            />
             <Route
               path="add-new"
               element={
@@ -458,7 +515,7 @@ export default function Dashboard() {
                   <NotFound />
                 )
               }
-            />{" "}
+            />
             <Route
               path="session/master"
               element={

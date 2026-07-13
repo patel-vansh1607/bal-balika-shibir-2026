@@ -724,3 +724,44 @@
   transform: translateY(-2px); /* Adds a smooth lift effect matching your transition */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Adds a subtle micro-shadow depth */
 }
+.viewWrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  display: block !important;
+}
+
+.viewWrapper::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+}
+
+.viewWrapper::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1 !important;
+  border-radius: 4px;
+  border: 1px solid #f1f5f9;
+}
+
+.viewWrapper::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8 !important;
+}
+
+/* Keep Sidebar Navigation List Scrollbar Constant if overflow occurs */
+.navigationList {
+  flex: 1;
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.navigationList::-webkit-scrollbar {
+  width: 5px;
+  display: block !important;
+}
+
+.navigationList::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.navigationList::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 10px;
+}

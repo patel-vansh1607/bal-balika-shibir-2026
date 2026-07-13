@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { attendees as attendeesApi } from "../../apiClient";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { toast as hotToast } from 'react-hot-toast';
 import {
   FaSearch,
   FaPhoneAlt,
@@ -19,8 +20,8 @@ import {
   FaEllipsisV,
   FaEdit,
   FaCheckCircle,
-  FaUserMinus,
-  FaUserCheck,
+  // FaUserMinus,
+  // FaUserCheck,
   FaCreditCard,
   FaMoneyBillWave,
 } from "react-icons/fa";
@@ -40,8 +41,7 @@ export default function RegisteredRoster({
   const [selectedGender, setSelectedGender] = useState("All");
   const [isExporting, setIsExporting] = useState(false);
   const [isDownloadingQR, setIsDownloadingQR] = useState(false);
-  const [isDownloadingSingle, setIsDownloadingSingle] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null);
+const [downloadingId, setDownloadingId] = useState(null);  const [confirmAction, setConfirmAction] = useState(null);
   const [activeQrModalUser, setActiveQrModalUser] = useState(null);
   const [isQrLoading, setIsQrLoading] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -58,7 +58,7 @@ export default function RegisteredRoster({
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
-  const [, setError] = useState(null);
+  // const [, setError] = useState(null);
 
   // B. First Memo calculates the base dataset filters
   // B. First Memo calculates the base dataset filters including your Payment Filter
@@ -118,62 +118,62 @@ export default function RegisteredRoster({
     "All",
     ...new Set(attendees.map((a) => a.center).filter(Boolean)),
   ];
-  const apiFetch = async (url, options) => {
-    const res = await fetch(url, options);
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || "API Error");
-    }
-    return res.json();
-  };
+  // const apiFetch = async (url, options) => {
+  //   const res = await fetch(url, options);
+  //   if (!res.ok) {
+  //     const errorData = await res.json().catch(() => ({}));
+  //     throw new Error(errorData.message || "API Error");
+  //   }
+  //   return res.json();
+  // };
   // Function updated to use member_id for the PATCH request
-  const handleToggleSelection = async (attendee, newSelectionStatus) => {
-    setIsProcessing(true);
-    setError(null);
+  // const handleToggleSelection = async (attendee, newSelectionStatus) => {
+  //   setIsProcessing(true);
+  //   setError(null);
 
-    // Use the raw integer database ID (e.g., 299)
-    const databaseId = attendee._raw_id || attendee.id;
+  //   // Use the raw integer database ID (e.g., 299)
+  //   const databaseId = attendee._raw_id || attendee.id;
 
-    try {
-      const payload = {
-        is_selected: newSelectionStatus,
-      };
+  //   try {
+  //     const payload = {
+  //       is_selected: newSelectionStatus,
+  //     };
 
-      // ─── REMOVED "/routes" FROM THE ENDPOINT PATH ───
-      await apiFetch(
-        `https://api.riftkoders.com/mtrc/attendees/${databaseId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        },
-      );
+  //     // ─── REMOVED "/routes" FROM THE ENDPOINT PATH ───
+  //     await apiFetch(
+  //       `https://api.riftkoders.com/mtrc/attendees/${databaseId}`,
+  //       {
+  //         method: "PATCH",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify(payload),
+  //       },
+  //     );
 
-      // Update state locally
-      setAttendees((prevAttendees) =>
-        prevAttendees.map((item) =>
-          item.id === attendee.id
-            ? { ...item, is_selected: newSelectionStatus }
-            : item,
-        ),
-      );
+  //     // Update state locally
+  //     setAttendees((prevAttendees) =>
+  //       prevAttendees.map((item) =>
+  //         item.id === attendee.id
+  //           ? { ...item, is_selected: newSelectionStatus }
+  //           : item,
+  //       ),
+  //     );
 
-      setToast({
-        show: true,
-        type: "selection",
-        message: `Successfully updated status for ${attendee.name}`,
-      });
+  //     setToast({
+  //       show: true,
+  //       type: "selection",
+  //       message: `Successfully updated status for ${attendee.name}`,
+  //     });
 
-      setTimeout(() => setToast({ show: false, type: "", message: "" }), 4000);
-    } catch (err) {
-      console.error("--- SERVER ERROR DETECTED ---", err);
-      setError(`Failed to update status: ${err.message}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  //     setTimeout(() => setToast({ show: false, type: "", message: "" }), 4000);
+  //   } catch (err) {
+  //     console.error("--- SERVER ERROR DETECTED ---", err);
+  //     setError(`Failed to update status: ${err.message}`);
+  //   } finally {
+  //     setIsProcessing(false);
+  //   }
+  // };
   const handleExecuteArchive = async (reason) => {
     setIsProcessing(true);
     const databaseId = selectedAttendee._raw_id || selectedAttendee.id;
@@ -297,6 +297,7 @@ export default function RegisteredRoster({
       "South Africa",
       "Malawi",
       "Zambia",
+      "Kenya"
     ].includes(regionScope);
 
     // 1. Build Dynamic Headers Based on Selections
@@ -307,7 +308,7 @@ export default function RegisteredRoster({
       "Mandal",
       "Age",
       "Country",
-      "Center Branch",
+      "Center",
     ];
     if (includeContact) headersRow.push("Parent Contact");
     if (isSpecialRegion) headersRow.push("T-Shirt");
@@ -523,6 +524,7 @@ export default function RegisteredRoster({
         "South Africa",
         "Malawi",
         "Zambia",
+        "Kenya"
       ].includes(regionScope);
 
       // Set dynamic headers based on contact inclusion rules
@@ -533,7 +535,7 @@ export default function RegisteredRoster({
         "Mandal",
         "Age",
         "Country",
-        "Center Branch",
+        "Center",
       ];
       if (includeContact) {
         headers.push("Parent Contact");
@@ -598,33 +600,57 @@ export default function RegisteredRoster({
       setIsExporting(false);
     }
   };
-  const downloadQRImg = async (memberId, userName, storedQrUrl) => {
-    setIsDownloadingSingle(true);
-    try {
-      const url =
-        storedQrUrl ||
-        `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(memberId)}&color=000000&format=png&t=${Date.now()}`;
-      const ext = storedQrUrl ? "svg" : "png";
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Network response was not ok");
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = `ID_${memberId}_${userName.replace(/\s+/g, "_")}.${ext}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      console.error("QR download error:", err);
-      alert("Failed to download QR code.");
-    } finally {
-      setIsDownloadingSingle(false);
-    }
-  };
-  /* --- Open Edit Modal & Populate Form Fields Dynamically --- */
+const downloadQRImg = async (memberId, userName, storedQrUrl) => {
+  // Set the specific member ID as the active loader
+  setDownloadingId(memberId);
+  try {
+    const targetUrl =
+      storedQrUrl ||
+      `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(memberId)}&color=000000&format=png`;
 
+    const safeFileName = `ID_${memberId}_${userName.trim().replace(/\s+/g, "_")}.png`;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 300;
+        canvas.height = 300;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, 300, 300);
+
+        const pngUrl = canvas.toDataURL("image/png");
+
+        const link = document.createElement("a");
+        link.href = pngUrl;
+        link.download = safeFileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (canvasErr) {
+        console.error("Canvas processing execution error:", canvasErr);
+        window.open(targetUrl, "_blank");
+      } finally {
+        setDownloadingId(null); // Clear loading state on finish
+      }
+    };
+
+    img.onerror = (err) => {
+      console.error("Image loading resource track failed:", err);
+      window.open(targetUrl, "_blank");
+      setDownloadingId(null); // Clear loading state on error
+    };
+
+    img.src = targetUrl;
+
+  } catch (err) {
+    console.error("QR image pipeline structure error:", err);
+    alert("Failed to build PNG conversion export.");
+    setDownloadingId(null); // Clear loading state on total failure
+  }
+};
   /* --- Update Field Values Inline --- */
   const handleEditFieldChange = (field, value) => {
     setEditingAttendee((prev) => ({
@@ -670,6 +696,7 @@ export default function RegisteredRoster({
       "South Africa",
       "Malawi",
       "Zambia",
+      "Kenya"
     ].includes(attendeeCountry);
 
     // Determine if the current operator has Master Admin clearance
@@ -697,13 +724,17 @@ export default function RegisteredRoster({
     setIsEditModalOpen(true);
   };
   /* --- Save Changes to Database --- */
-  const handleSaveProfile = async (e) => {
+const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (!editingAttendee) return;
 
+    if (!editingAttendee.first_name?.trim() || !editingAttendee.last_name?.trim()) {
+      hotToast.error("First Name and Last Name are required fields.");
+      return;
+    }
+
     setIsSavingProfile(true);
     try {
-      // 1. Build a complete payload that includes EVERY editable field
       const updatePayload = {
         first_name: editingAttendee.first_name,
         middle_name: editingAttendee.middle_name,
@@ -712,8 +743,6 @@ export default function RegisteredRoster({
           .replace(/\s+/g, " ")
           .trim(),
         email: editingAttendee.email || null,
-
-        // 2. ADD THESE FIELDS so the backend actually receives them
         gender: editingAttendee.gender,
         age: editingAttendee.age,
         center: editingAttendee.center,
@@ -722,10 +751,8 @@ export default function RegisteredRoster({
         tshirt_size: editingAttendee.tshirt_size || null,
       };
 
-      // 3. Send the full payload to your API
       await attendeesApi.update(editingAttendee.id, updatePayload);
 
-      // 4. Update the local UI state with the exact payload we sent
       setAttendees((prev) =>
         prev.map((item) =>
           item.id === editingAttendee.id ? { ...item, ...updatePayload } : item,
@@ -734,10 +761,11 @@ export default function RegisteredRoster({
 
       setIsEditModalOpen(false);
       setEditingAttendee(null);
-      alert("Profile changes committed successfully!");
+      
+      hotToast.success("Profile changes committed successfully!");
     } catch (error) {
       console.error("Database Update Error:", error);
-      alert(`Failed to save profile changes: ${error.message || error}`);
+      hotToast.error(`Failed to save profile changes: ${error.message || "Server Error"}`);
     } finally {
       setIsSavingProfile(false);
     }
@@ -1095,12 +1123,12 @@ export default function RegisteredRoster({
                   <th>Age</th>
                   <th>Center</th>
                   <th>Parent Contact</th>
-                  {["Botswana", "South Africa", "Malawi", "Zambia"].includes(
+                  {["Botswana", "South Africa", "Malawi", "Zambia", "Kenya"].includes(
                     regionScope,
                   ) && <th>T-Shirt</th>}
                   {regionScope === "Tanzania" && <th>Selection Status</th>}
                   {regionScope === "Kenya" && <th>Payment Status</th>}
-                  <th style={{ textAlign: "center" }}>Identity Pass</th>
+                  <th style={{ textAlign: "center" }}>QR</th>
                   {(userRole === "master_admin" ||
                     userRole === "super_admin") && <th>Actions</th>}
                 </tr>
@@ -1158,6 +1186,7 @@ export default function RegisteredRoster({
                         "South Africa",
                         "Malawi",
                         "Zambia",
+                        "Kenya",
                       ].includes(regionScope) && (
                         <td>
                           {attendee.tshirt_size ? (
@@ -1251,7 +1280,7 @@ export default function RegisteredRoster({
                           onClick={() => handleOpenQrModal(attendee)}
                           className={styles.viewPassBtn}
                         >
-                          <FaQrcode style={{ fontSize: "13px" }} /> View QR
+                          <FaQrcode style={{ fontSize: "13px" }} />
                         </button>
                       </td>
                       <td style={{ textAlign: "center", position: "relative" }}>
@@ -1299,7 +1328,7 @@ export default function RegisteredRoster({
                               onClick={(e) => e.stopPropagation()}
                             >
                               {/* --- Tanzania Selection Actions --- */}
-                              {regionScope === "Tanzania" &&
+                              {/* {regionScope === "Tanzania" &&
                                 (userRole === "master_admin" ||
                                   userRole === "super_admin") && (
                                   <>
@@ -1339,7 +1368,7 @@ export default function RegisteredRoster({
                                         />{" "}
                                         Mark Not Selected
                                       </button>
-                                    )}
+                                    )} 
 
                                     {attendee.is_selected !== 0 &&
                                       attendee.is_selected !== null &&
@@ -1362,7 +1391,7 @@ export default function RegisteredRoster({
                                         </button>
                                       )}
                                   </>
-                                )}
+                                )}*/}
 
                               {/* --- Kenya Payment Actions --- */}
                               {regionScope === "Kenya" &&
@@ -1711,26 +1740,27 @@ export default function RegisteredRoster({
               </div>
             </div>
             <button
-              onClick={() =>
-                downloadQRImg(
-                  activeQrModalUser.member_id || activeQrModalUser.id,
-                  activeQrModalUser.name,
-                  activeQrModalUser.qr_code_url,
-                )
-              }
-              className={styles.modalDownloadBtn}
-              disabled={isDownloadingSingle}
-            >
-              {isDownloadingSingle ? (
-                <>
-                  <FaSpinner className={styles.spin} /> Downloading...
-                </>
-              ) : (
-                <>
-                  <FaDownload /> Download QR Code
-                </>
-              )}
-            </button>
+  onClick={() => {
+    const targetId = activeQrModalUser.member_id || activeQrModalUser.id;
+    downloadQRImg(
+      targetId,
+      activeQrModalUser.name,
+      activeQrModalUser.qr_code_url
+    );
+  }}
+  className={styles.modalDownloadBtn}
+  disabled={downloadingId === (activeQrModalUser.member_id || activeQrModalUser.id)}
+>
+  {downloadingId === (activeQrModalUser.member_id || activeQrModalUser.id) ? (
+    <>
+      <FaSpinner className={styles.spin} /> Downloading...
+    </>
+  ) : (
+    <>
+      <FaDownload /> Download QR Code
+    </>
+  )}
+</button>
           </div>
         </div>
       )}
@@ -1822,16 +1852,42 @@ export default function RegisteredRoster({
                   />
                 </div>
                 <div className={styles.formGroup} style={{ flex: 1 }}>
-                  <label>T-Shirt Size</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. M, L, XL"
-                    value={editingAttendee.tshirt_size}
-                    onChange={(e) =>
-                      handleEditFieldChange("tshirt_size", e.target.value)
-                    }
-                  />
-                </div>
+  <label>T-Shirt Size</label>
+  {localStorage.getItem("selected_shibir_region") === "Kenya" || editingAttendee?.region === "Kenya" ? (
+    <select
+      value={editingAttendee?.tshirt_size || ""}
+      onChange={(e) => handleEditFieldChange("tshirt_size", e.target.value)}
+      style={{
+        width: "100%",
+        padding: "8px 12px",
+        borderRadius: "6px",
+        border: "1px solid #ccc",
+        backgroundColor: "#fff",
+        height: "38px",
+        fontSize: "14px",
+        color: "#333",
+        display: "block"
+      }}
+    >
+      <option value="">Select Size...</option>
+      <option value="XXXS">XXXS</option>
+      <option value="XS">XS</option>
+      <option value="S">S</option>
+      <option value="M">M</option>
+      <option value="L">L</option>
+      <option value="XL">XL</option>
+      <option value="XXL">XXL</option>
+      <option value="XXXL">XXXL</option>
+    </select>
+  ) : (
+    <input
+      type="text"
+      placeholder="e.g. M, L, XL"
+      value={editingAttendee?.tshirt_size || ""}
+      onChange={(e) => handleEditFieldChange("tshirt_size", e.target.value)}
+    />
+  )}
+</div>
               </div>
 
               {/* Dynamic Restricted Metadata Sections — Unlocked ONLY for Master Admin */}
