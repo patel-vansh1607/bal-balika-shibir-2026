@@ -21,7 +21,7 @@ import AddSession from "../AddSession/AddSession";
 import Sessions from "../Sessions/Sessions";
 import SessionDataDetails from "../SessionDataDetails/SessionDataDetails";
 import AdminControl from "../AdminControl/AdminControl";
-import PublicRegister from "../PublicRegister/PublicRegister";
+import AdminRegister from "../AdminRegister/AdminRegister";
 import {
   FaChartBar,
   FaSignOutAlt,
@@ -479,7 +479,7 @@ export default function Dashboard() {
             <Route
               path="add-new"
               element={
-                userRole !== "operator" ? <PublicRegister /> : <NotFound />
+                userRole !== "operator" ? <AdminRegister /> : <NotFound />
               }
             />
             <Route
