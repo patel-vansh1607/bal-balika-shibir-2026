@@ -310,15 +310,15 @@ const handleExportPDF = (
 
     // Map short codes to full descriptions with measurements for Kenya & Uganda
     const SIZE_TO_CM_MAP = {
-      "XXXS": "XXXS - 57-62cm",
-      "XXS": "XXS - 62-67cm",
-      "XS": "XS - 67-72cm",
-      "S": "S - 72-75cm",
-      "M": "M - 77-82cm",
-      "L": "L - 82-88cm",
-      "XL": "XL - 88-93cm",
-      "XXL": "XXL - 93-98cm",
-      "XXXL": "XXXL - 98-103cm"
+      "XXXS": "XXXS (57-62cm)",
+      "XXS": "XXS (62-67cm)",
+      "XS": "XS (67-72cm)",
+      "S": "S (72-75cm)",
+      "M": "M (77-82cm)",
+      "L": "L (82-88cm)",
+      "XL": "XL (88-93cm)",
+      "XXL": "XXL (93-98cm)",
+      "XXXL": "XXXL (98-103cm)"
     };
 
     // 2. Build Dynamic Headers Based on Selections
@@ -554,15 +554,15 @@ const executeExport = (includeContact) => {
 
     // Map short codes to full descriptions with measurements for Kenya & Uganda
     const SIZE_TO_CM_MAP = {
-      "XXXS": "XXXS - 57-62cm",
-      "XXS": "XXS - 62-67cm",
-      "XS": "XS - 67-72cm",
-      "S": "S - 72-75cm",
-      "M": "M - 77-82cm",
-      "L": "L - 82-88cm",
-      "XL": "XL - 88-93cm",
-      "XXL": "XXL - 93-98cm",
-      "XXXL": "XXXL - 98-103cm"
+      "XXXS": "XXXS (57-62cm)",
+      "XXS": "XXS (62-67cm)",
+      "XS": "XS (67-72cm)",
+      "S": "S (72-75cm)",
+      "M": "M (77-82cm)",
+      "L": "L (82-88cm)",
+      "XL": "XL (88-93cm)",
+      "XXL": "XXL (93-98cm)",
+      "XXXL": "XXXL (98-103cm)"
     };
 
     try {
