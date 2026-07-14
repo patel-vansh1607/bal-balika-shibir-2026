@@ -825,7 +825,8 @@ const handleSaveProfile = async (e) => {
             <FaSearch className={styles.searchIcon} />
           </div>
           <div className={styles.filterGroup}>
-            <div className={styles.filterSelectContainer}>
+{regionScope === "All" && (
+  <div className={styles.filterSelectContainer}>
     <FaGlobe style={{ color: "var(--accent-primary)" }} />
     <select
       value={selectedRegion}
@@ -844,6 +845,7 @@ const handleSaveProfile = async (e) => {
       <option value="Zambia">Zambia</option>
     </select>
   </div>
+)}
             <div className={styles.filterSelectContainer}>
               <FaMapMarkerAlt style={{ color: "var(--accent-primary)" }} />
               <select
