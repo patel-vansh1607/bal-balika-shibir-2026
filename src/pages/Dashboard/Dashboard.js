@@ -81,12 +81,9 @@ export default function Dashboard() {
     if (user) setUserEmail(user.email || "");
     setLoading(false);
   }, [navigate, user]);
-// ... after useState declarations (loading, dataFetching, attendeesList, etc.)
-
-// --- ADD THIS BLOCK ---
-// Calculate if duplicates exist to show notification in navigation
-const hasDuplicatesFlagged = useMemo(() => {
-  if (!attendeesList || attendeesList.length === 0 || dataFetching) return false;
+// Calculate the exact number of duplicate matching groups
+const duplicateCount = useMemo(() => {
+  if (!attendeesList || attendeesList.length === 0 || dataFetching) return 0;
 
   const groups = {};
   attendeesList.forEach((person) => {
@@ -106,10 +103,10 @@ const hasDuplicatesFlagged = useMemo(() => {
     groups[cleanName].push(person);
   });
 
-  // Returns true if there is at least one group with more than 1 entry
-  return Object.values(groups).some((group) => group.length > 1);
+  // Filter to find groups with 2 or more occurrences, then return the count
+  const duplicateGroups = Object.values(groups).filter((group) => group.length > 1);
+  return duplicateGroups.length;
 }, [attendeesList, dataFetching]);
-// ----------------------
   const fetchIsolatedDataset = useCallback(async () => {
     try {
       setDataFetching(true);
@@ -286,37 +283,37 @@ const hasDuplicatesFlagged = useMemo(() => {
                     </button> */}
                   </>
                 )}
-
 <button
   onClick={() => handleNavigation("/dashboard/duplicates")}
   className={`${styles.navLink} ${location.pathname === "/dashboard/duplicates" ? styles.navLinkActive : ""}`}
-  style={{ position: 'relative' }} // Required for badge positioning
+  style={{ position: 'relative' }} // Keeps badge anchored correctly
 >
   <FaCopy className={styles.iconMargin} /> Duplicates
 
-  {/* Show warning badge if hasDuplicatesFlagged is true */}
-  {hasDuplicatesFlagged && (
+  {/* Display the active count bubble if duplicates > 0 */}
+  {duplicateCount > 0 && (
     <span
       style={{
         position: 'absolute',
         top: '50%',
         right: '16px',
         transform: 'translateY(-50%)',
-        backgroundColor: '#ef4444', // Red 500
+        backgroundColor: '#ef4444', // Tailwind Red-500
         color: '#ffffff',
-        width: '18px',
-        height: '18px',
-        borderRadius: '50%',
+        minWidth: '20px',
+        height: '20px',
+        padding: '0 6px',
+        borderRadius: '10px', // pill-shaped so multi-digit numbers fit
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '0.7rem',
-        fontWeight: 'bold',
-        boxShadow: '0 0 6px rgba(239, 68, 68, 0.4)', // subtle glow effect
+        fontSize: '0.75rem',
+        fontWeight: '700',
+        boxShadow: '0 0 6px rgba(239, 68, 68, 0.4)',
       }}
-      title="Unresolved duplicate registrations detected. Click to review."
+      title={`${duplicateCount} duplicate profile sets detected`}
     >
-      !
+      {duplicateCount}
     </span>
   )}
 </button>
