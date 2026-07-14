@@ -35,6 +35,7 @@ export default function KarayakarList({ defaultRegion = '' }) {
   const [centerFilter, setCenterFilter] = useState('All');
   const [nameSearch, setNameSearch] = useState('');
   const [sevaFilter, setSevaFilter] = useState('');
+  const [genderFilter, setGenderFilter] = useState('All');
   
   const [activeMenuId, setActiveMenuId] = useState(null);
   
@@ -149,33 +150,47 @@ export default function KarayakarList({ defaultRegion = '' }) {
     }
   };
 
-  const filteredList = list.filter(k => {
+  const getIsFemale = (karyakar) => {
+    if (!karyakar.seva_designation) return false;
+    const designations = typeof karyakar.seva_designation === 'string' 
+      ? karyakar.seva_designation.split(', ') 
+      : Array.isArray(karyakar.seva_designation) ? karyakar.seva_designation : [];
+      
+    return designations.some(role => {
+      const r = role.toUpperCase();
+      return r === 'I-NC' || r === 'I-NOC' || r === 'I-RC' || r.includes('SHISHIKA') || r.includes('BALIKA');
+    });
+  };
+
+  // 1. Filter based on text searches and selectors, but IGNORE gender state to compute correct dynamic header totals
+  const baseFilteredList = list.filter(k => {
     const matchesCenter = centerFilter === 'All' || k.center === centerFilter;
     const matchesSeva = !sevaFilter.trim() || (k.seva_designation?.toLowerCase().includes(sevaFilter.toLowerCase().trim()));
     const matchesName = !nameSearch.trim() || (k.full_name?.toLowerCase().includes(nameSearch.toLowerCase().trim()));
     return matchesCenter && matchesSeva && matchesName;
   });
 
-  const getGenderStats = () => {
+  // 2. Count dynamic stats from current filtered base
+  const getDynamicGenderStats = () => {
     let male = 0;
     let female = 0;
-    filteredList.forEach(k => {
-      if (!k.seva_designation) return;
-      const designations = typeof k.seva_designation === 'string' 
-        ? k.seva_designation.split(', ') 
-        : Array.isArray(k.seva_designation) ? k.seva_designation : [];
-        
-      const hasFemaleRole = designations.some(role => {
-        const r = role.toUpperCase();
-        return r === 'I-NC' || r === 'I-NOC' || r === 'I-RC' || r.includes('SHISHIKA') || r.includes('BALIKA');
-      });
-      if (hasFemaleRole) female++;
+    baseFilteredList.forEach(k => {
+      const isFemale = getIsFemale(k);
+      if (isFemale) female++;
       else male++;
     });
     return { male, female };
   };
 
-  const { male: maleCount, female: femaleCount } = getGenderStats();
+  const { male: maleCount, female: femaleCount } = getDynamicGenderStats();
+
+  // 3. Final visual items array with gender filter applied
+  const filteredList = baseFilteredList.filter(k => {
+    const isFemale = getIsFemale(k);
+    return genderFilter === 'All' || 
+      (genderFilter === 'Female' && isFemale) || 
+      (genderFilter === 'Male' && !isFemale);
+  });
 
   const handleConfirmDelete = async (id) => {
     setDeleting(id);
@@ -301,22 +316,28 @@ export default function KarayakarList({ defaultRegion = '' }) {
 
   const handleExportCSV = () => {
     if (filteredList.length === 0) return;
-    const headers = ['No.', 'Full Name', 'Region', 'Center', 'Seva Designations', 'T-Shirt Size', 'Payment Status'];
+    
+    // Added "Gender" column header
+    const headers = ['No.', 'Full Name', 'Gender', 'Region', 'Center', 'Seva Designations', 'T-Shirt Size', 'Payment Status'];
+    
+    // Generated rows based strictly on the filtered list items
     const rows = filteredList.map((k, idx) => [
       idx + 1,
       `"${k.full_name || ''}"`,
+      `"${getIsFemale(k) ? 'Female' : 'Male'}"`,
       `"${k.region || ''}"`,
       `"${k.center || ''}"`,
       `"${k.seva_designation || 'None'}"`,
       `"${k.tshirt_size || 'N/A'}"`,
       Number(k.is_paid) === 1 ? 'Paid' : 'Unpaid'
     ]);
+    
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Directory_Report.csv`;
+    link.download = `Karyakar_Report.csv`;
     link.click();
   };
 
@@ -324,16 +345,29 @@ export default function KarayakarList({ defaultRegion = '' }) {
 
   return (
     <div className={styles.rosterContainer}>
+      {/* Dynamic Filter Bento Header - Numbers now update dynamically on search and filters */}
       <div className={styles.directoryBentoStats}>
-        <div className={styles.statBox}>
+        <div 
+          className={`${styles.statBox} ${genderFilter === 'All' ? styles.statBoxActive : ''}`} 
+          onClick={() => setGenderFilter('All')}
+          style={{ cursor: 'pointer' }}
+        >
           <span className={styles.statLabel}>TOTAL REGISTERED</span>
-          <span className={styles.statCount}>{filteredList.length}</span>
+          <span className={styles.statCount}>{baseFilteredList.length}</span>
         </div>
-        <div className={styles.statBoxBlue}>
+        <div 
+          className={`${styles.statBoxBlue} ${genderFilter === 'Male' ? styles.statBoxBlueActive : ''}`} 
+          onClick={() => setGenderFilter('Male')}
+          style={{ cursor: 'pointer' }}
+        >
           <span className={styles.statLabelBlue}>MALE</span>
           <span className={styles.statCountBlue}>{maleCount}</span>
         </div>
-        <div className={styles.statBoxRed}>
+        <div 
+          className={`${styles.statBoxRed} ${genderFilter === 'Female' ? styles.statBoxRedActive : ''}`} 
+          onClick={() => setGenderFilter('Female')}
+          style={{ cursor: 'pointer' }}
+        >
           <span className={styles.statLabelRed}>FEMALE</span>
           <span className={styles.statCountRed}>{femaleCount}</span>
         </div>
@@ -365,6 +399,14 @@ export default function KarayakarList({ defaultRegion = '' }) {
               <select value={centerFilter} onChange={e => setCenterFilter(e.target.value)} className={styles.styledSelect}>
                 <option value="All">All Center Branches</option>
                 {(REGION_CENTERS[region] || []).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div className={styles.selectWrapper}>
+              <select value={genderFilter} onChange={e => setGenderFilter(e.target.value)} className={styles.styledSelect}>
+                <option value="All">All Genders</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
               </select>
             </div>
 
