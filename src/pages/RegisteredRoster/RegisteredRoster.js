@@ -894,6 +894,7 @@ const executeExport = (includeContact) => {
                 >
                   <option value="All">All Regions</option>
                   <option value="Kenya">Kenya</option>
+                  <option value="Tanzania">Tanzania</option>
                   <option value="Uganda">Uganda</option>
                   <option value="Botswana">Botswana</option>
                   <option value="South Africa">South Africa</option>
