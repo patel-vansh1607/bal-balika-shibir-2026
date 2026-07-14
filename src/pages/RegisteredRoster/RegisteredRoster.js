@@ -962,8 +962,7 @@ export default function RegisteredRoster({
             </div>
 
             {/* --- NEW KENYA-ONLY PAYMENT FILTER DROPDOWN --- */}
-            {regionScope === "Kenya" ||
-              (regionScope === "Uganda" && (
+            {regionScope === "Kenya" && (
                 <div className={styles.filterSelectContainer}>
                   <FaMoneyBillWave style={{ color: "var(--accent-primary)" }} />
                   <select
@@ -976,7 +975,7 @@ export default function RegisteredRoster({
                     <option value="0">Not Paid Only</option>
                   </select>
                 </div>
-              ))}
+              )}
 
             {/* Primary Action Button */}
             <button
@@ -1248,9 +1247,7 @@ export default function RegisteredRoster({
                     "Uganda",
                   ].includes(regionScope) && <th>T-Shirt</th>}
                   {regionScope === "Tanzania" && <th>Selection Status</th>}
-                  {regionScope === "Kenya" || regionScope === "Uganda" ? (
-                    <th>Payment Status</th>
-                  ) : null}
+                  {regionScope === "Kenya" && <th>Payment Status</th>}
                   <th style={{ textAlign: "center" }}>QR</th>
                   {(userRole === "master_admin" ||
                     userRole === "super_admin") && <th>Actions</th>}
@@ -1370,8 +1367,7 @@ export default function RegisteredRoster({
                       )}
 
                       {/* --- Kenya Specific Column --- */}
-                      {regionScope === "Kenya" ||
-                        (regionScope === "Uganda" && (
+                      {regionScope === "Kenya" && (
                           <td>
                             {attendee.is_paid === 1 ? (
                               <span
@@ -1399,7 +1395,7 @@ export default function RegisteredRoster({
                               </span>
                             )}
                           </td>
-                        ))}
+                        )}
 
                       <td style={{ textAlign: "center" }}>
                         <button
@@ -1520,8 +1516,7 @@ export default function RegisteredRoster({
                                 )}*/}
 
                               {/* --- Kenya Payment Actions --- */}
-                              {regionScope === "Kenya" ||
-                                (regionScope === "Uganda" &&
+                              {regionScope === "Kenya" &&
                                   (userRole === "master_admin" ||
                                     userRole === "super_admin") && (
                                     <button
@@ -1564,7 +1559,7 @@ export default function RegisteredRoster({
                                         </>
                                       )}
                                     </button>
-                                  ))}
+                                  )}
 
                               {/* Only Admin can Edit Profile */}
                               {(userRole === "master_admin" ||
