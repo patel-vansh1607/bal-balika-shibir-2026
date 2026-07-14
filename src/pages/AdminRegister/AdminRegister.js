@@ -19,9 +19,9 @@ import {
   FaCloudDownloadAlt
 } from "react-icons/fa";
 import shirtChartImg from '../../assets/images/t_shirt_size_guide.jpeg'
-import styles from "./PublicRegister.module.css";
+import styles from "./AdminRegister.module.css";
 import confetti from "canvas-confetti";
-export default function PublicRegister() {
+export default function AdminRegister() {
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
