@@ -19,7 +19,7 @@ import {
   FaArchive,
   FaEllipsisV,
   FaEdit,
-  FaCheckCircle,
+  FaCheckCircle,FaGlobe,
   // FaUserMinus,
   // FaUserCheck,
   FaCreditCard,
@@ -38,6 +38,7 @@ export default function RegisteredRoster({
   const showArchived = false;
   const [selectedCenter, setSelectedCenter] = useState("All");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState("All");
   const [selectedGender, setSelectedGender] = useState("All");
   const [isExporting, setIsExporting] = useState(false);
   const [isDownloadingQR, setIsDownloadingQR] = useState(false);
@@ -62,22 +63,24 @@ const [downloadingId, setDownloadingId] = useState(null);  const [confirmAction,
 
   // B. First Memo calculates the base dataset filters
   // B. First Memo calculates the base dataset filters including your Payment Filter
-  const filteredAttendees = useMemo(() => {
+const filteredAttendees = useMemo(() => {
     return attendees.filter((attendee) => {
       const nameSafe = attendee.name?.toLowerCase() || "";
       const contactSafe = String(attendee.parent_contact || "");
       const idSafe = String(attendee.member_id || "").toLowerCase();
 
-      // Check standard criteria
+      // Check standard base filters (including your new region selection)
       const matchesBaseFilters =
         attendee.is_archived === showArchived &&
         (nameSafe.includes(searchTerm.toLowerCase()) ||
           contactSafe.includes(searchTerm) ||
           idSafe.includes(searchTerm.toLowerCase())) &&
+        (selectedRegion === "All" || 
+          attendee.region === selectedRegion || 
+          attendee.country === selectedRegion) &&
         (selectedCenter === "All" || attendee.center === selectedCenter) &&
         (selectedGender === "All" || attendee.gender === selectedGender);
 
-      // Check conditional payment criteria specifically for Kenya context values
       // Check conditional payment criteria specifically for Kenya context values
       if (regionScope === "Kenya" && paymentFilter !== "All") {
         // If it's missing or null, treat it as 0 (not paid)
@@ -92,6 +95,7 @@ const [downloadingId, setDownloadingId] = useState(null);  const [confirmAction,
   }, [
     attendees,
     searchTerm,
+    selectedRegion, // Added to trigger re-computation when region changes
     selectedCenter,
     selectedGender,
     showArchived,
@@ -821,6 +825,25 @@ const handleSaveProfile = async (e) => {
             <FaSearch className={styles.searchIcon} />
           </div>
           <div className={styles.filterGroup}>
+            <div className={styles.filterSelectContainer}>
+    <FaGlobe style={{ color: "var(--accent-primary)" }} />
+    <select
+      value={selectedRegion}
+      onChange={(e) => {
+        setSelectedRegion(e.target.value);
+        setSelectedCenter("All"); // Reset center filter when region changes
+      }}
+      className={styles.selectDropdown}
+    >
+      <option value="All">All Regions</option>
+      <option value="Kenya">Kenya</option>
+      <option value="Uganda">Uganda</option>
+      <option value="Botswana">Botswana</option>
+      <option value="South Africa">South Africa</option>
+      <option value="Malawi">Malawi</option>
+      <option value="Zambia">Zambia</option>
+    </select>
+  </div>
             <div className={styles.filterSelectContainer}>
               <FaMapMarkerAlt style={{ color: "var(--accent-primary)" }} />
               <select
