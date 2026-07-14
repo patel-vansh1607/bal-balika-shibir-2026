@@ -1871,6 +1871,7 @@ const handleSaveProfile = async (e) => {
     >
       <option value="">Select Size...</option>
       <option value="XXXS">XXXS</option>
+      <option value="XXS">XXS</option>
       <option value="XS">XS</option>
       <option value="S">S</option>
       <option value="M">M</option>

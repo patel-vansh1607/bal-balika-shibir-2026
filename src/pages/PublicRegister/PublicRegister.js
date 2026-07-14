@@ -16,7 +16,9 @@ import {
   FaPlusCircle,
   FaEdit,
   FaCheck,
+  FaCloudDownloadAlt
 } from "react-icons/fa";
+import shirtChartImg from '../../assets/images/t_shirt_size_guide.jpeg'
 import styles from "./PublicRegister.module.css";
 import confetti from "canvas-confetti";
 export default function PublicRegister() {
@@ -25,7 +27,7 @@ export default function PublicRegister() {
   const [lastName, setLastName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
-
+const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState("");
   const [regionSearchQuery, setRegionSearchQuery] = useState("");
   const [isRegionDropdownOpen, setIsRegionDropdownOpen] = useState(false);
@@ -362,7 +364,8 @@ export default function PublicRegister() {
       selectedRegion === "Botswana" ||
       selectedRegion === "South Africa" ||
       selectedRegion === "Malawi" ||
-      selectedRegion === "Zambia";
+      selectedRegion === "Zambia" ||
+      selectedRegion === "Uganda" ;
     if (needsTshirt && !tshirtSize) {
       return fail("Please select a T-shirt size.", shirtRef);
     }
@@ -643,7 +646,13 @@ export default function PublicRegister() {
                   <span>{formError}</span>
                 </div>
               )}
-
+                {selectedRegion === "Uganda" && (
+                  <div className={styles.regionNoticeBox}>
+                    <span className={styles.noticeTitle}>For Uganda Parents</span>
+                    <p className={styles.noticeText}>
+                Kindly ensure that your Shibir registration fee of UGX 25,000 is submitted to the Accounts Department to finalize your registration.    </p>
+                  </div>
+                )}
               <div className={styles.previewGridSummary}>
                 <div className={styles.previewRow}>
                   <span className={styles.previewLabel}>Full Name:</span>
@@ -961,36 +970,136 @@ export default function PublicRegister() {
                       />
                     </div>
                   </div>
+{(selectedRegion === "Botswana" ||
+  selectedRegion === "South Africa" ||
+  selectedRegion === "Malawi" ||
+  selectedRegion === "Zambia" ||
+  selectedRegion === "Uganda") && (
+  <>
+    <div className={styles.rowFieldContainer} ref={shirtRef}>
+      <div className={styles.formGroup}>
+        <div className={styles.labelWithHelper}>
+          <label className={styles.label}>T-Shirt Size *</label>
+          
+          {/* Sizing Info Helper (Visible only for Uganda) */}
+          {selectedRegion === "Uganda" && (
+            <div className={styles.helperTooltipContainer}>
+              <button
+                type="button"
+                className={styles.helperBtn}
+                onClick={() => setIsModalOpen(true)}
+                aria-label="View Uganda T-shirt size chart"
+              >
+                <span className={styles.infoIcon}>ℹ</span> View Size Chart
+              </button>
+              <div className={styles.tooltipText}>Click to open sizing guide image</div>
+            </div>
+          )}
+        </div>
 
-                  {(selectedRegion === "Botswana" ||
-                    selectedRegion === "South Africa" ||
-                    selectedRegion === "Malawi" ||
-                    selectedRegion === "Zambia") && (
-                    <div className={styles.rowFieldContainer} ref={shirtRef}>
-                      <div className={styles.formGroup}>
-                        <label className={styles.label}>T-Shirt Size *</label>
-                        <select
-                          className={`${styles.select} ${formError && !tshirtSize ? styles.inputError : ""}`}
-                          value={tshirtSize}
-                          onChange={(e) => setTshirtSize(e.target.value)}
-                          disabled={loading}
-                        >
-                          <option value="">Select Size</option>
-                          <option value="24">24</option>
-                          <option value="26">26</option>
-                          <option value="28">28</option>
-                          <option value="30">30</option>
-                          <option value="32">32</option>
-                          <option value="34">34</option>
-                          <option value="36">36</option>
-                          <option value="38">38</option>
-                          <option value="40">40</option>
-                          <option value="42">42</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
+        <select
+          className={`${styles.select} ${formError && !tshirtSize ? styles.inputError : ""}`}
+          value={tshirtSize}
+          onChange={(e) => setTshirtSize(e.target.value)}
+          disabled={loading}
+        >
+          <option value="">Select Size</option>
+          {selectedRegion === "Uganda" ? (
+            /* Uganda Custom Alphabetical Sizes */
+            <>
+  <option value="XXXS">XXXS - 57-62cm</option>
+  <option value="XXS">XXS - 62-67cm</option>
+  <option value="XS">XS - 67-72cm</option>
+  <option value="S">S - 72-75cm</option>
+  <option value="M">M - 77-82cm</option>
+  <option value="L">L - 82-88cm</option>
+  <option value="XL">XL - 88-93cm</option>
+  <option value="XXL">XXL - 93-98cm</option>
+  <option value="XXXL">XXXL - 98-103cm</option>
+</>
+          ) : (
+            /* Classic Numeric Sizes for Southern Africa */
+            <>
+              <option value="24">24</option>
+              <option value="26">26</option>
+              <option value="28">28</option>
+              <option value="30">30</option>
+              <option value="32">32</option>
+              <option value="34">34</option>
+              <option value="36">36</option>
+              <option value="38">38</option>
+              <option value="40">40</option>
+              <option value="42">42</option>
+            </>
+          )}
+        </select>
+      </div>
 
+      
+    </div>
+
+    {/* Sizing Image Modal Popup */}
+    {isModalOpen && (
+      <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
+        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modalHeader}>
+            <h4 className={styles.modalTitle}>Uganda T-Shirt Size Guide</h4>
+            
+            <div className={styles.modalHeaderActions}>
+              {/* Download Button */}
+              <a 
+                href={shirtChartImg} 
+                download="TShirt_Size_Guide.png" 
+                className={styles.modalDownloadBtn}
+                title="Download Sizing Chart"
+              >
+                 <FaCloudDownloadAlt />Download
+              </a>
+              
+              <button 
+                type="button" 
+                className={styles.modalCloseBtn} 
+                onClick={() => setIsModalOpen(false)}
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+          
+          {/* Zoom-on-mouse-move Container */}
+          <div 
+            className={styles.modalImageContainer}
+            onMouseMove={(e) => {
+              const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+              const x = ((e.clientX - left) / width) * 100;
+              const y = ((e.clientY - top) / height) * 100;
+              e.currentTarget.style.setProperty('--x', `${x}%`);
+              e.currentTarget.style.setProperty('--y', `${y}%`);
+            }}
+          >
+            <img 
+              src={shirtChartImg} 
+              alt="Uganda T-Shirt Sizing Grid Dimensions" 
+              className={styles.chartImage}
+            />
+          </div>
+          <p className={styles.zoomHint}>Move your mouse over the image to zoom in on details</p>
+        </div>
+      </div>
+    )}
+  </>
+)}
+{/* Uganda Registration Fee Notice */}
+      {selectedRegion === "Uganda" && (
+        <div className={styles.ugandaDetailsBox}>
+          <div className={styles.feeNotice}>
+            <span className={styles.noticeTitle}>Registration Fee Notice</span>
+            <p className={styles.noticeText}>
+              Kindly ensure that your Shibir registration fee of <strong>UGX 25,000</strong> is submitted to the Accounts Department to finalize your registration.
+            </p>
+          </div>
+        </div>
+      )}
                   <div className={styles.termsSection} ref={termsRef}>
                     <div className={styles.checkboxWrapper}>
                       <label

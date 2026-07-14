@@ -72,7 +72,7 @@ const regionDataset = {
 
 const ALL_REGIONS     = Object.keys(regionDataset);
 const TSHIRT_REGIONS  = ['South Africa', 'Botswana','Kenya','Tanzania','Uganda','Malawi','Zambia'];
-const TSHIRT_SIZES = ['XXXS','XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+const TSHIRT_SIZES = ['XXXS','XXS','XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const SEVA_DESIGNATIONS = ['NC','I-NC','NOC', 'I-NOC','RC', 'I-RC','Tech Team','Shishu Sanchalak', 'Shishu Sah-Sanchalak', 'Shishu I.C','Shishu Helper', 'Shishika Sanchalak', 'Shishika Sah-Sanchalak', 'Shishika I.C','Shishika Helper', 'Bal Sanchalak', 'Bal Sah-Sanchalak', 'Bal I.C','Bal Helper','Balika Sanchalak', 'Balika Sah-Sanchalak', 'Balika I.C','Balika Helper'];
 
 export default function KarayakarForm() {
