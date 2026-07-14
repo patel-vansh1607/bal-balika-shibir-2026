@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback,useMemo } from "react";
 import {
   useNavigate,
   useLocation,
@@ -12,7 +12,7 @@ import OverviewMetrics from "../OverviewMetrics/OverviewMetrics";
 import CameraScanner from "../CameraScanner/CameraScanner";
 import RegisteredRoster from "../RegisteredRoster/RegisteredRoster";
 import TanzaniaSelectionRoster from "../TanzaniaSelectionRoster/TanzaniaSelectionRoster";
-import BroadcastDashboard from "../BroadcastDashboard/BroadcastDashboard"; 
+import BroadcastDashboard from "../BroadcastDashboard/BroadcastDashboard";
 import NotFound from "../NotFound/NotFound";
 import styles from "./Dashboard.module.css";
 import ArchiveManager from "../ArchiveManager/ArchiveManager";
@@ -22,6 +22,7 @@ import Sessions from "../Sessions/Sessions";
 import SessionDataDetails from "../SessionDataDetails/SessionDataDetails";
 import AdminControl from "../AdminControl/AdminControl";
 import AdminRegister from "../AdminRegister/AdminRegister";
+import DuplicateFinderModal from "../DuplicateFinderModal/DuplicateFinderModal";
 import {
   FaChartBar,
   FaSignOutAlt,
@@ -34,8 +35,8 @@ import {
   FaArrowLeft,
   FaArchive,
   FaSyncAlt,
-  FaGlobeAfrica,
-  // FaEnvelope, 
+  FaGlobeAfrica,FaCopy
+  // FaEnvelope,
 } from "react-icons/fa";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
@@ -80,7 +81,35 @@ export default function Dashboard() {
     if (user) setUserEmail(user.email || "");
     setLoading(false);
   }, [navigate, user]);
+// ... after useState declarations (loading, dataFetching, attendeesList, etc.)
 
+// --- ADD THIS BLOCK ---
+// Calculate if duplicates exist to show notification in navigation
+const hasDuplicatesFlagged = useMemo(() => {
+  if (!attendeesList || attendeesList.length === 0 || dataFetching) return false;
+
+  const groups = {};
+  attendeesList.forEach((person) => {
+    if (person.is_archived) return; // Skip archived records
+
+    // Normalize name
+    const cleanName = (person.name || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+
+    if (!cleanName || cleanName.length < 3) return;
+
+    if (!groups[cleanName]) {
+      groups[cleanName] = [];
+    }
+    groups[cleanName].push(person);
+  });
+
+  // Returns true if there is at least one group with more than 1 entry
+  return Object.values(groups).some((group) => group.length > 1);
+}, [attendeesList, dataFetching]);
+// ----------------------
   const fetchIsolatedDataset = useCallback(async () => {
     try {
       setDataFetching(true);
@@ -111,11 +140,13 @@ export default function Dashboard() {
     try {
       setDataFetching(true);
       await attendeesApi.update(attendee.id, { is_selected: newStatusValue });
-      
+
       setAttendeesList((prevList) =>
         prevList.map((item) =>
-          item.id === attendee.id ? { ...item, is_selected: newStatusValue } : item
-        )
+          item.id === attendee.id
+            ? { ...item, is_selected: newStatusValue }
+            : item,
+        ),
       );
     } catch (err) {
       console.error("Failed to update status parameters:", err.message);
@@ -151,16 +182,21 @@ export default function Dashboard() {
   const getPageTitle = (path) => {
     if (path.startsWith("/dashboard/overview")) return "Performance Overview";
     if (path.startsWith("/dashboard/roster/karyakar")) return "Karyakar List";
-    if (path.startsWith("/dashboard/tanzania-roster")) return "Tanzania Selection Roster";
-    if (path.startsWith("/dashboard/tanzania-broadcast")) return "Communications Hub";
+    if (path.startsWith("/dashboard/tanzania-roster"))
+      return "Tanzania Selection Roster";
+    if (path.startsWith("/dashboard/tanzania-broadcast"))
+      return "Communications Hub";
     if (path.startsWith("/dashboard/roster")) return "Registered Attendees";
-    if (path.startsWith("/dashboard/add-new-karyakar")) return "Register New Karyakar";
+    if (path.startsWith("/dashboard/add-new-karyakar"))
+      return "Register New Karyakar";
     if (path.startsWith("/dashboard/add-new")) return "Register New Attendee";
     if (path.startsWith("/dashboard/archive")) return "Archive Manager";
     if (path.startsWith("/dashboard/admin-control")) return "Admin Control";
     if (path.startsWith("/dashboard/session/master")) return "Session Master";
     if (path.startsWith("/dashboard/session/add-session")) return "Add Session";
-    if (path.startsWith("/dashboard/session/attendance")) return "Sessions Attendance";
+    if (path.startsWith("/dashboard/duplicates")) return "Duplicate Profiles";
+    if (path.startsWith("/dashboard/session/attendance"))
+      return "Sessions Attendance";
     return "";
   };
 
@@ -230,14 +266,17 @@ export default function Dashboard() {
                 >
                   <FaUsers className={styles.iconMargin} /> Registered Roster
                 </button>
-                
+
                 {regionScope === "Tanzania" && (
                   <>
                     <button
-                      onClick={() => handleNavigation("/dashboard/tanzania-roster")}
+                      onClick={() =>
+                        handleNavigation("/dashboard/tanzania-roster")
+                      }
                       className={`${styles.navLink} ${location.pathname === "/dashboard/tanzania-roster" ? styles.navLinkActive : ""}`}
                     >
-                      <FaGlobeAfrica className={styles.iconMargin} /> TZ Selection Roster
+                      <FaGlobeAfrica className={styles.iconMargin} /> TZ
+                      Selection Roster
                     </button>
                     {/* <button
                       onClick={() => handleNavigation("/dashboard/tanzania-broadcast")}
@@ -248,6 +287,39 @@ export default function Dashboard() {
                   </>
                 )}
 
+<button
+  onClick={() => handleNavigation("/dashboard/duplicates")}
+  className={`${styles.navLink} ${location.pathname === "/dashboard/duplicates" ? styles.navLinkActive : ""}`}
+  style={{ position: 'relative' }} // Required for badge positioning
+>
+  <FaCopy className={styles.iconMargin} /> Duplicates
+
+  {/* Show warning badge if hasDuplicatesFlagged is true */}
+  {hasDuplicatesFlagged && (
+    <span
+      style={{
+        position: 'absolute',
+        top: '50%',
+        right: '16px',
+        transform: 'translateY(-50%)',
+        backgroundColor: '#ef4444', // Red 500
+        color: '#ffffff',
+        width: '18px',
+        height: '18px',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '0.7rem',
+        fontWeight: 'bold',
+        boxShadow: '0 0 6px rgba(239, 68, 68, 0.4)', // subtle glow effect
+      }}
+      title="Unresolved duplicate registrations detected. Click to review."
+    >
+      !
+    </span>
+  )}
+</button>
                 <button
                   onClick={() => handleNavigation("/dashboard/add-new")}
                   className={`${styles.navLink} ${location.pathname === "/dashboard/add-new" ? styles.navLinkActive : ""}`}
@@ -300,7 +372,8 @@ export default function Dashboard() {
                   }
                   className={`${styles.navLink} ${location.pathname === "/dashboard/session/add-session" ? styles.navLinkActive : ""}`}
                 >
-                  <IoIosAddCircleOutline className={styles.iconMargin} /> Add Session
+                  <IoIosAddCircleOutline className={styles.iconMargin} /> Add
+                  Session
                 </button>
               </>
             )}
@@ -451,11 +524,11 @@ export default function Dashboard() {
                 )
               }
             />
-            <Route 
+            <Route
               path="tanzania-roster"
               element={
                 userRole !== "operator" && regionScope === "Tanzania" ? (
-                  <TanzaniaSelectionRoster 
+                  <TanzaniaSelectionRoster
                     attendees={attendeesList}
                     onUpdateStatus={handleUpdateSelectionStatus}
                   />
@@ -464,13 +537,21 @@ export default function Dashboard() {
                 )
               }
             />
-            <Route 
+            <Route
+              path="duplicates"
+              element={
+                userRole !== "operator" ? (
+                  <DuplicateFinderModal attendees={attendeesList} />
+                ) : (
+                  <NotFound />
+                )
+              }
+            />
+            <Route
               path="tanzania-broadcast"
               element={
                 userRole !== "operator" && regionScope === "Tanzania" ? (
-                  <BroadcastDashboard 
-                    attendees={attendeesList}
-                  />
+                  <BroadcastDashboard attendees={attendeesList} />
                 ) : (
                   <NotFound />
                 )
