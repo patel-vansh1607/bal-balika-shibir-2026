@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 import { attendees as attendeesApi } from "../../apiClient";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { toast as hotToast } from 'react-hot-toast';
+import { toast as hotToast } from "react-hot-toast";
 import {
   FaSearch,
   FaPhoneAlt,
@@ -19,7 +19,8 @@ import {
   FaArchive,
   FaEllipsisV,
   FaEdit,
-  FaCheckCircle,FaGlobe,
+  FaCheckCircle,
+  FaGlobe,
   // FaUserMinus,
   // FaUserCheck,
   FaCreditCard,
@@ -42,7 +43,8 @@ export default function RegisteredRoster({
   const [selectedGender, setSelectedGender] = useState("All");
   const [isExporting, setIsExporting] = useState(false);
   const [isDownloadingQR, setIsDownloadingQR] = useState(false);
-const [downloadingId, setDownloadingId] = useState(null);  const [confirmAction, setConfirmAction] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
   const [activeQrModalUser, setActiveQrModalUser] = useState(null);
   const [isQrLoading, setIsQrLoading] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -63,7 +65,7 @@ const [downloadingId, setDownloadingId] = useState(null);  const [confirmAction,
 
   // B. First Memo calculates the base dataset filters
   // B. First Memo calculates the base dataset filters including your Payment Filter
-const filteredAttendees = useMemo(() => {
+  const filteredAttendees = useMemo(() => {
     return attendees.filter((attendee) => {
       const nameSafe = attendee.name?.toLowerCase() || "";
       const contactSafe = String(attendee.parent_contact || "");
@@ -75,8 +77,8 @@ const filteredAttendees = useMemo(() => {
         (nameSafe.includes(searchTerm.toLowerCase()) ||
           contactSafe.includes(searchTerm) ||
           idSafe.includes(searchTerm.toLowerCase())) &&
-        (selectedRegion === "All" || 
-          attendee.region === selectedRegion || 
+        (selectedRegion === "All" ||
+          attendee.region === selectedRegion ||
           attendee.country === selectedRegion) &&
         (selectedCenter === "All" || attendee.center === selectedCenter) &&
         (selectedGender === "All" || attendee.gender === selectedGender);
@@ -283,15 +285,16 @@ const filteredAttendees = useMemo(() => {
     }
   };
   /* --- Core PDF Export Execution Logic --- */
-  const handleExportPDF = (
+const handleExportPDF = (
     includeContact = true,
     currentCountry = "All",
     currentCenter = "All",
     currentMandal = "All",
     generatedByName = "", // Fetched from active context data automatically
   ) => {
+    // 1. Switched to Landscape ("landscape") to comfortably accommodate high columns
     const doc = new jsPDF({
-      orientation: "portrait",
+      orientation: "landscape",
       unit: "mm",
       format: "a4",
     });
@@ -301,10 +304,24 @@ const filteredAttendees = useMemo(() => {
       "South Africa",
       "Malawi",
       "Zambia",
-      "Kenya"
+      "Kenya",
+      "Uganda",
     ].includes(regionScope);
 
-    // 1. Build Dynamic Headers Based on Selections
+    // Map short codes to full descriptions with measurements for Kenya & Uganda
+    const SIZE_TO_CM_MAP = {
+      "XXXS": "XXXS - 57-62cm",
+      "XXS": "XXS - 62-67cm",
+      "XS": "XS - 67-72cm",
+      "S": "S - 72-75cm",
+      "M": "M - 77-82cm",
+      "L": "L - 82-88cm",
+      "XL": "XL - 88-93cm",
+      "XXL": "XXL - 93-98cm",
+      "XXXL": "XXXL - 98-103cm"
+    };
+
+    // 2. Build Dynamic Headers Based on Selections
     const headersRow = [
       "Sr No.",
       "Member ID",
@@ -318,72 +335,79 @@ const filteredAttendees = useMemo(() => {
     if (isSpecialRegion) headersRow.push("T-Shirt");
     const headers = [headersRow];
 
-    // 2. Map Body Data Dynamically
+    // 3. Map Body Data Dynamically with Size Formatting
     const bodyData = filteredAttendees.map((a, index) => {
+      const attendeeCountry = a.country || a.region || "Kenya";
+      
+      let displayTshirtSize = a.tshirt_size || "";
+      if (isSpecialRegion && (attendeeCountry === "Kenya" || attendeeCountry === "Uganda")) {
+        displayTshirtSize = SIZE_TO_CM_MAP[displayTshirtSize] || displayTshirtSize;
+      }
+
       const baseRow = [
         String(index + 1),
         a.member_id || `MTRC-${a.id}`,
         a.name || "",
         a.gender || "Balak",
         a.age || "—",
-        a.country || a.region || "Kenya",
+        attendeeCountry,
         a.center || "",
       ];
       if (includeContact) {
         baseRow.push(a.parent_contact || "");
       }
       if (isSpecialRegion) {
-        baseRow.push(a.tshirt_size || "");
+        baseRow.push(displayTshirtSize);
       }
       return baseRow;
     });
 
-    // 3. Dynamic Column Width Configuration Matrix
+    // 4. Custom Width Configuration Matrix tailored for Landscape (297mm)
     let columnWidthStyles = {};
     if (isSpecialRegion && includeContact) {
       columnWidthStyles = {
-        0: { cellWidth: 10, halign: "center" },
-        1: { cellWidth: 26, fontStyle: "bold" },
+        0: { cellWidth: 15, halign: "center" },
+        1: { cellWidth: 32, fontStyle: "bold" },
         2: { cellWidth: "auto" },
-        3: { cellWidth: 14, halign: "center" },
-        4: { cellWidth: 10, halign: "center" },
-        5: { cellWidth: 20 },
-        6: { cellWidth: 22 },
-        7: { cellWidth: 24 },
-        8: { cellWidth: 12, halign: "center" },
+        3: { cellWidth: 20, halign: "center" },
+        4: { cellWidth: 15, halign: "center" },
+        5: { cellWidth: 30 },
+        6: { cellWidth: 35 },
+        7: { cellWidth: 35 },
+        8: { cellWidth: 32, halign: "center" },
       };
     } else if (isSpecialRegion && !includeContact) {
       columnWidthStyles = {
-        0: { cellWidth: 10, halign: "center" },
-        1: { cellWidth: 28, fontStyle: "bold" },
+        0: { cellWidth: 15, halign: "center" },
+        1: { cellWidth: 35, fontStyle: "bold" },
         2: { cellWidth: "auto" },
-        3: { cellWidth: 16, halign: "center" },
-        4: { cellWidth: 12, halign: "center" },
-        5: { cellWidth: 26 },
-        6: { cellWidth: 28 },
-        7: { cellWidth: 16, halign: "center" },
+        3: { cellWidth: 24, halign: "center" },
+        4: { cellWidth: 18, halign: "center" },
+        5: { cellWidth: 35 },
+        6: { cellWidth: 40 },
+        7: { cellWidth: 35, halign: "center" },
       };
     } else if (!isSpecialRegion && includeContact) {
       columnWidthStyles = {
-        0: { cellWidth: 10, halign: "center" },
-        1: { cellWidth: 28, fontStyle: "bold" },
+        0: { cellWidth: 15, halign: "center" },
+        1: { cellWidth: 35, fontStyle: "bold" },
         2: { cellWidth: "auto" },
-        3: { cellWidth: 16, halign: "center" },
-        4: { cellWidth: 12, halign: "center" },
-        5: { cellWidth: 24 },
-        6: { cellWidth: 26 },
-        7: { cellWidth: 26 },
+        3: { cellWidth: 24, halign: "center" },
+        4: { cellWidth: 18, halign: "center" },
+        5: { cellWidth: 35 },
+        6: { cellWidth: 40 },
+        7: { cellWidth: 40 },
       };
     } else {
       // !isSpecialRegion && !includeContact
       columnWidthStyles = {
-        0: { cellWidth: 10, halign: "center" },
-        1: { cellWidth: 32, fontStyle: "bold" },
+        0: { cellWidth: 15, halign: "center" },
+        1: { cellWidth: 40, fontStyle: "bold" },
         2: { cellWidth: "auto" },
-        3: { cellWidth: 18, halign: "center" },
-        4: { cellWidth: 14, halign: "center" },
-        5: { cellWidth: 28 },
-        6: { cellWidth: 32 },
+        3: { cellWidth: 26, halign: "center" },
+        4: { cellWidth: 20, halign: "center" },
+        5: { cellWidth: 40 },
+        6: { cellWidth: 45 },
       };
     }
 
@@ -398,10 +422,10 @@ const filteredAttendees = useMemo(() => {
       body: bodyData,
       theme: "striped",
       styles: {
-        fontSize: 8,
+        fontSize: 8.5,
         font: "helvetica",
-        cellPadding: { top: 4, bottom: 4, left: 2, right: 2 },
-        overflow: "visible",
+        cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
+        overflow: "linebreak", // Wraps text fields onto secondary lines cleanly instead of breaking borders
         valign: "middle",
         lineColor: [226, 239, 249],
         lineWidth: 0.15,
@@ -410,7 +434,7 @@ const filteredAttendees = useMemo(() => {
         fillColor: [42, 52, 107],
         textColor: [255, 255, 255],
         fontStyle: "bold",
-        fontSize: 8.5,
+        fontSize: 9,
       },
       columnStyles: columnWidthStyles,
       alternateRowStyles: {
@@ -420,11 +444,12 @@ const filteredAttendees = useMemo(() => {
 
       didDrawPage: function (data) {
         doc.setFillColor(42, 52, 107);
-        doc.rect(0, 0, 210, 24, "F");
+        // Changed rect width to 297 to span full Landscape width
+        doc.rect(0, 0, 297, 24, "F");
 
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(13);
+        doc.setFontSize(14);
         doc.text(
           "Making the Right Choices - Bal-Balika Shibir, Africa - 2026",
           12,
@@ -432,9 +457,14 @@ const filteredAttendees = useMemo(() => {
         );
 
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(8.5);
+        doc.setFontSize(9);
         doc.setTextColor(214, 162, 101);
-        const paymentLabel = paymentFilter === "1" ? "Paid Only" : paymentFilter === "0" ? "Not Paid Only" : "All";
+        const paymentLabel =
+          paymentFilter === "1"
+            ? "Paid Only"
+            : paymentFilter === "0"
+              ? "Not Paid Only"
+              : "All";
 
         doc.text(
           `Attendee Roster  |  Filtered Country: ${currentCountry}  |  Center: ${currentCenter}  |  Mandal: ${currentMandal}  |  Payment Status: ${paymentLabel}`,
@@ -458,7 +488,7 @@ const filteredAttendees = useMemo(() => {
         doc.internal.pageSize.height - 10,
       );
 
-      // Fallback display checks for naming strings
+      // Footer auto-positioning dynamically adapted for landscape widths
       const displayName = generatedByName || "Admin";
       const footerString = `System report generated by: ${displayName} on ${exportTimestamp}`;
       const textWidth = doc.getTextWidth(footerString);
@@ -518,9 +548,22 @@ const filteredAttendees = useMemo(() => {
   };
 
   /* --- The Core Export Logic Execution --- */
-  const executeExport = (includeContact) => {
+const executeExport = (includeContact) => {
     setIsExporting(true);
     setIsExportModalOpen(false); // Close choice menu instantly
+
+    // Map short codes to full descriptions with measurements for Kenya & Uganda
+    const SIZE_TO_CM_MAP = {
+      "XXXS": "XXXS - 57-62cm",
+      "XXS": "XXS - 62-67cm",
+      "XS": "XS - 67-72cm",
+      "S": "S - 72-75cm",
+      "M": "M - 77-82cm",
+      "L": "L - 82-88cm",
+      "XL": "XL - 88-93cm",
+      "XXL": "XXL - 93-98cm",
+      "XXXL": "XXXL - 98-103cm"
+    };
 
     try {
       const isSpecialRegion = [
@@ -528,7 +571,8 @@ const filteredAttendees = useMemo(() => {
         "South Africa",
         "Malawi",
         "Zambia",
-        "Kenya"
+        "Kenya",
+        "Uganda",
       ].includes(regionScope);
 
       // Set dynamic headers based on contact inclusion rules
@@ -575,7 +619,13 @@ const filteredAttendees = useMemo(() => {
           }
 
           if (isSpecialRegion) {
-            baseFields.push(`"${row.tshirt_size || ""}"`);
+            // Apply physical measurements to size codes only for Kenya or Uganda
+            const rawSize = row.tshirt_size || "";
+            const formattedSize = (attendeeCountry === "Kenya" || attendeeCountry === "Uganda")
+              ? (SIZE_TO_CM_MAP[rawSize] || rawSize)
+              : rawSize;
+
+            baseFields.push(`"${formattedSize}"`);
           }
 
           return baseFields.join(",");
@@ -604,57 +654,56 @@ const filteredAttendees = useMemo(() => {
       setIsExporting(false);
     }
   };
-const downloadQRImg = async (memberId, userName, storedQrUrl) => {
-  // Set the specific member ID as the active loader
-  setDownloadingId(memberId);
-  try {
-    const targetUrl =
-      storedQrUrl ||
-      `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(memberId)}&color=000000&format=png`;
+    const downloadQRImg = async (memberId, userName, storedQrUrl) => {
+    // Set the specific member ID as the active loader
+    setDownloadingId(memberId);
+    try {
+      const targetUrl =
+        storedQrUrl ||
+        `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(memberId)}&color=000000&format=png`;
 
-    const safeFileName = `ID_${memberId}_${userName.trim().replace(/\s+/g, "_")}.png`;
+      const safeFileName = `ID_${memberId}_${userName.trim().replace(/\s+/g, "_")}.png`;
 
-    const img = new Image();
-    img.crossOrigin = "anonymous";
+      const img = new Image();
+      img.crossOrigin = "anonymous";
 
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = 300;
-        canvas.height = 300;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, 300, 300);
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = 300;
+          canvas.height = 300;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, 300, 300);
 
-        const pngUrl = canvas.toDataURL("image/png");
+          const pngUrl = canvas.toDataURL("image/png");
 
-        const link = document.createElement("a");
-        link.href = pngUrl;
-        link.download = safeFileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (canvasErr) {
-        console.error("Canvas processing execution error:", canvasErr);
+          const link = document.createElement("a");
+          link.href = pngUrl;
+          link.download = safeFileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (canvasErr) {
+          console.error("Canvas processing execution error:", canvasErr);
+          window.open(targetUrl, "_blank");
+        } finally {
+          setDownloadingId(null); // Clear loading state on finish
+        }
+      };
+
+      img.onerror = (err) => {
+        console.error("Image loading resource track failed:", err);
         window.open(targetUrl, "_blank");
-      } finally {
-        setDownloadingId(null); // Clear loading state on finish
-      }
-    };
+        setDownloadingId(null); // Clear loading state on error
+      };
 
-    img.onerror = (err) => {
-      console.error("Image loading resource track failed:", err);
-      window.open(targetUrl, "_blank");
-      setDownloadingId(null); // Clear loading state on error
-    };
-
-    img.src = targetUrl;
-
-  } catch (err) {
-    console.error("QR image pipeline structure error:", err);
-    alert("Failed to build PNG conversion export.");
-    setDownloadingId(null); // Clear loading state on total failure
-  }
-};
+      img.src = targetUrl;
+    } catch (err) {
+      console.error("QR image pipeline structure error:", err);
+      alert("Failed to build PNG conversion export.");
+      setDownloadingId(null); // Clear loading state on total failure
+    }
+  };
   /* --- Update Field Values Inline --- */
   const handleEditFieldChange = (field, value) => {
     setEditingAttendee((prev) => ({
@@ -700,7 +749,8 @@ const downloadQRImg = async (memberId, userName, storedQrUrl) => {
       "South Africa",
       "Malawi",
       "Zambia",
-      "Kenya"
+      "Kenya",
+      "Uganda",
     ].includes(attendeeCountry);
 
     // Determine if the current operator has Master Admin clearance
@@ -727,12 +777,16 @@ const downloadQRImg = async (memberId, userName, storedQrUrl) => {
 
     setIsEditModalOpen(true);
   };
-  /* --- Save Changes to Database --- */
-const handleSaveProfile = async (e) => {
+  /* -
+  -- Save Changes to Database --- */
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (!editingAttendee) return;
 
-    if (!editingAttendee.first_name?.trim() || !editingAttendee.last_name?.trim()) {
+    if (
+      !editingAttendee.first_name?.trim() ||
+      !editingAttendee.last_name?.trim()
+    ) {
       hotToast.error("First Name and Last Name are required fields.");
       return;
     }
@@ -765,11 +819,13 @@ const handleSaveProfile = async (e) => {
 
       setIsEditModalOpen(false);
       setEditingAttendee(null);
-      
+
       hotToast.success("Profile changes committed successfully!");
     } catch (error) {
       console.error("Database Update Error:", error);
-      hotToast.error(`Failed to save profile changes: ${error.message || "Server Error"}`);
+      hotToast.error(
+        `Failed to save profile changes: ${error.message || "Server Error"}`,
+      );
     } finally {
       setIsSavingProfile(false);
     }
@@ -825,27 +881,27 @@ const handleSaveProfile = async (e) => {
             <FaSearch className={styles.searchIcon} />
           </div>
           <div className={styles.filterGroup}>
-{regionScope === "All" && (
-  <div className={styles.filterSelectContainer}>
-    <FaGlobe style={{ color: "var(--accent-primary)" }} />
-    <select
-      value={selectedRegion}
-      onChange={(e) => {
-        setSelectedRegion(e.target.value);
-        setSelectedCenter("All"); // Reset center filter when region changes
-      }}
-      className={styles.selectDropdown}
-    >
-      <option value="All">All Regions</option>
-      <option value="Kenya">Kenya</option>
-      <option value="Uganda">Uganda</option>
-      <option value="Botswana">Botswana</option>
-      <option value="South Africa">South Africa</option>
-      <option value="Malawi">Malawi</option>
-      <option value="Zambia">Zambia</option>
-    </select>
-  </div>
-)}
+            {regionScope === "All" && (
+              <div className={styles.filterSelectContainer}>
+                <FaGlobe style={{ color: "var(--accent-primary)" }} />
+                <select
+                  value={selectedRegion}
+                  onChange={(e) => {
+                    setSelectedRegion(e.target.value);
+                    setSelectedCenter("All"); // Reset center filter when region changes
+                  }}
+                  className={styles.selectDropdown}
+                >
+                  <option value="All">All Regions</option>
+                  <option value="Kenya">Kenya</option>
+                  <option value="Uganda">Uganda</option>
+                  <option value="Botswana">Botswana</option>
+                  <option value="South Africa">South Africa</option>
+                  <option value="Malawi">Malawi</option>
+                  <option value="Zambia">Zambia</option>
+                </select>
+              </div>
+            )}
             <div className={styles.filterSelectContainer}>
               <FaMapMarkerAlt style={{ color: "var(--accent-primary)" }} />
               <select
@@ -1138,7 +1194,10 @@ const handleSaveProfile = async (e) => {
             </p>
           </div>
         ) : (
-          <div className={styles.tableContainer} style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <div
+            className={styles.tableContainer}
+            style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}
+          >
             <table className={styles.dataTable}>
               <thead>
                 <tr>
@@ -1148,9 +1207,14 @@ const handleSaveProfile = async (e) => {
                   <th>Age</th>
                   <th>Center</th>
                   <th>Parent Contact</th>
-                  {["Botswana", "South Africa", "Malawi", "Zambia", "Kenya"].includes(
-                    regionScope,
-                  ) && <th>T-Shirt</th>}
+                  {[
+                    "Botswana",
+                    "South Africa",
+                    "Malawi",
+                    "Zambia",
+                    "Kenya",
+                    "Uganda",
+                  ].includes(regionScope) && <th>T-Shirt</th>}
                   {regionScope === "Tanzania" && <th>Selection Status</th>}
                   {regionScope === "Kenya" && <th>Payment Status</th>}
                   <th style={{ textAlign: "center" }}>QR</th>
@@ -1212,6 +1276,7 @@ const handleSaveProfile = async (e) => {
                         "Malawi",
                         "Zambia",
                         "Kenya",
+                        "Uganda",
                       ].includes(regionScope) && (
                         <td>
                           {attendee.tshirt_size ? (
@@ -1765,27 +1830,32 @@ const handleSaveProfile = async (e) => {
               </div>
             </div>
             <button
-  onClick={() => {
-    const targetId = activeQrModalUser.member_id || activeQrModalUser.id;
-    downloadQRImg(
-      targetId,
-      activeQrModalUser.name,
-      activeQrModalUser.qr_code_url
-    );
-  }}
-  className={styles.modalDownloadBtn}
-  disabled={downloadingId === (activeQrModalUser.member_id || activeQrModalUser.id)}
->
-  {downloadingId === (activeQrModalUser.member_id || activeQrModalUser.id) ? (
-    <>
-      <FaSpinner className={styles.spin} /> Downloading...
-    </>
-  ) : (
-    <>
-      <FaDownload /> Download QR Code
-    </>
-  )}
-</button>
+              onClick={() => {
+                const targetId =
+                  activeQrModalUser.member_id || activeQrModalUser.id;
+                downloadQRImg(
+                  targetId,
+                  activeQrModalUser.name,
+                  activeQrModalUser.qr_code_url,
+                );
+              }}
+              className={styles.modalDownloadBtn}
+              disabled={
+                downloadingId ===
+                (activeQrModalUser.member_id || activeQrModalUser.id)
+              }
+            >
+              {downloadingId ===
+              (activeQrModalUser.member_id || activeQrModalUser.id) ? (
+                <>
+                  <FaSpinner className={styles.spin} /> Downloading...
+                </>
+              ) : (
+                <>
+                  <FaDownload /> Download QR Code
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
@@ -1876,45 +1946,52 @@ const handleSaveProfile = async (e) => {
                     }
                   />
                 </div>
-                <div className={styles.formGroup} style={{ flex: 1 }}>
-  <label>T-Shirt Size</label>
-  {localStorage.getItem("selected_shibir_region") === "Kenya" || editingAttendee?.region === "Kenya" ? (
-    <select
-      value={editingAttendee?.tshirt_size || ""}
-      onChange={(e) => handleEditFieldChange("tshirt_size", e.target.value)}
-      style={{
-        width: "100%",
-        padding: "8px 12px",
-        borderRadius: "6px",
-        border: "1px solid #ccc",
-        backgroundColor: "#fff",
-        height: "38px",
-        fontSize: "14px",
-        color: "#333",
-        display: "block"
-      }}
-    >
-      <option value="">Select Size...</option>
-      <option value="XXXS">XXXS</option>
-      <option value="XXS">XXS</option>
-      <option value="XS">XS</option>
-      <option value="S">S</option>
-      <option value="M">M</option>
-      <option value="L">L</option>
-      <option value="XL">XL</option>
-      <option value="XXL">XXL</option>
-      <option value="XXXL">XXXL</option>
-    </select>
-  ) : (
-    <input
-      type="text"
-      placeholder="e.g. M, L, XL"
-      value={editingAttendee?.tshirt_size || ""}
-      onChange={(e) => handleEditFieldChange("tshirt_size", e.target.value)}
-    />
-  )}
-</div>
-              </div>
+<div className={styles.formGroup} style={{ flex: 1 }}>
+                  <label>T-Shirt Size</label>
+                  {localStorage.getItem("selected_shibir_region") === "Kenya" ||
+                  localStorage.getItem("selected_shibir_region") === "Uganda" ||
+                  editingAttendee?.region === "Kenya" ||
+                  editingAttendee?.region === "Uganda" ? (
+                    <select
+                      value={editingAttendee?.tshirt_size || ""}
+                      onChange={(e) =>
+                        handleEditFieldChange("tshirt_size", e.target.value)
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "8px 12px",
+                        borderRadius: "6px",
+                        border: "1px solid #ccc",
+                        backgroundColor: "#fff",
+                        height: "38px",
+                        fontSize: "14px",
+                        color: "#333",
+                        display: "block",
+                      }}
+                    >
+                      <option value="">Select Size...</option>
+                      <option value="XXXS">XXXS</option>
+                      <option value="XXS">XXS</option>
+                      <option value="XS">XS</option>
+                      <option value="S">S</option>
+                      <option value="M">M</option>
+                      <option value="L">L</option>
+                      <option value="XL">XL</option>
+                      <option value="XXL">XXL</option>
+                      <option value="XXXL">XXXL</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="e.g. M, L, XL"
+                      value={editingAttendee?.tshirt_size || ""}
+                      onChange={(e) =>
+                        handleEditFieldChange("tshirt_size", e.target.value)
+                      }
+                    />
+                  )}
+                </div>         
+                    </div>
 
               {/* Dynamic Restricted Metadata Sections — Unlocked ONLY for Master Admin */}
               <hr
