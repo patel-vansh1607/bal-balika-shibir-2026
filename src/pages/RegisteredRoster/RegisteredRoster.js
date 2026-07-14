@@ -932,7 +932,7 @@ const executeExport = (includeContact) => {
             </div>
 
             {/* --- NEW KENYA-ONLY PAYMENT FILTER DROPDOWN --- */}
-            {regionScope === "Kenya" && (
+            {regionScope === "Kenya"|| regionScope === "Uganda" &&(
               <div className={styles.filterSelectContainer}>
                 <FaMoneyBillWave style={{ color: "var(--accent-primary)" }} />
                 <select
@@ -1217,7 +1217,7 @@ const executeExport = (includeContact) => {
                     "Uganda",
                   ].includes(regionScope) && <th>T-Shirt</th>}
                   {regionScope === "Tanzania" && <th>Selection Status</th>}
-                  {regionScope === "Kenya" && <th>Payment Status</th>}
+                  {regionScope === "Kenya" || regionScope === "Uganda" ? <th>Payment Status</th> : null}
                   <th style={{ textAlign: "center" }}>QR</th>
                   {(userRole === "master_admin" ||
                     userRole === "super_admin") && <th>Actions</th>}
@@ -1337,7 +1337,7 @@ const executeExport = (includeContact) => {
                       )}
 
                       {/* --- Kenya Specific Column --- */}
-                      {regionScope === "Kenya" && (
+                      {regionScope === "Kenya" || regionScope === "Uganda" && (
                         <td>
                           {attendee.is_paid === 1 ? (
                             <span
@@ -1485,7 +1485,7 @@ const executeExport = (includeContact) => {
                                 )}*/}
 
                               {/* --- Kenya Payment Actions --- */}
-                              {regionScope === "Kenya" &&
+                              {regionScope === "Kenya" || regionScope === "Uganda" && 
                                 (userRole === "master_admin" ||
                                   userRole === "super_admin") && (
                                   <button
