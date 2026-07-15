@@ -24,7 +24,7 @@ const REGION_CENTERS = {
 
 REGION_CENTERS.All = Object.values(REGION_CENTERS).flat();
 
-const SEVA_DESIGNATIONS = ['NC','I-NC','NOC', 'I-NOC','RC', 'I-RC','Tech Team','BST Sanchalak','BST Sah-Sanchalak','BST Sanchalika','BST Sah-Sanchalika','Shishu Sanchalak', 'Shishu Sah-Sanchalak', 'Shishu I.C','Shishu Helper', 'Shishika Sanchalak', 'Shishika Sah-Sanchalak', 'Shishika I.C','Shishika Helper', 'Bal Sanchalak', 'Bal Sah-Sanchalak', 'Bal I.C','Bal Helper','Balika Sanchalak', 'Balika Sah-Sanchalak', 'Balika I.C','Balika Helper'];
+const SEVA_DESIGNATIONS = ['NC','I-NC','NOC', 'I-NOC','RC', 'I-RC','Tech Team','BST Sanchalak','BST Sah-Sanchalak','BST IC','BST Sanchalika','BST Sah-Sanchalika','BST Balika IC','Shishu Sanchalak', 'Shishu Sah-Sanchalak', 'Shishu I.C','Shishu Helper', 'Shishika Sanchalak', 'Shishika Sah-Sanchalak', 'Shishika I.C','Shishika Helper', 'Bal Sanchalak', 'Bal Sah-Sanchalak', 'Bal I.C','Bal Helper','Balika Sanchalak', 'Balika Sah-Sanchalak', 'Balika I.C','Balika Helper'];
 const TSHIRT_SIZES = ['XXXS','XXS','XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
 export default function KarayakarList({ defaultRegion = '' }) { 
@@ -150,17 +150,28 @@ export default function KarayakarList({ defaultRegion = '' }) {
     }
   };
 
-  const getIsFemale = (karyakar) => {
-    if (!karyakar.seva_designation) return false;
-    const designations = typeof karyakar.seva_designation === 'string' 
-      ? karyakar.seva_designation.split(', ') 
-      : Array.isArray(karyakar.seva_designation) ? karyakar.seva_designation : [];
-      
-    return designations.some(role => {
-      const r = role.toUpperCase();
-      return r === 'I-NC' || r === 'I-NOC' || r === 'I-RC' || r.includes('SHISHIKA') || r.includes('BALIKA');
-    });
-  };
+const getIsFemale = (karyakar) => {
+  if (!karyakar.seva_designation) return false;
+  
+  const designations = typeof karyakar.seva_designation === 'string' 
+    ? karyakar.seva_designation.split(', ') 
+    : Array.isArray(karyakar.seva_designation) ? karyakar.seva_designation : [];
+    
+  return designations.some(role => {
+    const r = role.toUpperCase();
+    
+    // Existing code checks
+    const matchesExisting = r === 'I-NC' || r === 'I-NOC' || r === 'I-RC' || r.includes('SHISHIKA') || r.includes('BALIKA');
+    
+    // Exact designation checks (normalized to uppercase)
+    const isBstFemaleRole = 
+      r === 'BST SANCHALIKA' || 
+      r === 'BST SAH-SANCHALIKA' || 
+      r === 'BST BALIKA IC';
+    
+    return matchesExisting || isBstFemaleRole;
+  });
+};
 
   // 1. Filter based on text searches and selectors, but IGNORE gender state to compute correct dynamic header totals
   const baseFilteredList = list.filter(k => {
