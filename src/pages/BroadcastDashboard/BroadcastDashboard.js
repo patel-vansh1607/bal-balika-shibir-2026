@@ -6,8 +6,7 @@ import {
   FaTimes, 
   FaExclamationTriangle, 
   FaUserCheck, 
-  FaUserMinus, 
-//   FaCheckCircle, 
+  FaUserMinus,  
   FaInfoCircle,
   FaTerminal
 } from 'react-icons/fa';
@@ -128,13 +127,12 @@ export default function BroadcastDashboard({ attendees = [] }) {
         <div className={styles.titleInfo}>
           <FaEnvelope className={styles.dashHeaderIcon} />
           <div>
-            <h2>Communications Hub &amp; Notification Center</h2>
-            <p>Safely run system announcements and transactional selection alerts from a controlled view</p>
+            <h2>Bulk Email</h2>
           </div>
         </div>
         <div className={styles.liveServerBadge}>
           <span className={styles.pulseDot}></span>
-          <span>PRODUCTION LIVE NETWORK</span>
+          <span>TZ</span>
         </div>
       </div>
 
@@ -142,27 +140,27 @@ export default function BroadcastDashboard({ attendees = [] }) {
       <div className={styles.metricsGrid}>
         <div className={`${styles.metricCard} ${styles.selectedBorder}`}>
           <div className={styles.metricLayout}>
-            <h4>Selected Pool Staging</h4>
+            <h4>Selected</h4>
             <span className={styles.metricNum}>{stats.selected}</span>
-            <p>Attendees assigned confirmation tokens</p>
+            <p>Attendees assigned confirmation</p>
           </div>
           <FaUserCheck className={styles.cardWatermark} />
         </div>
 
         <div className={`${styles.metricCard} ${styles.rejectedBorder}`}>
           <div className={styles.metricLayout}>
-            <h4>Not Selected Pool Staging</h4>
+            <h4>Not Selected </h4>
             <span className={styles.metricNum}>{stats.notSelected}</span>
-            <p>Attendees assigned rejection tags</p>
+            <p>Attendees assigned rejection</p>
           </div>
           <FaUserMinus className={styles.cardWatermark} />
         </div>
 
         <div className={`${styles.metricCard} ${styles.pendingBorder}`}>
           <div className={styles.metricLayout}>
-            <h4>Unprocessed (Pending)</h4>
+            <h4> Pending</h4>
             <span className={styles.metricNum}>{stats.pending}</span>
-            <p>Records awaiting active decision matrix</p>
+            <p>Records awaiting active decision</p>
           </div>
           <FaInfoCircle className={styles.cardWatermark} />
         </div>
@@ -170,37 +168,34 @@ export default function BroadcastDashboard({ attendees = [] }) {
 
       {/* Control Actions */}
       <div className={styles.actionLayoutBox}>
-        <h3>Available Delivery Pipelines</h3>
+        <h3>Available</h3>
         <p className={styles.disclaimerText}>
-          Selecting a delivery pipeline extracts a locked data snapshot. You can crosscheck the specific names before granting final execution clearance.
         </p>
 
         <div className={styles.pipelineRow}>
           <div className={styles.pipelineCard}>
             <div className={styles.pipelineMeta}>
-              <h5>1. Selection Acceptance Template</h5>
-              <p>Dispatches access passes, registration codes, and setup rules using the <strong>Acceptance Card Template</strong> layout matching status [1].</p>
+              <h5>1. Selection Template</h5>
             </div>
             <button 
               onClick={() => setActiveReviewBatch('agreed')}
               disabled={stats.selected === 0 || isSendingEmails}
               className={`${styles.launchBtn} ${styles.btnSelectColor}`}
             >
-              Review Acceptance Batch ({stats.selected})
+              Review Batch ({stats.selected})
             </button>
           </div>
 
           <div className={styles.pipelineCard}>
             <div className={styles.pipelineMeta}>
-              <h5>2. Selection Non-Acceptance Template</h5>
-              <p>Dispatches cancellation logs and registry waitlist alerts using the <strong>Rejection Minimalist Template</strong> layout matching status [2].</p>
+              <h5>2. Non-Acceptance Template</h5>
             </div>
             <button 
               onClick={() => setActiveReviewBatch('not_agreed')}
               disabled={stats.notSelected === 0 || isSendingEmails}
               className={`${styles.launchBtn} ${styles.btnRejectColor}`}
             >
-              Review Rejection Batch ({stats.notSelected})
+              Review Batch ({stats.notSelected})
             </button>
           </div>
         </div>

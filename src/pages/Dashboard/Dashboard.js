@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback,useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   useNavigate,
   useLocation,
@@ -35,8 +35,9 @@ import {
   FaArrowLeft,
   FaArchive,
   FaSyncAlt,
-  FaGlobeAfrica,FaCopy
-  // FaEnvelope,
+  FaGlobeAfrica,
+  FaCopy,
+  FaEnvelope,
 } from "react-icons/fa";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
@@ -81,32 +82,34 @@ export default function Dashboard() {
     if (user) setUserEmail(user.email || "");
     setLoading(false);
   }, [navigate, user]);
-// Calculate the exact number of duplicate matching groups
-const duplicateCount = useMemo(() => {
-  if (!attendeesList || attendeesList.length === 0 || dataFetching) return 0;
+  // Calculate the exact number of duplicate matching groups
+  const duplicateCount = useMemo(() => {
+    if (!attendeesList || attendeesList.length === 0 || dataFetching) return 0;
 
-  const groups = {};
-  attendeesList.forEach((person) => {
-    if (person.is_archived) return; // Skip archived records
+    const groups = {};
+    attendeesList.forEach((person) => {
+      if (person.is_archived) return; // Skip archived records
 
-    // Normalize name
-    const cleanName = (person.name || "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, " ");
+      // Normalize name
+      const cleanName = (person.name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
 
-    if (!cleanName || cleanName.length < 3) return;
+      if (!cleanName || cleanName.length < 3) return;
 
-    if (!groups[cleanName]) {
-      groups[cleanName] = [];
-    }
-    groups[cleanName].push(person);
-  });
+      if (!groups[cleanName]) {
+        groups[cleanName] = [];
+      }
+      groups[cleanName].push(person);
+    });
 
-  // Filter to find groups with 2 or more occurrences, then return the count
-  const duplicateGroups = Object.values(groups).filter((group) => group.length > 1);
-  return duplicateGroups.length;
-}, [attendeesList, dataFetching]);
+    // Filter to find groups with 2 or more occurrences, then return the count
+    const duplicateGroups = Object.values(groups).filter(
+      (group) => group.length > 1,
+    );
+    return duplicateGroups.length;
+  }, [attendeesList, dataFetching]);
   const fetchIsolatedDataset = useCallback(async () => {
     try {
       setDataFetching(true);
@@ -182,7 +185,7 @@ const duplicateCount = useMemo(() => {
     if (path.startsWith("/dashboard/tanzania-roster"))
       return "Tanzania Selection Roster";
     if (path.startsWith("/dashboard/tanzania-broadcast"))
-      return "Communications Hub";
+      return "Bulk Email";
     if (path.startsWith("/dashboard/roster")) return "Registered Attendees";
     if (path.startsWith("/dashboard/add-new-karyakar"))
       return "Register New Karyakar";
@@ -275,48 +278,51 @@ const duplicateCount = useMemo(() => {
                       <FaGlobeAfrica className={styles.iconMargin} /> TZ
                       Selection Roster
                     </button>
-                    {/* <button
-                      onClick={() => handleNavigation("/dashboard/tanzania-broadcast")}
-                      className={`${styles.navLink} ${location.pathname === "/dashboard/tanzania-broadcast" ? styles.navLinkActive : ""}`}
-                    >
-                      <FaEnvelope className={styles.iconMargin} /> TZ Email Hub
-                    </button> */}
+                    {userRole === "master_admin" && (
+                      <button
+                        onClick={() =>
+                          handleNavigation("/dashboard/tanzania-broadcast")
+                        }
+                        className={`${styles.navLink} ${location.pathname === "/dashboard/tanzania-broadcast" ? styles.navLinkActive : ""}`}
+                      >
+                        <FaEnvelope className={styles.iconMargin} /> Bulk Email
+                      </button>
+                    )}
                   </>
                 )}
-<button
-  onClick={() => handleNavigation("/dashboard/duplicates")}
-  className={`${styles.navLink} ${location.pathname === "/dashboard/duplicates" ? styles.navLinkActive : ""}`}
-  style={{ position: 'relative' }} // Keeps badge anchored correctly
->
-  <FaCopy className={styles.iconMargin} /> Duplicates
-
-  {/* Display the active count bubble if duplicates > 0 */}
-  {duplicateCount > 0 && (
-    <span
-      style={{
-        position: 'absolute',
-        top: '50%',
-        right: '16px',
-        transform: 'translateY(-50%)',
-        backgroundColor: '#ef4444', // Tailwind Red-500
-        color: '#ffffff',
-        minWidth: '20px',
-        height: '20px',
-        padding: '0 6px',
-        borderRadius: '10px', // pill-shaped so multi-digit numbers fit
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '0.75rem',
-        fontWeight: '700',
-        boxShadow: '0 0 6px rgba(239, 68, 68, 0.4)',
-      }}
-      title={`${duplicateCount} duplicate profile sets detected`}
-    >
-      {duplicateCount}
-    </span>
-  )}
-</button>
+                <button
+                  onClick={() => handleNavigation("/dashboard/duplicates")}
+                  className={`${styles.navLink} ${location.pathname === "/dashboard/duplicates" ? styles.navLinkActive : ""}`}
+                  style={{ position: "relative" }} // Keeps badge anchored correctly
+                >
+                  <FaCopy className={styles.iconMargin} /> Duplicates
+                  {/* Display the active count bubble if duplicates > 0 */}
+                  {duplicateCount > 0 && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "50%",
+                        right: "16px",
+                        transform: "translateY(-50%)",
+                        backgroundColor: "#ef4444", // Tailwind Red-500
+                        color: "#ffffff",
+                        minWidth: "20px",
+                        height: "20px",
+                        padding: "0 6px",
+                        borderRadius: "10px", // pill-shaped so multi-digit numbers fit
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "0.75rem",
+                        fontWeight: "700",
+                        boxShadow: "0 0 6px rgba(239, 68, 68, 0.4)",
+                      }}
+                      title={`${duplicateCount} duplicate profile sets detected`}
+                    >
+                      {duplicateCount}
+                    </span>
+                  )}
+                </button>
                 <button
                   onClick={() => handleNavigation("/dashboard/add-new")}
                   className={`${styles.navLink} ${location.pathname === "/dashboard/add-new" ? styles.navLinkActive : ""}`}
@@ -547,7 +553,7 @@ const duplicateCount = useMemo(() => {
             <Route
               path="tanzania-broadcast"
               element={
-                userRole !== "operator" && regionScope === "Tanzania" ? (
+                userRole === "master_admin" ? (
                   <BroadcastDashboard attendees={attendeesList} />
                 ) : (
                   <NotFound />
