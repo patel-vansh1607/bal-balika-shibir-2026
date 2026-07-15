@@ -56,7 +56,7 @@ export default function SelectRegion() {
     setIsLoggingOut(true);
     await new Promise((resolve) => setTimeout(resolve, 600));
     logout();
-    navigate("/");
+    navigate("/admin");
   };
 
   if (loading) return (
