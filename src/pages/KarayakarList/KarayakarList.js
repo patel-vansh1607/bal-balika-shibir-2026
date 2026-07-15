@@ -1,134 +1,379 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  FaUser, FaSpinner, FaTrash, FaFileExport, 
-  FaCheck, FaXmark, FaPenToSquare, 
-  FaMagnifyingGlass, FaEllipsisVertical, FaCircleCheck, FaCircleXmark, FaCamera, FaWallet,
-  FaChevronDown
-} from 'react-icons/fa6';
-import { karayakars as karayakarsApi, upload } from '../../apiClient';
-import styles from './KarayakarList.module.css';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import {
+  FaUser,
+  FaSpinner,
+  FaTrash,
+  FaFileExport,
+  FaCheck,
+  FaXmark,
+  FaPenToSquare,
+  FaMagnifyingGlass,
+  FaEllipsisVertical,
+  FaCircleCheck,
+  FaCircleXmark,
+  FaCamera,
+  FaWallet,
+  FaChevronDown,
+} from "react-icons/fa6";
+import { karayakars as karayakarsApi, upload } from "../../apiClient";
+import styles from "./KarayakarList.module.css";
+import toast from "react-hot-toast";
 
-const REGIONS = ['All', 'Kenya', 'Tanzania', 'Uganda', 'Zambia', 'Malawi', 'Botswana', 'South Africa'];
+const REGIONS = [
+  "All",
+  "Kenya",
+  "Tanzania",
+  "Uganda",
+  "Zambia",
+  "Malawi",
+  "Botswana",
+  "South Africa",
+];
 
 const REGION_CENTERS = {
   All: [],
-  Kenya: ["Nairobi", "Mombasa", "Kisumu", "Nakuru", "Eldoret", "Thika", "Malindi", "Kericho", "Kakamega", "Nyeri", "Machakos", "Meru", "Kitale", "Garissa", "Voi", "Naivasha", "Narok", "Embu", "Lamu", "Nanyuki", "Athi River", "Nyahururu", "Bomet", "Busia", "Homabay", "Kisii", "Bungoma"],
-  Tanzania: ["Dar es Salaam", "Arusha", "Mwanza", "Zanzibar City", "Dodoma", "Moshi", "Tanga", "Morogoro", "Mbeya", "Iringa", "Kigoma", "Songea", "Tabora", "Musoma", "Shinyanga", "Sumbawanga", "Lindi", "Singida", "Bukoba"],
-  Uganda: ["Kampala", "Entebbe", "Jinja", "Mbarara", "Gulu", "Mbale", "Masaka", "Arua", "Lira", "Fort Portal", "Kabale", "Tororo", "Soroti", "Mukono", "Hoima", "Kasese", "Busia", "Iganga", "Wakiso", "Mityana", "Mubende", "Luwero", "Kyenjojo", "Masindi", "Kitgum"],
-  Zambia: ["Lusaka", "Kitwe", "Ndola", "Livingstone", "Kabwe", "Chingola", "Mufulira", "Luanshya", "Kasama", "Chipata", "Chinsali", "Mansa", "Solwezi", "Mongu", "Mazabuka", "Monze", "Choma", "Kapiri Mposhi"],
-  Malawi: ["Lilongwe", "Blantyre", "Mzuzu", "Zomba", "Kasungu", "Mangochi", "Karonga", "Salima", "Nkhotakota", "Liwonde", "Balaka", "Luchenza", "Dedza", "Mchinji", "Chikwawa", "Nsanje", "Rumphi"],
-  Botswana: ["Gaborone", "Francistown", "Molepolole", "Maun", "Mogoditshane", "Serowe", "Selebi-Phikwe", "Kanye", "Lobatse", "Palapye", "Mahalapye", "Mochudi", "Ghanzi", "Kasane", "Orapa", "Jwaneng", "Sowa"],
-  "South Africa": ["Johannesburg", "Cape Town", "Durban", "Pretoria", "Port Elizabeth", "Bloemfontein", "East London", "Polokwane", "Nelspruit", "Kimberley", "Pietermaritzburg", "Rustenburg", "George", "Welkom", "Klerksdorp", "Vereeniging", "Stellenbosch", "Paarl", "Upington", "Mthatha", "Soweto", "Benoni", "Tembisa", "Mayfair", "Laudium", "Germiston", "Lenasia", "Louis Trichard", "Mogwase", "Tzaneen", "North Riding"]
+  Kenya: [
+    "Nairobi",
+    "Mombasa",
+    "Kisumu",
+    "Nakuru",
+    "Eldoret",
+    "Thika",
+    "Malindi",
+    "Kericho",
+    "Kakamega",
+    "Nyeri",
+    "Machakos",
+    "Meru",
+    "Kitale",
+    "Garissa",
+    "Voi",
+    "Naivasha",
+    "Narok",
+    "Embu",
+    "Lamu",
+    "Nanyuki",
+    "Athi River",
+    "Nyahururu",
+    "Bomet",
+    "Busia",
+    "Homabay",
+    "Kisii",
+    "Bungoma",
+  ],
+  Tanzania: [
+    "Dar es Salaam",
+    "Arusha",
+    "Mwanza",
+    "Zanzibar City",
+    "Dodoma",
+    "Moshi",
+    "Tanga",
+    "Morogoro",
+    "Mbeya",
+    "Iringa",
+    "Kigoma",
+    "Songea",
+    "Tabora",
+    "Musoma",
+    "Shinyanga",
+    "Sumbawanga",
+    "Lindi",
+    "Singida",
+    "Bukoba",
+  ],
+  Uganda: [
+    "Kampala",
+    "Entebbe",
+    "Jinja",
+    "Mbarara",
+    "Gulu",
+    "Mbale",
+    "Masaka",
+    "Arua",
+    "Lira",
+    "Fort Portal",
+    "Kabale",
+    "Tororo",
+    "Soroti",
+    "Mukono",
+    "Hoima",
+    "Kasese",
+    "Busia",
+    "Iganga",
+    "Wakiso",
+    "Mityana",
+    "Mubende",
+    "Luwero",
+    "Kyenjojo",
+    "Masindi",
+    "Kitgum",
+  ],
+  Zambia: [
+    "Lusaka",
+    "Kitwe",
+    "Ndola",
+    "Livingstone",
+    "Kabwe",
+    "Chingola",
+    "Mufulira",
+    "Luanshya",
+    "Kasama",
+    "Chipata",
+    "Chinsali",
+    "Mansa",
+    "Solwezi",
+    "Mongu",
+    "Mazabuka",
+    "Monze",
+    "Choma",
+    "Kapiri Mposhi",
+  ],
+  Malawi: [
+    "Lilongwe",
+    "Blantyre",
+    "Mzuzu",
+    "Zomba",
+    "Kasungu",
+    "Mangochi",
+    "Karonga",
+    "Salima",
+    "Nkhotakota",
+    "Liwonde",
+    "Balaka",
+    "Luchenza",
+    "Dedza",
+    "Mchinji",
+    "Chikwawa",
+    "Nsanje",
+    "Rumphi",
+  ],
+  Botswana: [
+    "Gaborone",
+    "Francistown",
+    "Molepolole",
+    "Maun",
+    "Mogoditshane",
+    "Serowe",
+    "Selebi-Phikwe",
+    "Kanye",
+    "Lobatse",
+    "Palapye",
+    "Mahalapye",
+    "Mochudi",
+    "Ghanzi",
+    "Kasane",
+    "Orapa",
+    "Jwaneng",
+    "Sowa",
+  ],
+  "South Africa": [
+    "Johannesburg",
+    "Cape Town",
+    "Durban",
+    "Pretoria",
+    "Port Elizabeth",
+    "Bloemfontein",
+    "East London",
+    "Polokwane",
+    "Nelspruit",
+    "Kimberley",
+    "Pietermaritzburg",
+    "Rustenburg",
+    "George",
+    "Welkom",
+    "Klerksdorp",
+    "Vereeniging",
+    "Stellenbosch",
+    "Paarl",
+    "Upington",
+    "Mthatha",
+    "Soweto",
+    "Benoni",
+    "Tembisa",
+    "Mayfair",
+    "Laudium",
+    "Germiston",
+    "Lenasia",
+    "Louis Trichard",
+    "Mogwase",
+    "Tzaneen",
+    "North Riding",
+  ],
 };
 
 REGION_CENTERS.All = Object.values(REGION_CENTERS).flat();
 
-const SEVA_DESIGNATIONS = ['NC','I-NC','NOC', 'I-NOC','RC', 'I-RC','Tech Team','BST Sanchalak','BST Sah-Sanchalak','BST IC','BST Sanchalika','BST Sah-Sanchalika','BST Balika IC','Shishu Sanchalak', 'Shishu Sah-Sanchalak', 'Shishu I.C','Shishu Helper', 'Shishika Sanchalak', 'Shishika Sah-Sanchalak', 'Shishika I.C','Shishika Helper', 'Bal Sanchalak', 'Bal Sah-Sanchalak', 'Bal I.C','Bal Helper','Balika Sanchalak', 'Balika Sah-Sanchalak', 'Balika I.C','Balika Helper'];
-const TSHIRT_SIZES = ['XXXS','XXS','XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+const SEVA_DESIGNATIONS = [
+  "NC",
+  "I-NC",
+  "NOC",
+  "I-NOC",
+  "RC",
+  "I-RC",
+  "Tech Team",
+  "BST Sanchalak",
+  "BST Sah-Sanchalak",
+  "BST IC",
+  "BST Sanchalika",
+  "BST Sah-Sanchalika",
+  "BST Balika IC",
+  "Shishu Sanchalak",
+  "Shishu Sah-Sanchalak",
+  "Shishu I.C",
+  "Shishu Helper",
+  "Shishika Sanchalak",
+  "Shishika Sah-Sanchalak",
+  "Shishika I.C",
+  "Shishika Helper",
+  "Bal Sanchalak",
+  "Bal Sah-Sanchalak",
+  "Bal I.C",
+  "Bal Helper",
+  "Balika Sanchalak",
+  "Balika Sah-Sanchalak",
+  "Balika I.C",
+  "Balika Helper",
+];
+const TSHIRT_SIZES = ["XXXS", "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"];
 
-export default function KarayakarList({ defaultRegion = '' }) { 
+// ID Formatter Helper Function
+const formatKaryakarId = (value) => {
+  if (!value) return "";
+  const clean = value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+  if (clean.startsWith("MTRC")) {
+    const numbers = clean
+      .slice(4)
+      .replace(/[^0-9]/g, "")
+      .slice(0, 4);
+    return numbers ? `MTRC-${numbers}` : "MTRC-";
+  }
+
+  const numbersOnly = clean.replace(/[^0-9]/g, "").slice(0, 4);
+  if (numbersOnly) {
+    return `MTRC-${numbersOnly}`;
+  }
+
+  return "";
+};
+
+export default function KarayakarList({ defaultRegion = "" }) {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  const [region, setRegion] = useState(defaultRegion || 'All');
-  const [centerFilter, setCenterFilter] = useState('All');
-  const [nameSearch, setNameSearch] = useState('');
-  const [sevaFilter, setSevaFilter] = useState('');
-  const [genderFilter, setGenderFilter] = useState('All');
-  
+
+  const [region, setRegion] = useState(defaultRegion || "All");
+  const [centerFilter, setCenterFilter] = useState("All");
+  const [nameSearch, setNameSearch] = useState("");
+  const [sevaFilter, setSevaFilter] = useState("");
+  const [genderFilter, setGenderFilter] = useState("All");
+
   const [activeMenuId, setActiveMenuId] = useState(null);
-  
+
   const [deleting, setDeleting] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-  
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [modalUploading, setModalUploading] = useState(false);
   const [editForm, setEditForm] = useState({
-    full_name: '',
-    center: '',
+    full_name: "",
+    id_number: "",
+    center: "",
     sevaDesignation: [],
-    tshirt_size: '',
+    tshirt_size: "",
     is_paid: 0,
-    photo_url: '',
-    newFile: null
+    photo_url: "",
+    newFile: null,
   });
 
   const [editPreview, setEditPreview] = useState(null);
   const [isSevaDropdownOpen, setIsSevaDropdownOpen] = useState(false);
-  
+
   const menuRef = useRef(null);
   const sevaDropdownRef = useRef(null);
 
-  const userRole = localStorage.getItem('user_role');
-  const canDelete = ['master_admin', 'super_admin'].includes(userRole);
-  const canEdit = ['master_admin', 'super_admin', 'admin'].includes(userRole);
+  const userRole = localStorage.getItem("user_role");
+  const canDelete = ["master_admin", "super_admin"].includes(userRole);
+  const canEdit = ["master_admin", "super_admin", "admin"].includes(userRole);
 
   const parseIncomingList = (data) => {
     if (!Array.isArray(data)) return [];
-    return data.map(k => {
+    return data.map((k) => {
       let size = k.tshirt_size;
-      let center = k.center || '';
+      let center = k.center || "";
 
-      if (center.includes('_3XL')) {
-        size = 'XXXL';
-        center = center.replace('_3XL', ''); 
-      } else if (center.includes('_3XS')) {
-        size = 'XXXS';
-        center = center.replace('_3XS', '');
-      } else if (size === '3XL') {
-        size = 'XXXL';
-      } else if (k.full_name && k.full_name.includes(' [SIZE:XXXL]')) {
-        size = 'XXXL';
-        k.full_name = k.full_name.replace(' [SIZE:XXXL]', '');
+      if (center.includes("_3XL")) {
+        size = "XXXL";
+        center = center.replace("_3XL", "");
+      } else if (center.includes("_3XS")) {
+        size = "XXXS";
+        center = center.replace("_3XS", "");
+      } else if (size === "3XL") {
+        size = "XXXL";
+      } else if (k.full_name && k.full_name.includes(" [SIZE:XXXL]")) {
+        size = "XXXL";
+        k.full_name = k.full_name.replace(" [SIZE:XXXL]", "");
       }
-      return { ...k, tshirt_size: size, center: center };
+      return {
+        ...k,
+        tshirt_size: size,
+        center: center,
+        // Fallback safety check in case database returned "idNumber"
+        id_number: k.id_number || k.idNumber || "",
+      };
     });
   };
 
   const fetchData = useCallback(() => {
     setLoading(true);
     karayakarsApi
-      .list(region && region !== 'All' ? { region } : {})
-      .then(res => {
+      .list(region && region !== "All" ? { region } : {})
+      .then((res) => {
         const normalizedData = parseIncomingList(res.data || []);
         setList(normalizedData);
       })
-      .catch(err => console.error('Fetch error:', err))
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        toast.error("Failed to load roster directory");
+      })
       .finally(() => setLoading(false));
   }, [region]);
 
   useEffect(() => {
-    setCenterFilter('All');
+    setCenterFilter("All");
   }, [region]);
 
   useEffect(() => {
     fetchData();
-    
+
     function closeDropdownsOutside(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setActiveMenuId(null);
       }
-      if (sevaDropdownRef.current && !sevaDropdownRef.current.contains(e.target)) {
+      if (
+        sevaDropdownRef.current &&
+        !sevaDropdownRef.current.contains(e.target)
+      ) {
         setIsSevaDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", closeDropdownsOutside);
-    return () => document.removeEventListener("mousedown", closeDropdownsOutside);
+    return () =>
+      document.removeEventListener("mousedown", closeDropdownsOutside);
   }, [fetchData]);
 
   const handleTogglePayment = async (karyakar) => {
     const newStatus = Number(karyakar.is_paid) === 1 ? 0 : 1;
-    
+
     let processedSize = karyakar.tshirt_size || null;
     let processedCenter = karyakar.center;
 
-    if (processedSize === 'XXXL') {
-      processedSize = 'XXL';
+    if (processedSize === "XXXL") {
+      processedSize = "XXL";
       processedCenter = `${processedCenter}_3XL`;
-    } else if (processedSize === 'XXXS') {
-      processedSize = 'XS';
+    } else if (processedSize === "XXXS") {
+      processedSize = "XS";
       processedCenter = `${processedCenter}_3XS`;
     }
 
@@ -136,56 +381,72 @@ export default function KarayakarList({ defaultRegion = '' }) {
       ...karyakar,
       center: processedCenter,
       tshirt_size: processedSize,
-      is_paid: newStatus
+      is_paid: newStatus,
     };
 
     try {
       await karayakarsApi.update(karyakar.id, payload);
-      setList(prev => prev.map(k => k.id === karyakar.id ? { ...k, is_paid: newStatus } : k));
+      setList((prev) =>
+        prev.map((k) =>
+          k.id === karyakar.id ? { ...k, is_paid: newStatus } : k,
+        ),
+      );
       setActiveMenuId(null);
-      toast.success(`${karyakar.full_name} is now ${newStatus === 1 ? 'Paid' : 'Unpaid'}`);
+      toast.success(
+        `${karyakar.full_name} is now ${newStatus === 1 ? "Paid" : "Unpaid"}`,
+      );
     } catch (err) {
       console.error(err);
-      toast.error('Failed to update status');
+      toast.error("Failed to update status");
     }
   };
 
-const getIsFemale = (karyakar) => {
-  if (!karyakar.seva_designation) return false;
-  
-  const designations = typeof karyakar.seva_designation === 'string' 
-    ? karyakar.seva_designation.split(', ') 
-    : Array.isArray(karyakar.seva_designation) ? karyakar.seva_designation : [];
-    
-  return designations.some(role => {
-    const r = role.toUpperCase();
-    
-    // Existing code checks
-    const matchesExisting = r === 'I-NC' || r === 'I-NOC' || r === 'I-RC' || r.includes('SHISHIKA') || r.includes('BALIKA');
-    
-    // Exact designation checks (normalized to uppercase)
-    const isBstFemaleRole = 
-      r === 'BST SANCHALIKA' || 
-      r === 'BST SAH-SANCHALIKA' || 
-      r === 'BST BALIKA IC';
-    
-    return matchesExisting || isBstFemaleRole;
-  });
-};
+  const getIsFemale = (karyakar) => {
+    if (!karyakar.seva_designation) return false;
 
-  // 1. Filter based on text searches and selectors, but IGNORE gender state to compute correct dynamic header totals
-  const baseFilteredList = list.filter(k => {
-    const matchesCenter = centerFilter === 'All' || k.center === centerFilter;
-    const matchesSeva = !sevaFilter.trim() || (k.seva_designation?.toLowerCase().includes(sevaFilter.toLowerCase().trim()));
-    const matchesName = !nameSearch.trim() || (k.full_name?.toLowerCase().includes(nameSearch.toLowerCase().trim()));
+    const designations =
+      typeof karyakar.seva_designation === "string"
+        ? karyakar.seva_designation.split(", ")
+        : Array.isArray(karyakar.seva_designation)
+          ? karyakar.seva_designation
+          : [];
+
+    return designations.some((role) => {
+      const r = role.toUpperCase();
+
+      const matchesExisting =
+        r === "I-NC" ||
+        r === "I-NOC" ||
+        r === "I-RC" ||
+        r.includes("SHISHIKA") ||
+        r.includes("BALIKA");
+
+      const isBstFemaleRole =
+        r === "BST SANCHALIKA" ||
+        r === "BST SAH-SANCHALIKA" ||
+        r === "BST BALIKA IC";
+
+      return matchesExisting || isBstFemaleRole;
+    });
+  };
+
+  const baseFilteredList = list.filter((k) => {
+    const matchesCenter = centerFilter === "All" || k.center === centerFilter;
+    const matchesSeva =
+      !sevaFilter.trim() ||
+      k.seva_designation
+        ?.toLowerCase()
+        .includes(sevaFilter.toLowerCase().trim());
+    const matchesName =
+      !nameSearch.trim() ||
+      k.full_name?.toLowerCase().includes(nameSearch.toLowerCase().trim());
     return matchesCenter && matchesSeva && matchesName;
   });
 
-  // 2. Count dynamic stats from current filtered base
   const getDynamicGenderStats = () => {
     let male = 0;
     let female = 0;
-    baseFilteredList.forEach(k => {
+    baseFilteredList.forEach((k) => {
       const isFemale = getIsFemale(k);
       if (isFemale) female++;
       else male++;
@@ -195,25 +456,26 @@ const getIsFemale = (karyakar) => {
 
   const { male: maleCount, female: femaleCount } = getDynamicGenderStats();
 
-  // 3. Final visual items array with gender filter applied
-  const filteredList = baseFilteredList.filter(k => {
+  const filteredList = baseFilteredList.filter((k) => {
     const isFemale = getIsFemale(k);
-    return genderFilter === 'All' || 
-      (genderFilter === 'Female' && isFemale) || 
-      (genderFilter === 'Male' && !isFemale);
+    return (
+      genderFilter === "All" ||
+      (genderFilter === "Female" && isFemale) ||
+      (genderFilter === "Male" && !isFemale)
+    );
   });
 
   const handleConfirmDelete = async (id) => {
     setDeleting(id);
     try {
       await karayakarsApi.remove(id);
-      setList(prev => prev.filter(k => k.id !== id));
+      setList((prev) => prev.filter((k) => k.id !== id));
       setConfirmDeleteId(null);
       setActiveMenuId(null);
-      toast.success('Member removed from directory');
+      toast.success("Member removed from directory");
     } catch (err) {
       console.error(err);
-      toast.error('Failed to delete member');
+      toast.error("Failed to delete member");
     } finally {
       setDeleting(null);
     }
@@ -223,19 +485,23 @@ const getIsFemale = (karyakar) => {
     setEditingItem(karyakar);
     let currentDesignations = [];
     if (karyakar.seva_designation) {
-      currentDesignations = typeof karyakar.seva_designation === 'string'
-        ? karyakar.seva_designation.split(', ').filter(Boolean)
-        : Array.isArray(karyakar.seva_designation) ? karyakar.seva_designation : [];
+      currentDesignations =
+        typeof karyakar.seva_designation === "string"
+          ? karyakar.seva_designation.split(", ").filter(Boolean)
+          : Array.isArray(karyakar.seva_designation)
+            ? karyakar.seva_designation
+            : [];
     }
 
     setEditForm({
-      full_name: karyakar.full_name || '',
-      center: karyakar.center || '',
+      full_name: karyakar.full_name || "",
+      id_number: karyakar.id_number || karyakar.idNumber || "",
+      center: karyakar.center || "",
       sevaDesignation: currentDesignations,
-      tshirt_size: karyakar.tshirt_size || '',
+      tshirt_size: karyakar.tshirt_size || "",
       is_paid: Number(karyakar.is_paid) === 1 ? 1 : 0,
-      photo_url: karyakar.photo_url || '',
-      newFile: null
+      photo_url: karyakar.photo_url || "",
+      newFile: null,
     });
     setEditPreview(karyakar.photo_url || null);
     setIsSevaDropdownOpen(false);
@@ -249,77 +515,85 @@ const getIsFemale = (karyakar) => {
 
     const maxBytes = 2 * 1024 * 1024;
     if (file.size > maxBytes) {
-      toast.error('Please select a photo smaller than 2MB.');
+      toast.error("Please select a photo smaller than 2MB.");
       e.target.value = null;
       return;
     }
 
-    setEditForm(prev => ({ ...prev, newFile: file }));
+    setEditForm((prev) => ({ ...prev, newFile: file }));
     setEditPreview(URL.createObjectURL(file));
   };
 
   const handleModalSevaToggle = (designation) => {
-    setEditForm(prev => {
+    setEditForm((prev) => {
       const exists = prev.sevaDesignation.includes(designation);
-      const updated = exists 
-        ? prev.sevaDesignation.filter(d => d !== designation)
+      const updated = exists
+        ? prev.sevaDesignation.filter((d) => d !== designation)
         : [...prev.sevaDesignation, designation];
       return { ...prev, sevaDesignation: updated };
     });
   };
 
   const handleSaveModalEdit = async () => {
-    if (!editForm.full_name.trim()) return toast.error('Name field is required');
-    if (!editForm.center) return toast.error('Please select a center');
-    if (editForm.sevaDesignation.length === 0) return toast.error('Select at least one designation');
+    if (!editForm.full_name.trim())
+      return toast.error("Name field is required");
+    if (!editForm.id_number.trim()) return toast.error("ID Number is required");
+    if (!editForm.center) return toast.error("Please select a center");
+    if (editForm.sevaDesignation.length === 0)
+      return toast.error("Select at least one designation");
 
     setModalUploading(true);
     try {
       let finalPhotoUrl = editForm.photo_url;
       if (editForm.newFile) {
-        const ext = editForm.newFile.name.split('.').pop();
+        const ext = editForm.newFile.name.split(".").pop();
         const filename = `karayakar_${Date.now()}.${ext}`;
         const res = await upload.photo(editForm.newFile, filename);
-        finalPhotoUrl = res.url || '';
+        finalPhotoUrl = res.url || "";
       }
 
       let processedSize = editForm.tshirt_size || null;
       let processedCenter = editForm.center;
 
-      if (processedSize === 'XXXL') {
-        processedSize = 'XXL';
+      if (processedSize === "XXXL") {
+        processedSize = "XXL";
         processedCenter = `${processedCenter}_3XL`;
-      } else if (processedSize === 'XXXS') {
-        processedSize = 'XS';
+      } else if (processedSize === "XXXS") {
+        processedSize = "XS";
         processedCenter = `${processedCenter}_3XS`;
       }
 
       const updatePayload = {
         id: editingItem.id,
         full_name: editForm.full_name.trim(),
+        id_number: editForm.id_number.trim(),
         region: editingItem.region,
         center: processedCenter,
-        seva_designation: editForm.sevaDesignation.join(', '),
+        seva_designation: editForm.sevaDesignation.join(", "),
         tshirt_size: processedSize,
         is_paid: Number(editForm.is_paid),
-        photo_url: finalPhotoUrl
+        photo_url: finalPhotoUrl,
       };
 
       await karayakarsApi.update(editingItem.id, updatePayload);
-      
+
       const updatedLocalItem = {
         ...updatePayload,
-        center: editForm.center, 
-        tshirt_size: editForm.tshirt_size 
+        center: editForm.center,
+        tshirt_size: editForm.tshirt_size,
       };
 
-      setList(prev => prev.map(item => item.id === editingItem.id ? updatedLocalItem : item));
+      setList((prev) =>
+        prev.map((item) =>
+          item.id === editingItem.id ? updatedLocalItem : item,
+        ),
+      );
       setIsEditModalOpen(false);
       setEditingItem(null);
-      toast.success('Profile updated successfully');
+      toast.success("Profile updated successfully");
     } catch (err) {
       console.error(err);
-      toast.error('Failed to update profile changes.');
+      toast.error("Failed to update profile changes.");
     } finally {
       setModalUploading(false);
     }
@@ -327,26 +601,38 @@ const getIsFemale = (karyakar) => {
 
   const handleExportCSV = () => {
     if (filteredList.length === 0) return;
-    
-    // Added "Gender" column header
-    const headers = ['No.', 'Full Name', 'Gender', 'Region', 'Center', 'Seva Designations', 'T-Shirt Size', 'Payment Status'];
-    
-    // Generated rows based strictly on the filtered list items
+
+    const headers = [
+      "No.",
+      "ID Number",
+      "Full Name",
+      "Gender",
+      "Region",
+      "Center",
+      "Seva Designations",
+      "T-Shirt Size",
+      "Payment Status",
+    ];
+
     const rows = filteredList.map((k, idx) => [
       idx + 1,
-      `"${k.full_name || ''}"`,
-      `"${getIsFemale(k) ? 'Female' : 'Male'}"`,
-      `"${k.region || ''}"`,
-      `"${k.center || ''}"`,
-      `"${k.seva_designation || 'None'}"`,
-      `"${k.tshirt_size || 'N/A'}"`,
-      Number(k.is_paid) === 1 ? 'Paid' : 'Unpaid'
+      `"${k.id_number || ""}"`,
+      `"${k.full_name || ""}"`,
+      `"${getIsFemale(k) ? "Female" : "Male"}"`,
+      `"${k.region || ""}"`,
+      `"${k.center || ""}"`,
+      `"${k.seva_designation || "None"}"`,
+      `"${k.tshirt_size || "N/A"}"`,
+      Number(k.is_paid) === 1 ? "Paid" : "Unpaid",
     ]);
-    
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((r) => r.join(",")),
+    ].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = `Karyakar_Report.csv`;
     link.click();
@@ -356,28 +642,27 @@ const getIsFemale = (karyakar) => {
 
   return (
     <div className={styles.rosterContainer}>
-      {/* Dynamic Filter Bento Header - Numbers now update dynamically on search and filters */}
       <div className={styles.directoryBentoStats}>
-        <div 
-          className={`${styles.statBox} ${genderFilter === 'All' ? styles.statBoxActive : ''}`} 
-          onClick={() => setGenderFilter('All')}
-          style={{ cursor: 'pointer' }}
+        <div
+          className={`${styles.statBox} ${genderFilter === "All" ? styles.statBoxActive : ""}`}
+          onClick={() => setGenderFilter("All")}
+          style={{ cursor: "pointer" }}
         >
           <span className={styles.statLabel}>TOTAL REGISTERED</span>
           <span className={styles.statCount}>{baseFilteredList.length}</span>
         </div>
-        <div 
-          className={`${styles.statBoxBlue} ${genderFilter === 'Male' ? styles.statBoxBlueActive : ''}`} 
-          onClick={() => setGenderFilter('Male')}
-          style={{ cursor: 'pointer' }}
+        <div
+          className={`${styles.statBoxBlue} ${genderFilter === "Male" ? styles.statBoxBlueActive : ""}`}
+          onClick={() => setGenderFilter("Male")}
+          style={{ cursor: "pointer" }}
         >
           <span className={styles.statLabelBlue}>MALE</span>
           <span className={styles.statCountBlue}>{maleCount}</span>
         </div>
-        <div 
-          className={`${styles.statBoxRed} ${genderFilter === 'Female' ? styles.statBoxRedActive : ''}`} 
-          onClick={() => setGenderFilter('Female')}
-          style={{ cursor: 'pointer' }}
+        <div
+          className={`${styles.statBoxRed} ${genderFilter === "Female" ? styles.statBoxRedActive : ""}`}
+          onClick={() => setGenderFilter("Female")}
+          style={{ cursor: "pointer" }}
         >
           <span className={styles.statLabelRed}>FEMALE</span>
           <span className={styles.statCountRed}>{femaleCount}</span>
@@ -388,11 +673,11 @@ const getIsFemale = (karyakar) => {
         <div className={styles.searchFilterControlBlock}>
           <div className={styles.searchBarWrapper}>
             <FaMagnifyingGlass className={styles.searchIcon} />
-            <input 
-              type="text" 
-              placeholder="Search by name..." 
+            <input
+              type="text"
+              placeholder="Search by name..."
               value={nameSearch}
-              onChange={e => setNameSearch(e.target.value)}
+              onChange={(e) => setNameSearch(e.target.value)}
               className={styles.mainSearchBar}
             />
           </div>
@@ -400,21 +685,41 @@ const getIsFemale = (karyakar) => {
           <div className={styles.filterActionLayoutRow}>
             {!defaultRegion && (
               <div className={styles.selectWrapper}>
-                <select value={region} onChange={e => setRegion(e.target.value)} className={styles.styledSelect}>
-                  {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                <select
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  className={styles.styledSelect}
+                >
+                  {REGIONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
 
             <div className={styles.selectWrapper}>
-              <select value={centerFilter} onChange={e => setCenterFilter(e.target.value)} className={styles.styledSelect}>
+              <select
+                value={centerFilter}
+                onChange={(e) => setCenterFilter(e.target.value)}
+                className={styles.styledSelect}
+              >
                 <option value="All">All Center Branches</option>
-                {(REGION_CENTERS[region] || []).map(c => <option key={c} value={c}>{c}</option>)}
+                {(REGION_CENTERS[region] || []).map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div className={styles.selectWrapper}>
-              <select value={genderFilter} onChange={e => setGenderFilter(e.target.value)} className={styles.styledSelect}>
+              <select
+                value={genderFilter}
+                onChange={(e) => setGenderFilter(e.target.value)}
+                className={styles.styledSelect}
+              >
                 <option value="All">All Genders</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
@@ -422,16 +727,20 @@ const getIsFemale = (karyakar) => {
             </div>
 
             <div className={styles.searchBarWrapperHalf}>
-              <input 
-                type="text" 
-                placeholder="All Mandals / Designations..." 
+              <input
+                type="text"
+                placeholder="All Mandals / Designations..."
                 value={sevaFilter}
-                onChange={e => setSevaFilter(e.target.value)}
+                onChange={(e) => setSevaFilter(e.target.value)}
                 className={styles.mandalSearchBar}
               />
             </div>
 
-            <button onClick={handleExportCSV} className={styles.exportExcelButton} disabled={filteredList.length === 0}>
+            <button
+              onClick={handleExportCSV}
+              className={styles.exportExcelButton}
+              disabled={filteredList.length === 0}
+            >
               <FaFileExport /> Export to Excel
             </button>
           </div>
@@ -441,8 +750,9 @@ const getIsFemale = (karyakar) => {
           <table className={styles.dataTable}>
             <thead>
               <tr>
-                <th> No.</th>
+                <th>ID Number</th>
                 <th>Profile</th>
+
                 <th>Full Name</th>
                 <th>Region</th>
                 <th>Center</th>
@@ -455,102 +765,198 @@ const getIsFemale = (karyakar) => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className={styles.emptyTablePlaceholder}>
-                    <FaSpinner className={styles.spin} /> Loading directory records...
+                  <td colSpan={10} className={styles.emptyTablePlaceholder}>
+                    <FaSpinner className={styles.spin} /> Loading directory
+                    records...
                   </td>
                 </tr>
               ) : filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className={styles.emptyTablePlaceholder}>No registered members found matching filters.</td>
+                  <td colSpan={10} className={styles.emptyTablePlaceholder}>
+                    No registered members found matching filters.
+                  </td>
                 </tr>
-              ) : filteredList.map((k, index) => (
-                <tr key={k.id} className={confirmDeleteId === k.id ? styles.rowWarningHighlight : ''}>
-                  <td className={styles.centerAlignCell}>{index + 1}</td>
-                  <td className={styles.centerAlignCell}>
-                    <div className={styles.avatarFrame}>
-                      {k.photo_url ? (
-                        <img src={k.photo_url} alt="" className={styles.tableImage} />
+              ) : (
+                filteredList.map((k, index) => (
+                  <tr
+                    key={k.id}
+                    className={
+                      confirmDeleteId === k.id ? styles.rowWarningHighlight : ""
+                    }
+                  >
+                    <td
+                      className={`${styles.boldText} ${styles.centerAlignCell}`}
+                    >
+                      {k.id_number ? (
+                        <code>{k.id_number}</code>
                       ) : (
-                        <FaUser className={styles.avatarPlaceholder} />
+                        <span className={styles.textHyphen}>—</span>
                       )}
-                    </div>
-                  </td>
-                  <td className={`${styles.boldText} ${styles.centerAlignCell}`}>{k.full_name}</td>
-                  <td className={styles.centerAlignCell}><span className={styles.regionTag}>{k.region}</span></td>
-                  <td className={styles.centerAlignCell}><span className={styles.centerText}>{k.center || '—'}</span></td>
-                  <td className={styles.centerAlignCell}>
-                    <div className={styles.sevaBadgeContainer}>
-                      {k.seva_designation ? (
-                        (typeof k.seva_designation === 'string' ? k.seva_designation.split(', ') : k.seva_designation).map((role, idx) => (
-                          <span key={idx} className={styles.sevaTableBadge}>{role}</span>
-                        ))
-                      ) : (
-                        <span className={styles.noSevaText}>None assigned</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className={styles.centerAlignCell}>
-                    {k.tshirt_size ? <span className={styles.tshirtTag}><code>{k.tshirt_size}</code></span> : <span className={styles.textHyphen}>—</span>}
-                  </td>
-                  <td className={styles.centerAlignCell}>
-                    {Number(k.is_paid) === 1 ? (
-                      <span className={styles.paidBadge}><FaCircleCheck /> Paid</span>
-                    ) : (
-                      <span className={styles.unpaidBadge}><FaCircleXmark /> Unpaid</span>
-                    )}
-                  </td>
-                  {(canEdit || canDelete) && (
+                    </td>{" "}
                     <td className={styles.centerAlignCell}>
-                      <div className={styles.actionMenuRelativeAnchor} ref={activeMenuId === k.id ? menuRef : null}>
-                        <button 
-                          className={styles.ellipsisTriggerBtn} 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveMenuId(activeMenuId === k.id ? null : k.id);
-                          }}
-                        >
-                          <FaEllipsisVertical />
-                        </button>
-                        
-                        {activeMenuId === k.id && (
-                          <div className={styles.dropdownActionPopover}>
-                            {confirmDeleteId === k.id ? (
-                              <div className={styles.menuDeleteConfirmBlock}>
-                                <span className={styles.confirmDeleteMsgLabel}>Confirm Delete?</span>
-                                <div className={styles.confirmActionBtnRow}>
-                                  <button onClick={() => handleConfirmDelete(k.id)} disabled={deleting === k.id} className={styles.popoverConfirmBtn}>
-                                    {deleting === k.id ? <FaSpinner className={styles.spin} /> : 'Yes'}
-                                  </button>
-                                  <button onClick={() => setConfirmDeleteId(null)} disabled={deleting === k.id} className={styles.popoverCancelBtn}>No</button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                {canEdit && (
-                                  <>
-                                    <button onClick={() => handleOpenEditModal(k)} className={styles.dropdownOptionRowItem}>
-                                      <FaPenToSquare className={styles.editIconBtn} /> Edit Profile
-                                    </button>
-                                    <button onClick={() => handleTogglePayment(k)} className={styles.dropdownOptionRowItem}>
-                                      <FaWallet className={Number(k.is_paid) === 1 ? styles.statusPaidIcon : styles.statusUnpaidIcon} />
-                                      {Number(k.is_paid) === 1 ? 'Mark as Unpaid' : 'Mark as Paid'}
-                                    </button>
-                                  </>
-                                )}
-                                {canDelete && (
-                                  <button onClick={() => setConfirmDeleteId(k.id)} className={styles.dropdownOptionRowItem}>
-                                    <FaTrash className={styles.deleteIconBtn} /> Delete Member
-                                  </button>
-                                )}
-                              </>
-                            )}
-                          </div>
+                      <div className={styles.avatarFrame}>
+                        {k.photo_url ? (
+                          <img
+                            src={k.photo_url}
+                            alt=""
+                            className={styles.tableImage}
+                          />
+                        ) : (
+                          <FaUser className={styles.avatarPlaceholder} />
                         )}
                       </div>
                     </td>
-                  )}
-                </tr>
-              ))}
+                    {/* SAFELY RENDER ID NUMBER WITH FALLBACK */}
+                    <td
+                      className={`${styles.boldText} ${styles.centerAlignCell}`}
+                    >
+                      {k.full_name}
+                    </td>
+                    <td className={styles.centerAlignCell}>
+                      <span className={styles.regionTag}>{k.region}</span>
+                    </td>
+                    <td className={styles.centerAlignCell}>
+                      <span className={styles.centerText}>
+                        {k.center || "—"}
+                      </span>
+                    </td>
+                    <td className={styles.centerAlignCell}>
+                      <div className={styles.sevaBadgeContainer}>
+                        {k.seva_designation ? (
+                          (typeof k.seva_designation === "string"
+                            ? k.seva_designation.split(", ")
+                            : k.seva_designation
+                          ).map((role, idx) => (
+                            <span key={idx} className={styles.sevaTableBadge}>
+                              {role}
+                            </span>
+                          ))
+                        ) : (
+                          <span className={styles.noSevaText}>
+                            None assigned
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className={styles.centerAlignCell}>
+                      {k.tshirt_size ? (
+                        <span className={styles.tshirtTag}>
+                          <code>{k.tshirt_size}</code>
+                        </span>
+                      ) : (
+                        <span className={styles.textHyphen}>—</span>
+                      )}
+                    </td>
+                    <td className={styles.centerAlignCell}>
+                      {Number(k.is_paid) === 1 ? (
+                        <span className={styles.paidBadge}>
+                          <FaCircleCheck /> Paid
+                        </span>
+                      ) : (
+                        <span className={styles.unpaidBadge}>
+                          <FaCircleXmark /> Unpaid
+                        </span>
+                      )}
+                    </td>
+                    {(canEdit || canDelete) && (
+                      <td className={styles.centerAlignCell}>
+                        <div
+                          className={styles.actionMenuRelativeAnchor}
+                          ref={activeMenuId === k.id ? menuRef : null}
+                        >
+                          <button
+                            className={styles.ellipsisTriggerBtn}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuId(
+                                activeMenuId === k.id ? null : k.id,
+                              );
+                            }}
+                          >
+                            <FaEllipsisVertical />
+                          </button>
+
+                          {activeMenuId === k.id && (
+                            <div className={styles.dropdownActionPopover}>
+                              {confirmDeleteId === k.id ? (
+                                <div className={styles.menuDeleteConfirmBlock}>
+                                  <span
+                                    className={styles.confirmDeleteMsgLabel}
+                                  >
+                                    Confirm Delete?
+                                  </span>
+                                  <div className={styles.confirmActionBtnRow}>
+                                    <button
+                                      onClick={() => handleConfirmDelete(k.id)}
+                                      disabled={deleting === k.id}
+                                      className={styles.popoverConfirmBtn}
+                                    >
+                                      {deleting === k.id ? (
+                                        <FaSpinner className={styles.spin} />
+                                      ) : (
+                                        "Yes"
+                                      )}
+                                    </button>
+                                    <button
+                                      onClick={() => setConfirmDeleteId(null)}
+                                      disabled={deleting === k.id}
+                                      className={styles.popoverCancelBtn}
+                                    >
+                                      No
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  {canEdit && (
+                                    <>
+                                      <button
+                                        onClick={() => handleOpenEditModal(k)}
+                                        className={styles.dropdownOptionRowItem}
+                                      >
+                                        <FaPenToSquare
+                                          className={styles.editIconBtn}
+                                        />{" "}
+                                        Edit Profile
+                                      </button>
+                                      <button
+                                        onClick={() => handleTogglePayment(k)}
+                                        className={styles.dropdownOptionRowItem}
+                                      >
+                                        <FaWallet
+                                          className={
+                                            Number(k.is_paid) === 1
+                                              ? styles.statusPaidIcon
+                                              : styles.statusUnpaidIcon
+                                          }
+                                        />
+                                        {Number(k.is_paid) === 1
+                                          ? "Mark as Unpaid"
+                                          : "Mark as Paid"}
+                                      </button>
+                                    </>
+                                  )}
+                                  {canDelete && (
+                                    <button
+                                      onClick={() => setConfirmDeleteId(k.id)}
+                                      className={styles.dropdownOptionRowItem}
+                                    >
+                                      <FaTrash
+                                        className={styles.deleteIconBtn}
+                                      />{" "}
+                                      Delete Member
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -561,52 +967,102 @@ const getIsFemale = (karyakar) => {
           <div className={styles.modalContentCard}>
             <div className={styles.modalHeader}>
               <h3>Edit Karayakar Profile</h3>
-              <button className={styles.modalCloseIconBtn} onClick={() => setIsEditModalOpen(false)}><FaXmark /></button>
+              <button
+                className={styles.modalCloseIconBtn}
+                onClick={() => setIsEditModalOpen(false)}
+              >
+                <FaXmark />
+              </button>
             </div>
-            
+
             <div className={styles.modalBody}>
               <div className={styles.modalAvatarSection}>
                 <label className={styles.photoUploadTrigger}>
                   <div className={styles.photoUploadBoxFrame}>
                     {editPreview ? (
-                      <img src={editPreview} alt="Preview" className={styles.modalPreviewImg} />
+                      <img
+                        src={editPreview}
+                        alt="Preview"
+                        className={styles.modalPreviewImg}
+                      />
                     ) : (
                       <FaUser className={styles.modalPlaceholderIcon} />
                     )}
-                    <div className={styles.cameraOverlay}><FaCamera /></div>
+                    <div className={styles.cameraOverlay}>
+                      <FaCamera />
+                    </div>
                   </div>
-                  <span className={styles.uploadTextLabel}>Update Profile Photo</span>
-                  <input type="file" accept="image/*" onChange={handleModalFileChange} hidden />
+                  <span className={styles.uploadTextLabel}>
+                    Update Profile Photo
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleModalFileChange}
+                    hidden
+                  />
                 </label>
               </div>
 
               <div className={styles.modalFormGroup}>
                 <label>Full Name</label>
-                <input 
-                  type="text" 
-                  value={editForm.full_name} 
-                  onChange={e => setEditForm(p => ({ ...p, full_name: e.target.value }))}
+                <input
+                  type="text"
+                  value={editForm.full_name}
+                  onChange={(e) =>
+                    setEditForm((p) => ({ ...p, full_name: e.target.value }))
+                  }
+                  className={styles.modalInput}
+                />
+              </div>
+
+              {/* ID Formatter Input in Edit Modal */}
+              <div className={styles.modalFormGroup}>
+                <label>ID / National ID Number</label>
+                <input
+                  type="text"
+                  placeholder="MTRC-0000"
+                  maxLength="9"
+                  value={editForm.id_number}
+                  onChange={(e) => {
+                    const formatted = formatKaryakarId(e.target.value);
+                    setEditForm((p) => ({ ...p, id_number: formatted }));
+                  }}
                   className={styles.modalInput}
                 />
               </div>
 
               <div className={styles.modalFormGroup}>
                 <label>Center Location</label>
-                <select 
-                  value={editForm.center} 
-                  onChange={e => setEditForm(p => ({ ...p, center: e.target.value }))}
+                <select
+                  value={editForm.center}
+                  onChange={(e) =>
+                    setEditForm((p) => ({ ...p, center: e.target.value }))
+                  }
                   className={styles.modalSelect}
                 >
                   <option value="">Select Center Hub...</option>
-                  {(REGION_CENTERS[editingItem.region] || REGION_CENTERS['All']).map(c => (
-                    <option key={c} value={c}>{c}</option>
+                  {(
+                    REGION_CENTERS[editingItem.region] || REGION_CENTERS["All"]
+                  ).map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className={styles.modalFormGroup}>
-                <label>Seva Designation Badges <span className={styles.subtextLabel}>(Select all that apply)</span></label>
-                <div className={styles.customDropdownContainer} ref={sevaDropdownRef}>
+                <label>
+                  Seva Designation Badges{" "}
+                  <span className={styles.subtextLabel}>
+                    (Select all that apply)
+                  </span>
+                </label>
+                <div
+                  className={styles.customDropdownContainer}
+                  ref={sevaDropdownRef}
+                >
                   <button
                     type="button"
                     className={styles.customDropdownTrigger}
@@ -614,27 +1070,35 @@ const getIsFemale = (karyakar) => {
                   >
                     <span>
                       {selectedSevaCount === 0
-                        ? 'Select Seva Designations'
-                        : `${selectedSevaCount} Designation${selectedSevaCount > 1 ? 's' : ''} Selected`}
+                        ? "Select Seva Designations"
+                        : `${selectedSevaCount} Designation${selectedSevaCount > 1 ? "s" : ""} Selected`}
                     </span>
-                    <FaChevronDown className={`${styles.customDropdownChevron} ${isSevaDropdownOpen ? styles.customDropdownChevronOpen : ''}`} />
+                    <FaChevronDown
+                      className={`${styles.customDropdownChevron} ${isSevaDropdownOpen ? styles.customDropdownChevronOpen : ""}`}
+                    />
                   </button>
 
                   {isSevaDropdownOpen && (
                     <div className={styles.customDropdownMenu}>
-                      {SEVA_DESIGNATIONS.map(d => {
+                      {SEVA_DESIGNATIONS.map((d) => {
                         const isSelected = editForm.sevaDesignation.includes(d);
                         return (
                           <button
                             type="button"
                             key={d}
-                            className={`${styles.customDropdownOption} ${isSelected ? styles.customDropdownOptionActive : ''}`}
+                            className={`${styles.customDropdownOption} ${isSelected ? styles.customDropdownOptionActive : ""}`}
                             onClick={() => handleModalSevaToggle(d)}
                           >
                             <div className={styles.customDropdownCheckboxArea}>
-                              {isSelected && <FaCheck className={styles.customDropdownCheckIcon} />}
+                              {isSelected && (
+                                <FaCheck
+                                  className={styles.customDropdownCheckIcon}
+                                />
+                              )}
                             </div>
-                            <span className={styles.customDropdownOptionText}>{d}</span>
+                            <span className={styles.customDropdownOptionText}>
+                              {d}
+                            </span>
                           </button>
                         );
                       })}
@@ -646,21 +1110,35 @@ const getIsFemale = (karyakar) => {
               <div className={styles.modalFormRowHalfLayout}>
                 <div className={styles.modalFormGroup}>
                   <label>T-Shirt Size</label>
-                  <select 
-                    value={editForm.tshirt_size || ''} 
-                    onChange={e => setEditForm(p => ({ ...p, tshirt_size: e.target.value }))}
+                  <select
+                    value={editForm.tshirt_size || ""}
+                    onChange={(e) =>
+                      setEditForm((p) => ({
+                        ...p,
+                        tshirt_size: e.target.value,
+                      }))
+                    }
                     className={styles.modalSelect}
                   >
                     <option value="">Select Size...</option>
-                    {TSHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                    {TSHIRT_SIZES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div className={styles.modalFormGroup}>
                   <label>Payment Status</label>
-                  <select 
-                    value={String(editForm.is_paid)} 
-                    onChange={e => setEditForm(p => ({ ...p, is_paid: parseInt(e.target.value, 10) }))}
+                  <select
+                    value={String(editForm.is_paid)}
+                    onChange={(e) =>
+                      setEditForm((p) => ({
+                        ...p,
+                        is_paid: parseInt(e.target.value, 10),
+                      }))
+                    }
                     className={styles.modalSelect}
                   >
                     <option value="0">Unpaid</option>
@@ -671,9 +1149,25 @@ const getIsFemale = (karyakar) => {
             </div>
 
             <div className={styles.modalFooterActions}>
-              <button onClick={() => setIsEditModalOpen(false)} className={styles.modalCancelBtn} disabled={modalUploading}>Cancel</button>
-              <button onClick={handleSaveModalEdit} className={styles.modalSaveBtn} disabled={modalUploading}>
-                {modalUploading ? <><FaSpinner className={styles.spin} /> Processing...</> : 'Save Profile Changes'}
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className={styles.modalCancelBtn}
+                disabled={modalUploading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveModalEdit}
+                className={styles.modalSaveBtn}
+                disabled={modalUploading}
+              >
+                {modalUploading ? (
+                  <>
+                    <FaSpinner className={styles.spin} /> Processing...
+                  </>
+                ) : (
+                  "Save Profile Changes"
+                )}
               </button>
             </div>
           </div>
