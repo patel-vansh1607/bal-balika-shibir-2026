@@ -179,8 +179,18 @@ export default function KarayakarForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // ==========================================
+    // PHOTO REQUIREMENT CONTROL PANEL
+    // Set this boolean to false to make photo optional again!
+    const IS_PHOTO_REQUIRED = true; 
+    // ==========================================
+
     const finalCenterInput = centerSearch.trim() || form.center.trim();
 
+    if (IS_PHOTO_REQUIRED && !form.profilePhoto) {
+      showNotification('error', 'Photo Required', 'Please upload a profile photo to complete registration.');
+      return;
+    }
     if (!form.region) {
       showNotification('error', 'Missing Region', 'Please select a valid region context.');
       return;
@@ -276,7 +286,7 @@ export default function KarayakarForm() {
                 {preview ? <img src={preview} alt="Preview" className={styles.preview} /> : <FaUser className={styles.placeholderIcon} />}
                 <div className={styles.cameraOverlay}><FaCamera /></div>
               </div>
-              <span className={styles.uploadText}>Upload Photo (Max 2MB)</span>
+              <span className={styles.uploadText}>Upload Photo <span style={{ color: '#e53e3e' }}>*</span> (Max 2MB)</span>
               <input type="file" accept="image/*" onChange={handleFileChange} hidden />
             </label>
           </div>
