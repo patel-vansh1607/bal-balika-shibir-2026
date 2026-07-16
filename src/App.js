@@ -15,7 +15,7 @@ export default function App() {
   const [isMaintenance, setIsMaintenance] = useState(false);
 
   useEffect(() => {
-    setIsMaintenance(false);
+    setIsMaintenance(true);
   }, []);
 
   if (isMaintenance) {
