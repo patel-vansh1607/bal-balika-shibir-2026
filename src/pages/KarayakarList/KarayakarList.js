@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  FaUser, FaSpinner, FaTrash, FaFileExport, 
-  FaCheck, FaXmark, FaPenToSquare, 
+import {
+  FaUser, FaSpinner, FaTrash, FaFileExport,
+  FaCheck, FaXmark, FaPenToSquare,
   FaMagnifyingGlass, FaEllipsisVertical, FaCircleCheck, FaCircleXmark, FaCamera, FaWallet,
-  FaChevronDown
+  FaChevronDown, FaQrcode
 } from 'react-icons/fa6';
 import { karayakars as karayakarsApi, upload } from '../../apiClient';
 import styles from './KarayakarList.module.css';
@@ -58,12 +58,15 @@ export default function KarayakarList({ defaultRegion = '' }) {
   const [editPreview, setEditPreview] = useState(null);
   const [isSevaDropdownOpen, setIsSevaDropdownOpen] = useState(false);
   
+  const [isGeneratingQr, setIsGeneratingQr] = useState(false);
+
   const menuRef = useRef(null);
   const sevaDropdownRef = useRef(null);
 
   const userRole = localStorage.getItem('user_role');
   const canDelete = ['master_admin', 'super_admin'].includes(userRole);
   const canEdit = ['master_admin', 'super_admin', 'admin'].includes(userRole);
+  const canGenerateQr = ['master_admin', 'super_admin'].includes(userRole);
 
   const parseIncomingList = (data) => {
     if (!Array.isArray(data)) return [];
@@ -325,6 +328,20 @@ const getIsFemale = (karyakar) => {
     }
   };
 
+  const handleGenerateAllQr = async () => {
+    setIsGeneratingQr(true);
+    try {
+      const res = await karayakarsApi.generateQr();
+      toast.success(`QR codes generated: ${res.generated} done${res.failed ? `, ${res.failed} failed` : ''}.`);
+      fetchData(); // refresh list so qr_code_url fields populate
+    } catch (err) {
+      console.error(err);
+      toast.error('QR generation failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsGeneratingQr(false);
+    }
+  };
+
   const handleExportCSV = () => {
     if (filteredList.length === 0) return;
     
@@ -435,6 +452,13 @@ const getIsFemale = (karyakar) => {
             <button onClick={handleExportCSV} className={styles.exportExcelButton} disabled={filteredList.length === 0}>
               <FaFileExport /> Export to Excel
             </button>
+
+            {canGenerateQr && (
+              <button onClick={handleGenerateAllQr} className={styles.exportExcelButton} disabled={isGeneratingQr}>
+                {isGeneratingQr ? <FaSpinner className={styles.spin} /> : <FaQrcode />}
+                {isGeneratingQr ? ' Generating...' : ' Generate QR Codes'}
+              </button>
+            )}
           </div>
         </div>
 
