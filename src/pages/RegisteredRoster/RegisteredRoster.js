@@ -1249,7 +1249,7 @@ export default function RegisteredRoster({
                   ].includes(regionScope) && <th>T-Shirt</th>}
                   {regionScope === "Tanzania" && <th>Selection Status</th>}
                   {regionScope === "Kenya" && <th>Payment Status</th>}
-                  <th>Accomodation</th>
+                  {regionScope === "Kenya" &&<th>Accomodation</th>}
                   <th style={{ textAlign: "center" }}>QR</th>
                   {(userRole === "master_admin" ||
                     userRole === "super_admin") && <th>Actions</th>}
@@ -1399,9 +1399,8 @@ export default function RegisteredRoster({
                           </td>
                         )}
 
-                      {/* --- Accomodation Column --- */}
-                     <td>
   {/* Check both spellings so that whichever key the backend provides is successfully displayed */}
+<td style={attendee.region?.toLowerCase() !== 'kenya' ? { display: 'none' } : {}}>
   {(attendee.accommodation || attendee.accomodation) ? (
     <span className={styles.badgeGenderTag} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
       <FaBed style={{ fontSize: "12px" }} />
