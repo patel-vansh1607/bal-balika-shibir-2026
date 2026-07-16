@@ -248,7 +248,7 @@ export default function Dashboard() {
           <div className={styles.scopeIndicatorCard}>
             <span className={styles.scopeMetaLabel}>REGION </span>
             <div className={styles.scopeBadgeText} title={regionScope}>
-              {regionScope === "All" ? "Global African Database" : regionScope}
+              {regionScope === "All" ? "Africa" : regionScope}
             </div>
           </div>
           <nav className={styles.navigationList}>
