@@ -300,8 +300,49 @@
 
 .drawerWarningAlert p { margin: 0; font-size: 13px; color: #b45309; line-height: 1.4; }
 .drawerScrollList { padding: 12px 24px; overflow-y: auto; flex: 1; }
+
+.drawerSelectAllRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 24px;
+  border-bottom: 2px solid #e2e8f0;
+  background: #f8fafc;
+}
+.selectAllLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.selectedCountBadge {
+  font-size: 12px;
+  background: #6366f1;
+  color: #fff;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-weight: 600;
+}
+
 .drawerUserRow { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
 .drawerUserRow:last-child { border-bottom: none; }
+.drawerUserRowCheckable {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.1s;
+}
+.drawerUserRowCheckable:last-child { border-bottom: none; }
+.drawerUserRowCheckable:hover { background: #f8fafc; }
+.drawerUserRowChecked { background: #eef2ff !important; }
+.drawerCheckbox { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; accent-color: #6366f1; }
 .drawerUserName { font-size: 14px; font-weight: 600; }
 .drawerUserEmail { font-size: 13px; color: #64748b; }
 .emailMissingWarning { color: #ef4444; font-weight: 600; }
