@@ -1,15 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  FaEnvelope, 
-  FaPaperPlane, 
-  FaSpinner, 
-  FaTimes, 
-  FaExclamationTriangle, 
-  FaUserCheck, 
-  FaUserMinus,  
+import {
+  FaEnvelope,
+  FaPaperPlane,
+  FaSpinner,
+  FaTimes,
+  FaExclamationTriangle,
+  FaUserCheck,
+  FaUserMinus,
   FaInfoCircle,
   FaTerminal
 } from 'react-icons/fa';
+import { email as emailApi } from '../../apiClient';
 import styles from './BroadcastDashboard.module.css';
 
 export default function BroadcastDashboard({ attendees = [] }) {
@@ -76,19 +77,11 @@ export default function BroadcastDashboard({ attendees = [] }) {
         
         writeToTerminal(`[TRANSMITTING]: Slot ${i + 1}/${previewBatchUsers.length} [${targetTemplate}] -> ${targetEmail}`);
 
-        const response = await fetch(`http://localhost:3000/api/send-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: targetEmail,
-            name: targetUser.name,
-            selectionStatus: activeReviewBatch === 'agreed' ? 'CONFIRMED_SELECTED' : 'REJECTED_NOT_SELECTED',
-            templateType: targetTemplate,
-            shibirYear: '2026'
-          }),
+        await emailApi.sendSelection({
+          email: targetEmail,
+          name: targetUser.name,
+          templateType: targetTemplate,
         });
-
-        if (!response.ok) throw new Error(`API Endpoint responded with error status: ${response.status}`);
         
         successCount++;
         writeToTerminal(`✅ [DELIVERED]: Pipeline configuration successfully applied for ${targetEmail}`);
