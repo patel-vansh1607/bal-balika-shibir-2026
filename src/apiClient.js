@@ -146,10 +146,13 @@ export const karayakars = {
     ).toString();
     return apiFetch('GET', `/karayakars${qs ? '?' + qs : ''}`);
   },
-  get:    (id)       => apiFetch('GET',    `/karayakars/${id}`),
-  create: (data)     => apiFetch('POST',   '/karayakars', data),
-  update: (id, data) => apiFetch('PATCH',  `/karayakars/${id}`, data),
-  remove: (id)       => apiFetch('DELETE', `/karayakars/${id}`),
+  get:         (id)       => apiFetch('GET',    `/karayakars/${id}`),
+  create:      (data)     => apiFetch('POST',   '/karayakars', data),
+  update:      (id, data) => apiFetch('PATCH',  `/karayakars/${id}`, data),
+  remove:      (id)       => apiFetch('DELETE', `/karayakars/${id}`),
+  // Generates QR PNGs server-side for all karayakars with a member_id.
+  // Pass force=true to regenerate ones that already have a qr_code_url.
+  generateQr:  (force = false) => apiFetch('POST', `/karayakars/generate-qr${force ? '?force=1' : ''}`),
 };
 
 // Default export for convenience
