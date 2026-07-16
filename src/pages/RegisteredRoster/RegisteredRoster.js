@@ -311,7 +311,6 @@ export default function RegisteredRoster({
       );
     }
   };
-  /* --- Core PDF Export Execution Logic --- */
   const handleExportPDF = (
     includeContact = true,
     currentCountry = "All",
@@ -348,7 +347,7 @@ export default function RegisteredRoster({
       XXXL: "XXXL (98-103cm)",
     };
 
-    // 2. Build Dynamic Headers Based on Selections
+    // 2. Build Dynamic Headers Based on Selections (Adding Room Allocation)
     const headersRow = [
       "Sr No.",
       "Member ID",
@@ -357,12 +356,13 @@ export default function RegisteredRoster({
       "Age",
       "Country",
       "Center",
+      "Room Allocation" // Added Accommodation column here
     ];
     if (includeContact) headersRow.push("Parent Contact");
     if (isSpecialRegion) headersRow.push("T-Shirt");
     const headers = [headersRow];
 
-    // 3. Map Body Data Dynamically with Size Formatting
+    // 3. Map Body Data Dynamically with Size Formatting & Room Mapping
     const bodyData = filteredAttendees.map((a, index) => {
       const attendeeCountry = a.country || a.region || "Kenya";
 
@@ -383,6 +383,7 @@ export default function RegisteredRoster({
         a.age || "—",
         attendeeCountry,
         a.center || "",
+        a.accomodation || a.accommodation || "Unassigned" // Added Accommodation field mapping
       ];
       if (includeContact) {
         baseRow.push(a.parent_contact || "");
@@ -393,9 +394,34 @@ export default function RegisteredRoster({
       return baseRow;
     });
 
-    // 4. Custom Width Configuration Matrix tailored for Landscape (297mm)
+    // 4. Custom Width Configuration Matrix tailored for Landscape (297mm total)
     let columnWidthStyles = {};
     if (isSpecialRegion && includeContact) {
+      columnWidthStyles = {
+        0: { cellWidth: 12, halign: "center" },
+        1: { cellWidth: 26, fontStyle: "bold" },
+        2: { cellWidth: "auto" },
+        3: { cellWidth: 16, halign: "center" },
+        4: { cellWidth: 12, halign: "center" },
+        5: { cellWidth: 25 },
+        6: { cellWidth: 30 },
+        7: { cellWidth: 32 }, // Accommodation column
+        8: { cellWidth: 30 }, // Parent Contact
+        9: { cellWidth: 28, halign: "center" }, // T-Shirt
+      };
+    } else if (isSpecialRegion && !includeContact) {
+      columnWidthStyles = {
+        0: { cellWidth: 12, halign: "center" },
+        1: { cellWidth: 30, fontStyle: "bold" },
+        2: { cellWidth: "auto" },
+        3: { cellWidth: 18, halign: "center" },
+        4: { cellWidth: 14, halign: "center" },
+        5: { cellWidth: 30 },
+        6: { cellWidth: 35 },
+        7: { cellWidth: 35 }, // Accommodation column
+        8: { cellWidth: 32, halign: "center" }, // T-Shirt
+      };
+    } else if (!isSpecialRegion && includeContact) {
       columnWidthStyles = {
         0: { cellWidth: 15, halign: "center" },
         1: { cellWidth: 32, fontStyle: "bold" },
@@ -404,41 +430,20 @@ export default function RegisteredRoster({
         4: { cellWidth: 15, halign: "center" },
         5: { cellWidth: 30 },
         6: { cellWidth: 35 },
-        7: { cellWidth: 35 },
-        8: { cellWidth: 32, halign: "center" },
-      };
-    } else if (isSpecialRegion && !includeContact) {
-      columnWidthStyles = {
-        0: { cellWidth: 15, halign: "center" },
-        1: { cellWidth: 35, fontStyle: "bold" },
-        2: { cellWidth: "auto" },
-        3: { cellWidth: 24, halign: "center" },
-        4: { cellWidth: 18, halign: "center" },
-        5: { cellWidth: 35 },
-        6: { cellWidth: 40 },
-        7: { cellWidth: 35, halign: "center" },
-      };
-    } else if (!isSpecialRegion && includeContact) {
-      columnWidthStyles = {
-        0: { cellWidth: 15, halign: "center" },
-        1: { cellWidth: 35, fontStyle: "bold" },
-        2: { cellWidth: "auto" },
-        3: { cellWidth: 24, halign: "center" },
-        4: { cellWidth: 18, halign: "center" },
-        5: { cellWidth: 35 },
-        6: { cellWidth: 40 },
-        7: { cellWidth: 40 },
+        7: { cellWidth: 38 }, // Accommodation column
+        8: { cellWidth: 35 }, // Parent Contact
       };
     } else {
       // !isSpecialRegion && !includeContact
       columnWidthStyles = {
         0: { cellWidth: 15, halign: "center" },
-        1: { cellWidth: 40, fontStyle: "bold" },
+        1: { cellWidth: 35, fontStyle: "bold" },
         2: { cellWidth: "auto" },
-        3: { cellWidth: 26, halign: "center" },
-        4: { cellWidth: 20, halign: "center" },
-        5: { cellWidth: 40 },
-        6: { cellWidth: 45 },
+        3: { cellWidth: 22, halign: "center" },
+        4: { cellWidth: 18, halign: "center" },
+        5: { cellWidth: 35 },
+        6: { cellWidth: 40 },
+        7: { cellWidth: 42 }, // Accommodation column
       };
     }
 
@@ -453,10 +458,10 @@ export default function RegisteredRoster({
       body: bodyData,
       theme: "striped",
       styles: {
-        fontSize: 8.5,
+        fontSize: 8, // Marginally scaled down to prevent room name linebreaks from eating vertical padding
         font: "helvetica",
-        cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
-        overflow: "linebreak", // Wraps text fields onto secondary lines cleanly instead of breaking borders
+        cellPadding: { top: 3.5, bottom: 3.5, left: 3, right: 3 },
+        overflow: "linebreak", 
         valign: "middle",
         lineColor: [226, 239, 249],
         lineWidth: 0.15,
@@ -465,7 +470,7 @@ export default function RegisteredRoster({
         fillColor: [42, 52, 107],
         textColor: [255, 255, 255],
         fontStyle: "bold",
-        fontSize: 9,
+        fontSize: 8.5,
       },
       columnStyles: columnWidthStyles,
       alternateRowStyles: {
@@ -475,7 +480,6 @@ export default function RegisteredRoster({
 
       didDrawPage: function (data) {
         doc.setFillColor(42, 52, 107);
-        // Changed rect width to 297 to span full Landscape width
         doc.rect(0, 0, 297, 24, "F");
 
         doc.setTextColor(255, 255, 255);
@@ -519,7 +523,6 @@ export default function RegisteredRoster({
         doc.internal.pageSize.height - 10,
       );
 
-      // Footer auto-positioning dynamically adapted for landscape widths
       const footerString = `System report generated by: ${displayName} on ${exportTimestamp}`;
       const textWidth = doc.getTextWidth(footerString);
       const rightXPosition = doc.internal.pageSize.width - 10 - textWidth;
@@ -534,6 +537,7 @@ export default function RegisteredRoster({
     const contactToken = includeContact ? "" : "";
     doc.save(`${contactToken}Registered_${safeFileNameToken}.pdf`);
   };
+  /* --- Core PDF Export Execution Logic --- */
   const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;
     setIsDownloadingQR(true);
@@ -578,7 +582,7 @@ export default function RegisteredRoster({
   };
 
   /* --- The Core Export Logic Execution --- */
-  const executeExport = (includeContact) => {
+const executeExport = (includeContact) => {
     setIsExporting(true);
     setIsExportModalOpen(false); // Close choice menu instantly
 
@@ -605,7 +609,7 @@ export default function RegisteredRoster({
         "Uganda",
       ].includes(regionScope);
 
-      // Set dynamic headers based on contact inclusion rules
+      // Set dynamic headers based on contact inclusion rules (including Room Allocation)
       const headers = [
         "Sr No.",
         "Member ID",
@@ -614,6 +618,7 @@ export default function RegisteredRoster({
         "Age",
         "Country",
         "Center",
+        "Room Allocation" // Added Accommodation column here
       ];
       if (includeContact) {
         headers.push("Parent Contact");
@@ -631,6 +636,8 @@ export default function RegisteredRoster({
             row.region ||
             (regionScope !== "All" ? regionScope : "");
 
+          const accommodationRoom = row.accomodation || row.accommodation || "Unassigned";
+
           const baseFields = [
             `"${index + 1}"`,
             `"${finalId}"`,
@@ -639,6 +646,7 @@ export default function RegisteredRoster({
             `"${row.age}"`,
             `"${attendeeCountry}"`,
             `"${row.center}"`,
+            `"${accommodationRoom.replace(/"/g, '""')}"` // Safely inject room value
           ];
 
           // Conditional column payload injection
@@ -684,8 +692,8 @@ export default function RegisteredRoster({
     } finally {
       setIsExporting(false);
     }
-  };
-  const downloadQRImg = async (memberId, userName, storedQrUrl) => {
+  }; 
+   const downloadQRImg = async (memberId, userName, storedQrUrl) => {
     // Set the specific member ID as the active loader
     setDownloadingId(memberId);
     try {

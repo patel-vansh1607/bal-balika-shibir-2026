@@ -3,7 +3,7 @@ import {
   FaUser, FaSpinner, FaTrash, FaFileExport,
   FaCheck, FaXmark, FaPenToSquare,
   FaMagnifyingGlass, FaEllipsisVertical, FaCircleCheck, FaCircleXmark, FaCamera, FaWallet,
-  FaChevronDown, FaQrcode
+  FaChevronDown, FaQrcode, FaBed
 } from 'react-icons/fa6';
 import { karayakars as karayakarsApi, upload } from '../../apiClient';
 import styles from './KarayakarList.module.css';
@@ -153,30 +153,27 @@ export default function KarayakarList({ defaultRegion = '' }) {
     }
   };
 
-const getIsFemale = (karyakar) => {
-  if (!karyakar.seva_designation) return false;
-  
-  const designations = typeof karyakar.seva_designation === 'string' 
-    ? karyakar.seva_designation.split(', ') 
-    : Array.isArray(karyakar.seva_designation) ? karyakar.seva_designation : [];
+  const getIsFemale = (karyakar) => {
+    if (!karyakar.seva_designation) return false;
     
-  return designations.some(role => {
-    const r = role.toUpperCase();
-    
-    // Existing code checks
-    const matchesExisting = r === 'I-NC' || r === 'I-NOC' || r === 'I-RC' || r.includes('SHISHIKA') || r.includes('BALIKA');
-    
-    // Exact designation checks (normalized to uppercase)
-    const isBstFemaleRole = 
-      r === 'BST SANCHALIKA' || 
-      r === 'BST SAH-SANCHALIKA' || 
-      r === 'BST BALIKA IC';
-    
-    return matchesExisting || isBstFemaleRole;
-  });
-};
+    const designations = typeof karyakar.seva_designation === 'string' 
+      ? karyakar.seva_designation.split(', ') 
+      : Array.isArray(karyakar.seva_designation) ? karyakar.seva_designation : [];
+      
+    return designations.some(role => {
+      const r = role.toUpperCase();
+      
+      const matchesExisting = r === 'I-NC' || r === 'I-NOC' || r === 'I-RC' || r.includes('SHISHIKA') || r.includes('BALIKA');
+      
+      const isBstFemaleRole = 
+        r === 'BST SANCHALIKA' || 
+        r === 'BST SAH-SANCHALIKA' || 
+        r === 'BST BALIKA IC';
+      
+      return matchesExisting || isBstFemaleRole;
+    });
+  };
 
-  // 1. Filter based on text searches and selectors, but IGNORE gender state to compute correct dynamic header totals
   const baseFilteredList = list.filter(k => {
     const matchesCenter = centerFilter === 'All' || k.center === centerFilter;
     const matchesSeva = !sevaFilter.trim() || (k.seva_designation?.toLowerCase().includes(sevaFilter.toLowerCase().trim()));
@@ -184,7 +181,6 @@ const getIsFemale = (karyakar) => {
     return matchesCenter && matchesSeva && matchesName;
   });
 
-  // 2. Count dynamic stats from current filtered base
   const getDynamicGenderStats = () => {
     let male = 0;
     let female = 0;
@@ -198,7 +194,6 @@ const getIsFemale = (karyakar) => {
 
   const { male: maleCount, female: femaleCount } = getDynamicGenderStats();
 
-  // 3. Final visual items array with gender filter applied
   const filteredList = baseFilteredList.filter(k => {
     const isFemale = getIsFemale(k);
     return genderFilter === 'All' || 
@@ -333,7 +328,7 @@ const getIsFemale = (karyakar) => {
     try {
       const res = await karayakarsApi.generateQr();
       toast.success(`QR codes generated: ${res.generated} done${res.failed ? `, ${res.failed} failed` : ''}.`);
-      fetchData(); // refresh list so qr_code_url fields populate
+      fetchData(); 
     } catch (err) {
       console.error(err);
       toast.error('QR generation failed: ' + (err.message || 'Unknown error'));
@@ -345,21 +340,37 @@ const getIsFemale = (karyakar) => {
   const handleExportCSV = () => {
     if (filteredList.length === 0) return;
     
-    // Added "Gender" column header
-    const headers = ['No.', 'Member ID', 'Full Name', 'Gender', 'Region', 'Center', 'Seva Designations', 'T-Shirt Size', 'Payment Status'];
+    // Setup headers dynamically: add Accommodation if Kenya is chosen
+    const headers = [
+      'No.', 
+      'Member ID', 
+      'Full Name', 
+      'Gender', 
+      'Region', 
+      'Center', 
+      'Seva Designations', 
+      'T-Shirt Size', 
+      'Payment Status',
+      ...(region.toLowerCase() === 'kenya' ? ['Accommodation'] : [])
+    ];
 
-    // Generated rows based strictly on the filtered list items
-    const rows = filteredList.map((k, idx) => [
-      idx + 1,
-      `"${k.member_id || ''}"`,
-      `"${k.full_name || ''}"`,
-      `"${getIsFemale(k) ? 'Female' : 'Male'}"`,
-      `"${k.region || ''}"`,
-      `"${k.center || ''}"`,
-      `"${k.seva_designation || 'None'}"`,
-      `"${k.tshirt_size || 'N/A'}"`,
-      Number(k.is_paid) === 1 ? 'Paid' : 'Unpaid'
-    ]);
+    const rows = filteredList.map((k, idx) => {
+      const rowData = [
+        idx + 1,
+        `"${k.member_id || ''}"`,
+        `"${k.full_name || ''}"`,
+        `"${getIsFemale(k) ? 'Female' : 'Male'}"`,
+        `"${k.region || ''}"`,
+        `"${k.center || ''}"`,
+        `"${k.seva_designation || 'None'}"`,
+        `"${k.tshirt_size || 'N/A'}"`,
+        Number(k.is_paid) === 1 ? 'Paid' : 'Unpaid'
+      ];
+      if (region.toLowerCase() === 'kenya') {
+        rowData.push(`"${k.accomodation || k.accommodation || 'Not Assigned'}"`);
+      }
+      return rowData;
+    });
     
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -372,9 +383,20 @@ const getIsFemale = (karyakar) => {
 
   const selectedSevaCount = editForm.sevaDesignation.length;
 
+  // Determine if Region Column should render (Only when 'All' is selected)
+  const showRegionColumn = region === 'All';
+
+  // Determine if Accommodation should render (Only when 'Kenya' is selected)
+  const showAccommodationColumn = region.toLowerCase() === 'kenya';
+
+  // Compute colspan dynamically for loader and fallback rows
+  let totalColumns = 10; // default columns
+  if (showRegionColumn) totalColumns += 1;
+  if (showAccommodationColumn) totalColumns += 1;
+  if (canEdit || canDelete) totalColumns += 1;
+
   return (
     <div className={styles.rosterContainer}>
-      {/* Dynamic Filter Bento Header - Numbers now update dynamically on search and filters */}
       <div className={styles.directoryBentoStats}>
         <div 
           className={`${styles.statBox} ${genderFilter === 'All' ? styles.statBoxActive : ''}`} 
@@ -471,8 +493,9 @@ const getIsFemale = (karyakar) => {
                 <th>QR Code</th>
                 <th>Profile</th>
                 <th>Full Name</th>
-                <th>Region</th>
+                {showRegionColumn && <th>Region</th>}
                 <th>Center</th>
+                {showAccommodationColumn && <th>Accommodation</th>}
                 <th>Seva Designation</th>
                 <th>T-Shirt</th>
                 <th>Status</th>
@@ -482,13 +505,13 @@ const getIsFemale = (karyakar) => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={11} className={styles.emptyTablePlaceholder}>
+                  <td colSpan={totalColumns} className={styles.emptyTablePlaceholder}>
                     <FaSpinner className={styles.spin} /> Loading directory records...
                   </td>
                 </tr>
               ) : filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className={styles.emptyTablePlaceholder}>No registered members found matching filters.</td>
+                  <td colSpan={totalColumns} className={styles.emptyTablePlaceholder}>No registered members found matching filters.</td>
                 </tr>
               ) : filteredList.map((k, index) => (
                 <tr key={k.id} className={confirmDeleteId === k.id ? styles.rowWarningHighlight : ''}>
@@ -513,8 +536,29 @@ const getIsFemale = (karyakar) => {
                     </div>
                   </td>
                   <td className={`${styles.boldText} ${styles.centerAlignCell}`}>{k.full_name}</td>
-                  <td className={styles.centerAlignCell}><span className={styles.regionTag}>{k.region}</span></td>
+                  {showRegionColumn && (
+                    <td className={styles.centerAlignCell}>
+                      <span className={styles.regionTag}>{k.region}</span>
+                    </td>
+                  )}
                   <td className={styles.centerAlignCell}><span className={styles.centerText}>{k.center || '—'}</span></td>
+                  
+                  {/* Kenya-Only Accommodation Database render */}
+                  {showAccommodationColumn && (
+                    <td className={styles.centerAlignCell}>
+                      {(k.accomodation || k.accommodation) ? (
+                        <span className={styles.badgeGenderTag} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                          <FaBed style={{ fontSize: "12px" }} />
+                          {k.accomodation || k.accommodation}
+                        </span>
+                      ) : (
+                        <span style={{ color: "var(--text-muted)", fontSize: "12px", fontStyle: "italic" }}>
+                          Not Assigned
+                        </span>
+                      )}
+                    </td>
+                  )}
+
                   <td className={styles.centerAlignCell}>
                     <div className={styles.sevaBadgeContainer}>
                       {k.seva_designation ? (

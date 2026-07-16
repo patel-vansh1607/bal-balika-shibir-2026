@@ -1,235 +1,637 @@
-.managerContainer {
-  padding: 24px;
-  background-color: #f8f9fa;
+/* ==========================================================================
+   Layout Wrappers (Sidebar + Main Workspace)
+   ========================================================================== */
+
+.dashboardContainer {
+  display: flex;
   min-height: 100vh;
+  width: 100%;
+  background-color: var(--bg-main);
+  font-family: var(--font-sans);
 }
+
+.sidebar {
+  width: 300px;
+  background-color: var(--bg-card);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 32px 24px;
+  box-sizing: border-box;
+}
+
+.managerContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+  padding: 32px 40px;
+  background-color: var(--bg-main);
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+@media (max-width: 1024px) {
+  .dashboardContainer {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+    padding: 24px;
+  }
+  .managerContainer {
+    padding: 24px;
+  }
+}
+
+/* ==========================================================================
+   Sidebar Styling
+   ========================================================================== */
+
+.sidebarHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebarBrand {
+  font-family: var(--font-mainbrand);
+  font-size: 26px;
+  color: var(--accent-primary);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.scopeBadge {
+  background-color: var(--accent-soft);
+  color: var(--accent-primary);
+  font-family: var(--font-subbrand);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  width: fit-content;
+  border: 1px solid rgba(231, 133, 36, 0.2);
+}
+
+.sidebarFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: auto;
+  border-top: 1px solid var(--border-light);
+  padding-top: 24px;
+}
+
+.switchGatewayBtn {
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border-light);
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: var(--font-subbrand);
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.switchGatewayBtn:hover {
+  background-color: var(--accent-soft);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.userInfoBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background-color: var(--accent-soft);
+  border-radius: 10px;
+}
+
+.userEmailLabel {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: var(--text-main);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.userRoleTag {
+  font-family: var(--font-subbrand);
+  font-size: 0.75rem;
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.logoutBtn {
+  background-color: #8a151b; /* Classy warm crimson */
+  color: #ffffff;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: var(--font-subbrand);
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoutBtn:hover {
+  opacity: 0.9;
+}
+
+/* ==========================================================================
+   Header Area
+   ========================================================================== */
 
 .header {
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 20px;
 }
 
 .backBtn {
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 10px 18px;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  border: 1px solid #dee2e6;
-  background-color: #fff;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
+  font-family: var(--font-subbrand);
+  font-weight: 700;
+  transition: all 0.2s ease;
 }
 
 .backBtn:hover {
-  background-color: #e9ecef;
+  background-color: var(--accent-soft);
+  border-color: var(--accent-primary);
 }
 
 .titleArea {
-  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .title {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent-primary);
   margin: 0;
-  font-size: 24px;
-  color: #212529;
 }
 
 .subtitle {
-  margin: 4px 0 0;
-  color: #6c757d;
-  font-size: 14px;
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  color: var(--text-muted);
 }
 
-/* Control Row Layout with Toggles */
+/* ==========================================================================
+   Filter & Search Bento Container
+   ========================================================================== */
+
 .controlRow {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  gap: 20px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(108, 99, 92, 0.04);
 }
 
 .toggleSection {
   display: flex;
   flex-wrap: wrap;
   gap: 24px;
-  align-items: center;
 }
 
 .toggleGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .toggleLabel {
-  font-size: 11px;
+  font-family: var(--font-subbrand);
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #495057;
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
 }
 
 .toggleSwitchContainer {
   display: flex;
-  background: #f1f3f5;
+  background: var(--accent-soft);
   padding: 4px;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  width: fit-content;
 }
 
 .toggleBtn {
+  background: transparent;
   border: none;
-  background: none;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #495057;
+  border-radius: 8px;
+  padding: 8px 20px;
+  color: var(--text-muted);
+  font-family: var(--font-subbrand);
+  font-size: 0.9rem;
+  font-weight: 700;
   cursor: pointer;
-  border-radius: 6px;
   transition: all 0.2s ease;
 }
 
 .toggleBtnActive {
-  background: #3b82f6;
+  background: var(--accent-primary);
   color: #ffffff;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
+/* Bento Stat Display Cards */
+.statsBentoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .statsBentoGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statCard {
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.2s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+}
+
+.statMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.statLabel {
+  font-family: var(--font-subbrand);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.statIcon {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* Search Bar & Center Selectors */
 .filterBar {
   display: flex;
   gap: 12px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .filterBar {
+    flex-direction: column;
+  }
 }
 
 .searchWrapper {
   position: relative;
-  flex-grow: 1;
+  flex: 1;
 }
 
 .searchIcon {
   position: absolute;
-  left: 12px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  color: #adb5bd;
+  color: var(--text-muted);
 }
 
 .searchInput {
   width: 100%;
-  padding: 10px 12px 10px 36px;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-size: 14px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  color: var(--text-main);
+  border-radius: 10px;
+  padding: 12px 16px 12px 46px;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  border-color: var(--accent-primary);
 }
 
 .filterSelect {
-  padding: 10px 16px;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  background-color: #fff;
-  font-size: 14px;
-  cursor: pointer;
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  color: var(--text-main);
+  border-radius: 10px;
+  padding: 12px 18px;
+  outline: none;
+  font-family: var(--font-subbrand);
+  font-weight: 700;
+  font-size: 0.9rem;
+  min-width: 180px;
 }
 
-/* Table Card Layout */
-.tableCard {
-  background: #ffffff;
+/* ==========================================================================
+   Bulk Assignment Banner
+   ========================================================================== */
+
+.bulkActionPanel {
+  background-color: var(--accent-soft);
+  border: 1px solid rgba(231, 133, 36, 0.3);
+  border-radius: 12px;
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .bulkActionPanel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.bulkMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+}
+
+.bulkIcon {
+  font-size: 1.2rem;
+  color: var(--accent-primary);
+}
+
+.bulkForm {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .bulkForm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.bulkInput {
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  color: var(--text-main);
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  padding: 10px 14px;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  min-width: 180px;
+}
+
+.bulkInput:focus {
+  border-color: var(--accent-primary);
+}
+
+.bulkSubmitBtn {
+  background-color: var(--accent-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-family: var(--font-subbrand);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.bulkSubmitBtn:hover {
+  opacity: 0.95;
+}
+
+.bulkCancelBtn {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-family: var(--font-subbrand);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.bulkCancelBtn:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* ==========================================================================
+   Interactive Data Table Customizations
+   ========================================================================== */
+
+.tableCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(108, 99, 92, 0.02);
   overflow-x: auto;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.table th, .table td {
+  padding: 16px 20px;
   text-align: left;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .table th {
-  background-color: #f8f9fa;
-  padding: 12px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #495057;
-  border-bottom: 2px solid #dee2e6;
+  background-color: rgba(244, 236, 230, 0.3);
+  font-family: var(--font-subbrand);
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
 }
 
-.table td {
-  padding: 14px 16px;
-  border-bottom: 1px solid #dee2e6;
-  font-size: 14px;
+.checkboxCol {
+  text-align: center;
+  vertical-align: middle;
+  width: 50px;
+}
+
+.styledCheckbox {
+  appearance: none;
+  background-color: var(--bg-main);
+  border: 2px solid var(--border-light);
+  padding: 8px;
+  border-radius: 4px;
+  display: inline-block;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.styledCheckbox:checked {
+  background-color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.styledCheckbox:checked::after {
+  content: '\2714';
+  font-size: 10px;
+  color: #fff;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -51%);
+}
+
+.selectedRow {
+  background-color: rgba(231, 133, 36, 0.03) !important;
 }
 
 .modifiedRow {
-  background-color: #fefcf0;
+  background-color: rgba(244, 236, 230, 0.25);
 }
 
 .idCell {
   font-family: monospace;
-  font-weight: bold;
-  color: #495057;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-size: 0.88rem;
 }
 
 .nameCell {
-  font-weight: 500;
-  color: #212529;
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: 0.95rem;
 }
 
 .centerTag {
+  background-color: var(--accent-soft);
+  padding: 5px 12px;
+  border-radius: 20px;
+  color: var(--text-muted);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background-color: #e9ecef;
-  color: #495057;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .currentRoomTag {
+  background-color: #eef7ee; /* Soft organic moss green */
+  color: #2b5c2e;
+  border: 1px solid rgba(43, 92, 46, 0.15);
+  padding: 6px 14px;
+  border-radius: 20px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background-color: #e1f5fe;
-  color: #0288d1;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
+  font-weight: 700;
+  font-size: 0.8rem;
 }
 
 .noRoomTag {
-  color: #adb5bd;
-  font-size: 13px;
+  color: var(--text-muted);
   font-style: italic;
+  font-size: 0.85rem;
 }
 
+/* Input Fields inside table rows */
 .inputWrapper {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
+  max-width: 180px;
 }
 
 .roomInput {
   width: 100%;
-  max-width: 220px;
-  padding: 8px 32px 8px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 13px;
-  text-transform: uppercase;
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  color: var(--text-main);
+  border-radius: 8px;
+  padding: 8px 30px 8px 12px;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
 }
 
 .roomInput:focus {
-  border-color: #3b82f6;
-  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(231, 133, 36, 0.1);
 }
 
 .clearBtn {
@@ -237,66 +639,105 @@
   right: 8px;
   background: none;
   border: none;
-  color: #adb5bd;
+  color: var(--text-muted);
   cursor: pointer;
-  padding: 2px;
   display: flex;
   align-items: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background-color 0.15s;
 }
 
 .clearBtn:hover {
-  color: #495057;
+  background-color: var(--accent-soft);
+  color: var(--accent-primary);
 }
+
+/* ==========================================================================
+   Save/Status Indicator Column
+   ========================================================================== */
 
 .actionHeader {
   text-align: right;
 }
 
 .actionCell {
-  display: flex;
-  justify-content: flex-end;
+  text-align: right;
 }
 
 .saveBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border: 1px solid #ced4da;
-  background: #f8f9fa;
-  color: #6c757d;
-  font-size: 13px;
-  border-radius: 4px;
+  background-color: var(--accent-soft);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+  padding: 8px 16px;
+  border-radius: 8px;
   cursor: not-allowed;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.activeSave {
-  background: #28a745;
-  border-color: #28a745;
-  color: #ffffff;
-  cursor: pointer;
-}
-
-.activeSave:hover {
-  background: #218838;
-}
-
-.savingTag, .savedTag {
+  font-family: var(--font-subbrand);
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 0.82rem;
+  transition: all 0.2s ease;
+}
+
+.activeSave {
+  background-color: var(--accent-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--accent-primary) !important;
+  cursor: pointer !important;
+}
+
+.activeSave:hover {
+  opacity: 0.95;
+}
+
+.savingTag, .savedTag {
+  font-family: var(--font-subbrand);
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .savingTag {
-  color: #0288d1;
+  color: var(--text-muted);
 }
 
 .savedTag {
-  color: #28a745;
+  color: #2b5c2e;
+}
+
+/* ==========================================================================
+   Loading, Empty, and Error States
+   ========================================================================== */
+
+.centerState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+}
+
+.errorState {
+  color: #8a151b;
+  text-align: center;
+  padding: 40px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+.noDataCell {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px;
+  font-style: italic;
+  font-size: 0.9rem;
 }
 
 .spin {
@@ -304,22 +745,35 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+/* ==========================================================================
+   Gender Tag Badges
+   ========================================================================== */
+
+.genderTag {
+  font-family: var(--font-subbrand);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 12px;
+  display: inline-block;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.centerState, .errorState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 60px 20px;
-  background: #ffffff;
-  border-radius: 8px;
-  color: #6c757d;
+/* Elegant, soft blue/teal for Balak */
+.genderTag.balak {
+  background-color: #e6f4ea;
+  color: #137333;
+  border: 1px solid rgba(19, 115, 51, 0.15);
 }
 
-.errorState {
-  color: #dc3545;
+/* Elegant, soft peach/orange to match your baps brand palette for Balika */
+.genderTag.balika {
+  background-color: var(--accent-soft);
+  color: var(--accent-primary);
+  border: 1px solid rgba(231, 133, 36, 0.2);
 }
