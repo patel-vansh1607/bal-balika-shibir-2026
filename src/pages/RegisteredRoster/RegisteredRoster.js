@@ -25,6 +25,7 @@ import {
   // FaUserCheck,
   FaCreditCard,
   FaMoneyBillWave,
+  FaBed
 } from "react-icons/fa";
 import styles from "./RegisteredRoster.module.css";
 import ArchiveConfirmModal from "../ArchiveConfirmModal/ArchiveConfirmModal";
@@ -311,7 +312,7 @@ export default function RegisteredRoster({
     }
   };
   /* --- Core PDF Export Execution Logic --- */
-  const handleExportPDF = (
+const handleExportPDF = (
     includeContact = true,
     currentCountry = "All",
     currentCenter = "All",
@@ -356,12 +357,13 @@ export default function RegisteredRoster({
       "Age",
       "Country",
       "Center",
+      "Accomodation",
     ];
     if (includeContact) headersRow.push("Parent Contact");
     if (isSpecialRegion) headersRow.push("T-Shirt");
     const headers = [headersRow];
 
-    // 3. Map Body Data Dynamically with Size Formatting
+    // 3. Map Body Data Dynamically with Size Formatting & Room Numbers
     const bodyData = filteredAttendees.map((a, index) => {
       const attendeeCountry = a.country || a.region || "Kenya";
 
@@ -374,6 +376,9 @@ export default function RegisteredRoster({
           SIZE_TO_CM_MAP[displayTshirtSize] || displayTshirtSize;
       }
 
+      // Check both database spellings for rooms (fallback to empty string if none)
+      const displayRoom = a.accommodation || a.accomodation || "—";
+
       const baseRow = [
         String(index + 1),
         a.member_id || `MTRC-${a.id}`,
@@ -382,6 +387,7 @@ export default function RegisteredRoster({
         a.age || "—",
         attendeeCountry,
         a.center || "",
+        displayRoom,
       ];
       if (includeContact) {
         baseRow.push(a.parent_contact || "");
@@ -392,52 +398,60 @@ export default function RegisteredRoster({
       return baseRow;
     });
 
-    // 4. Custom Width Configuration Matrix tailored for Landscape (297mm)
+    // 4. Determine if we are exporting specifically for Kenya
+    const isKenyaExport = currentCountry === "Kenya";
+
+    // 5. Custom Width Configuration Matrix tailored for Landscape (297mm)
+    // We target a fixed, compact width of 55mm to 65mm for Kenya specifically to prevent stretched rows
     let columnWidthStyles = {};
     if (isSpecialRegion && includeContact) {
       columnWidthStyles = {
-        0: { cellWidth: 15, halign: "center" },
-        1: { cellWidth: 32, fontStyle: "bold" },
-        2: { cellWidth: "auto" },
-        3: { cellWidth: 20, halign: "center" },
-        4: { cellWidth: 15, halign: "center" },
-        5: { cellWidth: 30 },
-        6: { cellWidth: 35 },
-        7: { cellWidth: 35 },
-        8: { cellWidth: 32, halign: "center" },
+        0: { cellWidth: 12, halign: "center" },
+        1: { cellWidth: 28, fontStyle: "bold" },
+        2: { cellWidth: isKenyaExport ? 55 : "auto" }, // Compact width only for Kenya
+        3: { cellWidth: 18, halign: "center" },
+        4: { cellWidth: 12, halign: "center" },
+        5: { cellWidth: 28 },
+        6: { cellWidth: isKenyaExport ? "auto" : 30 },
+        7: { cellWidth: 30, halign: "center" },
+        8: { cellWidth: 32 },                   
+        9: { cellWidth: 32, halign: "center" }, 
       };
     } else if (isSpecialRegion && !includeContact) {
       columnWidthStyles = {
-        0: { cellWidth: 15, halign: "center" },
-        1: { cellWidth: 35, fontStyle: "bold" },
-        2: { cellWidth: "auto" },
-        3: { cellWidth: 24, halign: "center" },
-        4: { cellWidth: 18, halign: "center" },
-        5: { cellWidth: 35 },
-        6: { cellWidth: 40 },
-        7: { cellWidth: 35, halign: "center" },
+        0: { cellWidth: 12, halign: "center" },
+        1: { cellWidth: 32, fontStyle: "bold" },
+        2: { cellWidth: isKenyaExport ? 60 : "auto" }, // Compact width only for Kenya
+        3: { cellWidth: 20, halign: "center" },
+        4: { cellWidth: 15, halign: "center" },
+        5: { cellWidth: 32 },
+        6: { cellWidth: isKenyaExport ? "auto" : 32 },
+        7: { cellWidth: 35, halign: "center" }, 
+        8: { cellWidth: 35, halign: "center" }, 
       };
     } else if (!isSpecialRegion && includeContact) {
       columnWidthStyles = {
-        0: { cellWidth: 15, halign: "center" },
-        1: { cellWidth: 35, fontStyle: "bold" },
-        2: { cellWidth: "auto" },
-        3: { cellWidth: 24, halign: "center" },
-        4: { cellWidth: 18, halign: "center" },
-        5: { cellWidth: 35 },
-        6: { cellWidth: 40 },
-        7: { cellWidth: 40 },
+        0: { cellWidth: 12, halign: "center" },
+        1: { cellWidth: 32, fontStyle: "bold" },
+        2: { cellWidth: isKenyaExport ? 60 : "auto" }, // Compact width only for Kenya
+        3: { cellWidth: 20, halign: "center" },
+        4: { cellWidth: 15, halign: "center" },
+        5: { cellWidth: 32 },
+        6: { cellWidth: isKenyaExport ? "auto" : 32 },
+        7: { cellWidth: 35, halign: "center" }, 
+        8: { cellWidth: 35 },                   
       };
     } else {
       // !isSpecialRegion && !includeContact
       columnWidthStyles = {
         0: { cellWidth: 15, halign: "center" },
-        1: { cellWidth: 40, fontStyle: "bold" },
-        2: { cellWidth: "auto" },
-        3: { cellWidth: 26, halign: "center" },
-        4: { cellWidth: 20, halign: "center" },
-        5: { cellWidth: 40 },
-        6: { cellWidth: 45 },
+        1: { cellWidth: 35, fontStyle: "bold" },
+        2: { cellWidth: isKenyaExport ? 65 : "auto" }, // Compact width only for Kenya
+        3: { cellWidth: 22, halign: "center" },
+        4: { cellWidth: 18, halign: "center" },
+        5: { cellWidth: 35 },
+        6: { cellWidth: isKenyaExport ? "auto" : 38 },
+        7: { cellWidth: 40, halign: "center" }, 
       };
     }
 
@@ -454,8 +468,9 @@ export default function RegisteredRoster({
       styles: {
         fontSize: 8.5,
         font: "helvetica",
-        cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
-        overflow: "linebreak", // Wraps text fields onto secondary lines cleanly instead of breaking borders
+        cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, // Compact padding
+        minCellHeight: 8, // Force tight row layout
+        overflow: "linebreak", 
         valign: "middle",
         lineColor: [226, 239, 249],
         lineWidth: 0.15,
@@ -474,7 +489,6 @@ export default function RegisteredRoster({
 
       didDrawPage: function (data) {
         doc.setFillColor(42, 52, 107);
-        // Changed rect width to 297 to span full Landscape width
         doc.rect(0, 0, 297, 24, "F");
 
         doc.setTextColor(255, 255, 255);
@@ -532,8 +546,7 @@ export default function RegisteredRoster({
     );
     const contactToken = includeContact ? "" : "";
     doc.save(`${contactToken}Registered_${safeFileNameToken}.pdf`);
-  };
-  const downloadBatchQR = async () => {
+  };  const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;
     setIsDownloadingQR(true);
     try {
@@ -1229,7 +1242,7 @@ export default function RegisteredRoster({
             className={styles.tableContainer}
             style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}
           >
-            <table className={styles.dataTable}>
+<table className={styles.dataTable}>
               <thead>
                 <tr>
                   <th>Member ID</th>
@@ -1248,6 +1261,7 @@ export default function RegisteredRoster({
                   ].includes(regionScope) && <th>T-Shirt</th>}
                   {regionScope === "Tanzania" && <th>Selection Status</th>}
                   {regionScope === "Kenya" && <th>Payment Status</th>}
+                  <th>Accomodation</th>
                   <th style={{ textAlign: "center" }}>QR</th>
                   {(userRole === "master_admin" ||
                     userRole === "super_admin") && <th>Actions</th>}
@@ -1397,6 +1411,21 @@ export default function RegisteredRoster({
                           </td>
                         )}
 
+                      {/* --- Accomodation Column --- */}
+                     <td>
+  {/* Check both spellings so that whichever key the backend provides is successfully displayed */}
+  {(attendee.accommodation || attendee.accomodation) ? (
+    <span className={styles.badgeGenderTag} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+      <FaBed style={{ fontSize: "12px" }} />
+      {attendee.accommodation || attendee.accomodation}
+    </span>
+  ) : (
+    <span style={{ color: "var(--text-muted)", fontSize: "12px", fontStyle: "italic" }}>
+      Not Assigned
+    </span>
+  )}
+</td>
+
                       <td style={{ textAlign: "center" }}>
                         <button
                           onClick={() => handleOpenQrModal(attendee)}
@@ -1449,72 +1478,6 @@ export default function RegisteredRoster({
                               }}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              {/* --- Tanzania Selection Actions --- */}
-                              {/* {regionScope === "Tanzania" &&
-                                (userRole === "master_admin" ||
-                                  userRole === "super_admin") && (
-                                  <>
-                                    {attendee.is_selected !== 1 && (
-                                      <button
-                                        onClick={() => {
-                                          setActiveDropdown(null);
-                                          handleToggleSelection(attendee, 1);
-                                        }}
-                                        className={styles.dropdownItem}
-                                        style={{ color: "#16a34a" }}
-                                      >
-                                        <FaUserCheck
-                                          style={{
-                                            fontSize: "12px",
-                                            marginRight: "6px",
-                                          }}
-                                        />{" "}
-                                        Mark Selected
-                                      </button>
-                                    )}
-
-                                    {attendee.is_selected !== 2 && (
-                                      <button
-                                        onClick={() => {
-                                          setActiveDropdown(null);
-                                          handleToggleSelection(attendee, 2);
-                                        }}
-                                        className={styles.dropdownItem}
-                                        style={{ color: "#dc2626" }}
-                                      >
-                                        <FaUserMinus
-                                          style={{
-                                            fontSize: "12px",
-                                            marginRight: "6px",
-                                          }}
-                                        />{" "}
-                                        Mark Not Selected
-                                      </button>
-                                    )} 
-
-                                    {attendee.is_selected !== 0 &&
-                                      attendee.is_selected !== null &&
-                                      attendee.is_selected !== undefined && (
-                                        <button
-                                          onClick={() => {
-                                            setActiveDropdown(null);
-                                            handleToggleSelection(attendee, 0);
-                                          }}
-                                          className={styles.dropdownItem}
-                                          style={{ color: "#64748b" }}
-                                        >
-                                          <FaSpinner
-                                            style={{
-                                              fontSize: "12px",
-                                              marginRight: "6px",
-                                            }}
-                                          />{" "}
-                                          Mark Pending
-                                        </button>
-                                      )}
-                                  </>
-                                )}*/}
-
                               {/* --- Kenya Payment Actions --- */}
                               {regionScope === "Kenya" &&
                                   (userRole === "master_admin" ||
@@ -1633,7 +1596,6 @@ export default function RegisteredRoster({
                 })}
               </tbody>
             </table>
-
             {/* UI Toast and Action Modals remain positioned underneath cleanly */}
             {toast.show && (
               <div

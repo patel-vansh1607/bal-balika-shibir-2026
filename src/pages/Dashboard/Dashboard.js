@@ -44,6 +44,7 @@ import { TfiStatsUp } from "react-icons/tfi";
 import KarayakarForm from "../KarayakarForm/KarayakarForm";
 import KarayakarList from "../KarayakarList/KarayakarList";
 import ManualScanner from "../ManualScanner/ManualScanner";
+import AccommodationManager from "../AccomodationManager/AccomodationManager";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -343,6 +344,14 @@ export default function Dashboard() {
                 >
                   <FaUserPlus className={styles.iconMargin} /> Add Karyakar
                 </button>
+                <button
+                  onClick={() =>
+                    handleNavigation("/dashboard/acc")
+                  }
+                  className={`${styles.navLink} ${location.pathname === "/dashboard/acc" ? styles.navLinkActive : ""}`}
+                >
+                  <FaUserPlus className={styles.iconMargin} /> Accomodation
+                </button>
 
                 {(userRole === "master_admin" ||
                   userRole === "super_admin") && (
@@ -564,6 +573,12 @@ export default function Dashboard() {
               path="add-new"
               element={
                 userRole !== "operator" ? <AdminRegister /> : <NotFound />
+              }
+            />
+            <Route
+              path="acc"
+              element={
+                userRole !== "operator" ? <AccommodationManager /> : <NotFound />
               }
             />
             <Route

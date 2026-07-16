@@ -1,0 +1,329 @@
+.managerContainer {
+  padding: 24px;
+  background-color: #f8fafc;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1e293b;
+}
+
+/* Header & Breadcrumb Layout */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.backBtn:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.titleArea {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.subtitle {
+  margin: 2px 0 0 0;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+/* Filtering Layout */
+.filterBar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.searchWrapper {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 12px 12px 42px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  background-color: #ffffff;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease-in-out;
+}
+
+.searchInput:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.filterSelect {
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  font-size: 0.95rem;
+  color: #475569;
+  outline: none;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.filterSelect:focus {
+  border-color: #3b82f6;
+}
+
+/* Page states loading & errors */
+.centerState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 0;
+  color: #64748b;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.errorState {
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #991b1b;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Interactive Data Table */
+.tableCard {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  border: 1px solid #e2e8f0;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.925rem;
+}
+
+.table th {
+  background-color: #f8fafc;
+  padding: 16px 20px;
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.775rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #edf2f7;
+}
+
+.table td {
+  padding: 14px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.modifiedRow {
+  background-color: #f0fdf4; /* Soft green backdrop highlighting edited changes */
+}
+
+.idCell {
+  font-family: monospace;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.nameCell {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Badge tags for current statuses */
+.centerTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f1f5f9;
+  color: #475569;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.currentRoomTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.noRoomTag {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Form Input Layout */
+.inputWrapper {
+  position: relative;
+  max-width: 220px;
+}
+
+.roomInput {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  outline: none;
+  background: #ffffff;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.roomInput:focus {
+  border-color: #3b82f6;
+  background: #ffffff;
+}
+
+.clearBtn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  padding: 0;
+}
+
+.clearBtn:hover {
+  color: #64748b;
+}
+
+/* Action button and state wrappers */
+.actionHeader {
+  text-align: right;
+  padding-right: 28px !important;
+}
+
+.actionCell {
+  text-align: right;
+  padding-right: 28px !important;
+  min-width: 110px;
+}
+
+.saveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #94a3b8;
+  cursor: not-allowed;
+  transition: all 0.15s ease-in-out;
+}
+
+.activeSave {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.activeSave:hover {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.savingTag {
+  font-size: 0.85rem;
+  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.savedTag {
+  font-size: 0.85rem;
+  color: #16a34a;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  animation: popIn 0.2s ease-out;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.noDataCell {
+  text-align: center;
+  color: #94a3b8;
+  padding: 48px !important;
+  font-size: 0.95rem;
+}
