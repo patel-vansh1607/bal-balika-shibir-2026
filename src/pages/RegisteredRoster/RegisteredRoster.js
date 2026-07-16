@@ -312,7 +312,7 @@ export default function RegisteredRoster({
     }
   };
   /* --- Core PDF Export Execution Logic --- */
-const handleExportPDF = (
+  const handleExportPDF = (
     includeContact = true,
     currentCountry = "All",
     currentCenter = "All",
@@ -357,13 +357,12 @@ const handleExportPDF = (
       "Age",
       "Country",
       "Center",
-      "Accomodation",
     ];
     if (includeContact) headersRow.push("Parent Contact");
     if (isSpecialRegion) headersRow.push("T-Shirt");
     const headers = [headersRow];
 
-    // 3. Map Body Data Dynamically with Size Formatting & Room Numbers
+    // 3. Map Body Data Dynamically with Size Formatting
     const bodyData = filteredAttendees.map((a, index) => {
       const attendeeCountry = a.country || a.region || "Kenya";
 
@@ -376,9 +375,6 @@ const handleExportPDF = (
           SIZE_TO_CM_MAP[displayTshirtSize] || displayTshirtSize;
       }
 
-      // Check both database spellings for rooms (fallback to empty string if none)
-      const displayRoom = a.accommodation || a.accomodation || "—";
-
       const baseRow = [
         String(index + 1),
         a.member_id || `MTRC-${a.id}`,
@@ -387,7 +383,6 @@ const handleExportPDF = (
         a.age || "—",
         attendeeCountry,
         a.center || "",
-        displayRoom,
       ];
       if (includeContact) {
         baseRow.push(a.parent_contact || "");
@@ -398,60 +393,52 @@ const handleExportPDF = (
       return baseRow;
     });
 
-    // 4. Determine if we are exporting specifically for Kenya
-    const isKenyaExport = currentCountry === "Kenya";
-
-    // 5. Custom Width Configuration Matrix tailored for Landscape (297mm)
-    // We target a fixed, compact width of 55mm to 65mm for Kenya specifically to prevent stretched rows
+    // 4. Custom Width Configuration Matrix tailored for Landscape (297mm)
     let columnWidthStyles = {};
     if (isSpecialRegion && includeContact) {
       columnWidthStyles = {
-        0: { cellWidth: 12, halign: "center" },
-        1: { cellWidth: 28, fontStyle: "bold" },
-        2: { cellWidth: isKenyaExport ? 55 : "auto" }, // Compact width only for Kenya
-        3: { cellWidth: 18, halign: "center" },
-        4: { cellWidth: 12, halign: "center" },
-        5: { cellWidth: 28 },
-        6: { cellWidth: isKenyaExport ? "auto" : 30 },
-        7: { cellWidth: 30, halign: "center" },
-        8: { cellWidth: 32 },                   
-        9: { cellWidth: 32, halign: "center" }, 
+        0: { cellWidth: 15, halign: "center" },
+        1: { cellWidth: 32, fontStyle: "bold" },
+        2: { cellWidth: "auto" },
+        3: { cellWidth: 20, halign: "center" },
+        4: { cellWidth: 15, halign: "center" },
+        5: { cellWidth: 30 },
+        6: { cellWidth: 35 },
+        7: { cellWidth: 35 },
+        8: { cellWidth: 32, halign: "center" },
       };
     } else if (isSpecialRegion && !includeContact) {
       columnWidthStyles = {
-        0: { cellWidth: 12, halign: "center" },
-        1: { cellWidth: 32, fontStyle: "bold" },
-        2: { cellWidth: isKenyaExport ? 60 : "auto" }, // Compact width only for Kenya
-        3: { cellWidth: 20, halign: "center" },
-        4: { cellWidth: 15, halign: "center" },
-        5: { cellWidth: 32 },
-        6: { cellWidth: isKenyaExport ? "auto" : 32 },
-        7: { cellWidth: 35, halign: "center" }, 
-        8: { cellWidth: 35, halign: "center" }, 
+        0: { cellWidth: 15, halign: "center" },
+        1: { cellWidth: 35, fontStyle: "bold" },
+        2: { cellWidth: "auto" },
+        3: { cellWidth: 24, halign: "center" },
+        4: { cellWidth: 18, halign: "center" },
+        5: { cellWidth: 35 },
+        6: { cellWidth: 40 },
+        7: { cellWidth: 35, halign: "center" },
       };
     } else if (!isSpecialRegion && includeContact) {
       columnWidthStyles = {
-        0: { cellWidth: 12, halign: "center" },
-        1: { cellWidth: 32, fontStyle: "bold" },
-        2: { cellWidth: isKenyaExport ? 60 : "auto" }, // Compact width only for Kenya
-        3: { cellWidth: 20, halign: "center" },
-        4: { cellWidth: 15, halign: "center" },
-        5: { cellWidth: 32 },
-        6: { cellWidth: isKenyaExport ? "auto" : 32 },
-        7: { cellWidth: 35, halign: "center" }, 
-        8: { cellWidth: 35 },                   
+        0: { cellWidth: 15, halign: "center" },
+        1: { cellWidth: 35, fontStyle: "bold" },
+        2: { cellWidth: "auto" },
+        3: { cellWidth: 24, halign: "center" },
+        4: { cellWidth: 18, halign: "center" },
+        5: { cellWidth: 35 },
+        6: { cellWidth: 40 },
+        7: { cellWidth: 40 },
       };
     } else {
       // !isSpecialRegion && !includeContact
       columnWidthStyles = {
         0: { cellWidth: 15, halign: "center" },
-        1: { cellWidth: 35, fontStyle: "bold" },
-        2: { cellWidth: isKenyaExport ? 65 : "auto" }, // Compact width only for Kenya
-        3: { cellWidth: 22, halign: "center" },
-        4: { cellWidth: 18, halign: "center" },
-        5: { cellWidth: 35 },
-        6: { cellWidth: isKenyaExport ? "auto" : 38 },
-        7: { cellWidth: 40, halign: "center" }, 
+        1: { cellWidth: 40, fontStyle: "bold" },
+        2: { cellWidth: "auto" },
+        3: { cellWidth: 26, halign: "center" },
+        4: { cellWidth: 20, halign: "center" },
+        5: { cellWidth: 40 },
+        6: { cellWidth: 45 },
       };
     }
 
@@ -468,9 +455,8 @@ const handleExportPDF = (
       styles: {
         fontSize: 8.5,
         font: "helvetica",
-        cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, // Compact padding
-        minCellHeight: 8, // Force tight row layout
-        overflow: "linebreak", 
+        cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
+        overflow: "linebreak", // Wraps text fields onto secondary lines cleanly instead of breaking borders
         valign: "middle",
         lineColor: [226, 239, 249],
         lineWidth: 0.15,
@@ -489,6 +475,7 @@ const handleExportPDF = (
 
       didDrawPage: function (data) {
         doc.setFillColor(42, 52, 107);
+        // Changed rect width to 297 to span full Landscape width
         doc.rect(0, 0, 297, 24, "F");
 
         doc.setTextColor(255, 255, 255);
@@ -546,7 +533,8 @@ const handleExportPDF = (
     );
     const contactToken = includeContact ? "" : "";
     doc.save(`${contactToken}Registered_${safeFileNameToken}.pdf`);
-  };  const downloadBatchQR = async () => {
+  };
+  const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;
     setIsDownloadingQR(true);
     try {
