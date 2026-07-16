@@ -18,6 +18,7 @@ export default function BroadcastDashboard({ attendees = [] }) {
   const [isSendingEmails, setIsSendingEmails] = useState(false);
   const [emailLogs, setEmailLogs] = useState({ success: 0, failed: 0, currentAction: '' });
   const [liveTerminalLogs, setLiveTerminalLogs] = useState(['[SYSTEM]: Live production transmission lines ready. Dual-template engine active.']);
+  const [failedUsers, setFailedUsers] = useState([]);
 
   const writeToTerminal = (text) => {
     const timeMarker = new Date().toLocaleTimeString();
@@ -42,75 +43,61 @@ export default function BroadcastDashboard({ attendees = [] }) {
   }, [attendees, activeReviewBatch]);
 
   // Execute live production mass delivery pipeline with template branching split
-  const executeFinalizedBroadcast = async () => {
-    if (previewBatchUsers.length === 0) return;
+  const executeFinalizedBroadcast = async (usersToSend = null) => {
+    const batch = usersToSend || previewBatchUsers;
+    if (batch.length === 0) return;
 
     setIsSendingEmails(true);
+    setFailedUsers([]);
     const targetTemplate = activeReviewBatch === 'agreed' ? 'ACCEPTANCE_CARD' : 'REJECTION_MINIMAL';
-    
-    writeToTerminal(`🚀 INITIATING ${targetTemplate} TEMPLATE PIPELINE FOR ${previewBatchUsers.length} TARGET NODES.`);
-    setEmailLogs({ success: 0, failed: 0, currentAction: `Initializing staging environment for ${previewBatchUsers.length} records...` });
+
+    writeToTerminal(`🚀 INITIATING ${targetTemplate} TEMPLATE PIPELINE FOR ${batch.length} TARGET NODES.`);
+    setEmailLogs({ success: 0, failed: 0, currentAction: `Initializing staging environment for ${batch.length} records...` });
 
     let successCount = 0;
-    let failureCount = 0;
+    const localFailed = [];
 
-    for (let i = 0; i < previewBatchUsers.length; i++) {
-      const targetUser = previewBatchUsers[i];
+    for (let i = 0; i < batch.length; i++) {
+      const targetUser = batch[i];
       const targetEmail = targetUser.email || targetUser.email_address || targetUser.parent_email;
 
       if (!targetEmail) {
-        failureCount++;
+        localFailed.push({ ...targetUser, _failReason: 'No email address on record' });
         writeToTerminal(`⚠️ [BYPASSED]: "${targetUser.name || 'Unknown'}" contains no valid email destination parameter.`);
+        setEmailLogs({ success: successCount, failed: localFailed.length, currentAction: `(${i + 1}/${batch.length}) Skipped — no email for ${targetUser.name || 'Attendee'}` });
         continue;
       }
 
-      // Generate action text descriptor safely
-      const currentActionText = `(${i + 1}/${previewBatchUsers.length}) Dispatching ${targetTemplate} to: ${targetUser.name || 'Attendee'}`;
+      const currentActionText = `(${i + 1}/${batch.length}) Dispatching ${targetTemplate} to: ${targetUser.name || 'Attendee'}`;
+      setEmailLogs({ success: successCount, failed: localFailed.length, currentAction: currentActionText });
+      writeToTerminal(`[TRANSMITTING]: Slot ${i + 1}/${batch.length} [${targetTemplate}] -> ${targetEmail}`);
 
       try {
-        // FIXED: Replaced functional updater with plain object tracking to clear ESLint closures
-        setEmailLogs({
-          success: successCount,
-          failed: failureCount,
-          currentAction: currentActionText
-        });
-        
-        writeToTerminal(`[TRANSMITTING]: Slot ${i + 1}/${previewBatchUsers.length} [${targetTemplate}] -> ${targetEmail}`);
-
         await emailApi.sendSelection({
           email: targetEmail,
           name: targetUser.name,
           templateType: targetTemplate,
         });
-        
         successCount++;
-        writeToTerminal(`✅ [DELIVERED]: Pipeline configuration successfully applied for ${targetEmail}`);
+        writeToTerminal(`✅ [DELIVERED]: Successfully sent to ${targetEmail}`);
       } catch (error) {
-        console.error(`Failed delivery pointer targeting ${targetEmail}:`, error);
-        writeToTerminal(`❌ [PIPE EXCEPTION]: Delivery failure on ${targetEmail} -> ${error.message}`);
-        failureCount++;
+        const reason = error.message || 'Unknown error';
+        localFailed.push({ ...targetUser, _failReason: reason });
+        writeToTerminal(`❌ [PIPE EXCEPTION]: Delivery failure on ${targetEmail} -> ${reason}`);
       }
 
-      // FIXED: Kept loop clean and functional-free
-      setEmailLogs({
-        success: successCount,
-        failed: failureCount,
-        currentAction: currentActionText
-      });
+      setEmailLogs({ success: successCount, failed: localFailed.length, currentAction: currentActionText });
     }
 
-    const finalSummaryLog = `Template pipeline run concluded. Delivered: ${successCount}. Errors/Dropped: ${failureCount}.`;
-    setEmailLogs({
-      success: successCount,
-      failed: failureCount,
-      currentAction: finalSummaryLog
-    });
+    const finalSummaryLog = `Pipeline concluded. Delivered: ${successCount}. Failed: ${localFailed.length}.`;
+    setEmailLogs({ success: successCount, failed: localFailed.length, currentAction: finalSummaryLog });
     writeToTerminal(`🏁 LIVE BATCH RUNTIME CONCLUDED: ${finalSummaryLog}`);
-    
-    setTimeout(() => {
-      setIsSendingEmails(false);
-      setActiveReviewBatch(null);
-    }, 4000);
+    setFailedUsers(localFailed);
+    setIsSendingEmails(false);
+
+    if (localFailed.length === 0) {
+      setTimeout(() => setActiveReviewBatch(null), 2000);
+    }
   };
 
   return (
@@ -171,7 +158,7 @@ export default function BroadcastDashboard({ attendees = [] }) {
               <h5>1. Selection Template</h5>
             </div>
             <button 
-              onClick={() => setActiveReviewBatch('agreed')}
+              onClick={() => { setActiveReviewBatch('agreed'); setFailedUsers([]); }}
               disabled={stats.selected === 0 || isSendingEmails}
               className={`${styles.launchBtn} ${styles.btnSelectColor}`}
             >
@@ -184,7 +171,7 @@ export default function BroadcastDashboard({ attendees = [] }) {
               <h5>2. Non-Acceptance Template</h5>
             </div>
             <button 
-              onClick={() => setActiveReviewBatch('not_agreed')}
+              onClick={() => { setActiveReviewBatch('not_agreed'); setFailedUsers([]); }}
               disabled={stats.notSelected === 0 || isSendingEmails}
               className={`${styles.launchBtn} ${styles.btnRejectColor}`}
             >
@@ -238,16 +225,50 @@ export default function BroadcastDashboard({ attendees = [] }) {
                 <p className={styles.processingLogText}>{emailLogs.currentAction}</p>
                 <div className={styles.modalProgressCounter}>
                   <span className={styles.txtSuccess}>Delivered: <strong>{emailLogs.success}</strong></span>
-                  <span className={styles.txtFailed}>Errors/Dropped: <strong>{emailLogs.failed}</strong></span>
+                  <span className={styles.txtFailed}>Failed: <strong>{emailLogs.failed}</strong></span>
                 </div>
               </div>
+            ) : failedUsers.length > 0 ? (
+              <>
+                <div className={styles.drawerFailedAlert}>
+                  <FaExclamationTriangle style={{ fontSize: '18px', flexShrink: 0 }} />
+                  <p>
+                    <strong>{emailLogs.success}</strong> sent successfully.{' '}
+                    <strong>{failedUsers.length}</strong> failed — listed below. Successful deliveries have been removed.
+                  </p>
+                </div>
+
+                <div className={styles.drawerScrollList}>
+                  {failedUsers.map(user => {
+                    const extractedEmail = user.email || user.email_address || user.parent_email;
+                    return (
+                      <div key={user.id || extractedEmail} className={styles.drawerUserRowFailed}>
+                        <div className={styles.drawerUserRowLeft}>
+                          <span className={styles.drawerUserName}>{user.name || 'Anonymous User'}</span>
+                          <span className={styles.drawerUserEmail}>{extractedEmail || 'No email on record'}</span>
+                        </div>
+                        <span className={styles.failReasonTag}>{user._failReason}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className={styles.drawerActionFooter}>
+                  <button className={styles.cancelBtn} onClick={() => { setActiveReviewBatch(null); setFailedUsers([]); }}>
+                    Close
+                  </button>
+                  <button className={styles.confirmSendBtn} onClick={() => executeFinalizedBroadcast(failedUsers)}>
+                    <FaPaperPlane style={{ marginRight: '8px' }} /> Retry Failed ({failedUsers.length})
+                  </button>
+                </div>
+              </>
             ) : (
               <>
                 <div className={styles.drawerWarningAlert}>
                   <FaExclamationTriangle style={{ fontSize: '18px', flexShrink: 0 }} />
                   <p>
-                    You are reviewing a manual batch snapshot of <strong>{previewBatchUsers.length} profiles</strong>. 
-                    Target email output configuration variant: <strong>{activeReviewBatch === 'agreed' ? 'ACCEPTANCE_CARD' : 'REJECTION_MINIMAL'}</strong>.
+                    You are reviewing a manual batch snapshot of <strong>{previewBatchUsers.length} profiles</strong>.{' '}
+                    Target template: <strong>{activeReviewBatch === 'agreed' ? 'ACCEPTANCE_CARD' : 'REJECTION_MINIMAL'}</strong>.
                   </p>
                 </div>
 
@@ -258,7 +279,7 @@ export default function BroadcastDashboard({ attendees = [] }) {
                       <div key={user.id || user.email} className={styles.drawerUserRow}>
                         <span className={styles.drawerUserName}>{user.name || 'Anonymous User'}</span>
                         <span className={`${styles.drawerUserEmail} ${!extractedEmail ? styles.emailMissingWarning : ''}`}>
-                          {extractedEmail || '⚠️ No email profile on record (Will be skipped)'}
+                          {extractedEmail || '⚠️ No email on record (will be skipped)'}
                         </span>
                       </div>
                     );
@@ -269,7 +290,7 @@ export default function BroadcastDashboard({ attendees = [] }) {
                   <button className={styles.cancelBtn} onClick={() => setActiveReviewBatch(null)}>
                     Go Back &amp; Cancel
                   </button>
-                  <button className={styles.confirmSendBtn} onClick={executeFinalizedBroadcast}>
+                  <button className={styles.confirmSendBtn} onClick={() => executeFinalizedBroadcast()}>
                     <FaPaperPlane style={{ marginRight: '8px' }} /> Dispatch Emails to ({previewBatchUsers.length}) Users Now
                   </button>
                 </div>
