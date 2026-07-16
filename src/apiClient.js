@@ -135,6 +135,7 @@ export const upload = {
 export const email = {
   sendRegistration:  (data) => apiFetch('POST', '/email/send-registration',  data),
   sendAdminWelcome:  (data) => apiFetch('POST', '/email/send-admin-welcome',  data),
+  sendSelection:     (data) => apiFetch('POST', '/email/send-selection',      data),
 };
 
 // ---- Karayakars (volunteers) ----
