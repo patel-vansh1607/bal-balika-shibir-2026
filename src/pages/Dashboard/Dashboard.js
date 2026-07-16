@@ -45,6 +45,7 @@ import KarayakarForm from "../KarayakarForm/KarayakarForm";
 import KarayakarList from "../KarayakarList/KarayakarList";
 import ManualScanner from "../ManualScanner/ManualScanner";
 import AccommodationManager from "../AccomodationManager/AccomodationManager";
+import { FaBed } from "react-icons/fa6";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -196,6 +197,8 @@ export default function Dashboard() {
     if (path.startsWith("/dashboard/session/master")) return "Session Master";
     if (path.startsWith("/dashboard/session/add-session")) return "Add Session";
     if (path.startsWith("/dashboard/duplicates")) return "Duplicate Profiles";
+        if (path.startsWith("/dashboard/accommodation")) return "Accommodation";
+
     if (path.startsWith("/dashboard/session/attendance"))
       return "Sessions Attendance";
     return "";
@@ -324,6 +327,16 @@ export default function Dashboard() {
                     </span>
                   )}
                 </button>
+                {regionScope === "Kenya" && (
+                <button
+                  onClick={() =>
+                    handleNavigation("/dashboard/accommodation")
+                  }
+                  className={`${styles.navLink} ${location.pathname === "/dashboard/accommodation" ? styles.navLinkActive : ""}`}
+                >
+                  <FaBed className={styles.iconMargin} /> Accomodation
+                </button> 
+                )}
                 <button
                   onClick={() => handleNavigation("/dashboard/add-new")}
                   className={`${styles.navLink} ${location.pathname === "/dashboard/add-new" ? styles.navLinkActive : ""}`}
@@ -344,14 +357,7 @@ export default function Dashboard() {
                 >
                   <FaUserPlus className={styles.iconMargin} /> Add Karyakar
                 </button>
-                <button
-                  onClick={() =>
-                    handleNavigation("/dashboard/acc")
-                  }
-                  className={`${styles.navLink} ${location.pathname === "/dashboard/acc" ? styles.navLinkActive : ""}`}
-                >
-                  <FaUserPlus className={styles.iconMargin} /> Accomodation
-                </button>
+                
 
                 {(userRole === "master_admin" ||
                   userRole === "super_admin") && (
@@ -576,7 +582,7 @@ export default function Dashboard() {
               }
             />
             <Route
-              path="acc"
+              path="accommodation"
               element={
                 userRole !== "operator" ? <AccommodationManager /> : <NotFound />
               }

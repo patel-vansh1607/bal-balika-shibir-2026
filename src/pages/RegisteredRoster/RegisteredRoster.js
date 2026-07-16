@@ -311,7 +311,7 @@ export default function RegisteredRoster({
       );
     }
   };
-  const handleExportPDF = (
+const handleExportPDF = (
     includeContact = true,
     currentCountry = "All",
     currentCenter = "All",
@@ -334,6 +334,11 @@ export default function RegisteredRoster({
       "Uganda",
     ].includes(regionScope);
 
+    // Strictly check if the active scope or selected country is Kenya
+    const isKenya = 
+      String(regionScope).toLowerCase() === "kenya" || 
+      String(currentCountry).toLowerCase() === "kenya";
+
     // Map short codes to full descriptions with measurements for Kenya & Uganda
     const SIZE_TO_CM_MAP = {
       XXXS: "XXXS (57-62cm)",
@@ -347,7 +352,7 @@ export default function RegisteredRoster({
       XXXL: "XXXL (98-103cm)",
     };
 
-    // 2. Build Dynamic Headers Based on Selections (Adding Room Allocation)
+    // 2. Build Dynamic Headers (Conditionally appending Room Allocation ONLY for Kenya)
     const headersRow = [
       "Sr No.",
       "Member ID",
@@ -356,13 +361,20 @@ export default function RegisteredRoster({
       "Age",
       "Country",
       "Center",
-      "Room Allocation" // Added Accommodation column here
     ];
-    if (includeContact) headersRow.push("Parent Contact");
-    if (isSpecialRegion) headersRow.push("T-Shirt");
+    
+    if (isKenya) {
+      headersRow.push("Room Allocation"); // Only visible on Kenya reports
+    }
+    if (includeContact) {
+      headersRow.push("Parent Contact");
+    }
+    if (isSpecialRegion) {
+      headersRow.push("T-Shirt");
+    }
     const headers = [headersRow];
 
-    // 3. Map Body Data Dynamically with Size Formatting & Room Mapping
+    // 3. Map Body Data Dynamically
     const bodyData = filteredAttendees.map((a, index) => {
       const attendeeCountry = a.country || a.region || "Kenya";
 
@@ -375,6 +387,7 @@ export default function RegisteredRoster({
           SIZE_TO_CM_MAP[displayTshirtSize] || displayTshirtSize;
       }
 
+      // Base fields prior to the conditional blocks
       const baseRow = [
         String(index + 1),
         a.member_id || `MTRC-${a.id}`,
@@ -383,8 +396,12 @@ export default function RegisteredRoster({
         a.age || "—",
         attendeeCountry,
         a.center || "",
-        a.accomodation || a.accommodation || "Unassigned" // Added Accommodation field mapping
       ];
+
+      // Insert Room Allocation if Kenya
+      if (isKenya) {
+        baseRow.push(a.accomodation || a.accommodation || "Unassigned");
+      }
       if (includeContact) {
         baseRow.push(a.parent_contact || "");
       }
@@ -394,57 +411,85 @@ export default function RegisteredRoster({
       return baseRow;
     });
 
-    // 4. Custom Width Configuration Matrix tailored for Landscape (297mm total)
+    // 4. Custom Width Configuration Matrix tailored for Landscape (297mm)
     let columnWidthStyles = {};
-    if (isSpecialRegion && includeContact) {
-      columnWidthStyles = {
-        0: { cellWidth: 12, halign: "center" },
-        1: { cellWidth: 26, fontStyle: "bold" },
-        2: { cellWidth: "auto" },
-        3: { cellWidth: 16, halign: "center" },
-        4: { cellWidth: 12, halign: "center" },
-        5: { cellWidth: 25 },
-        6: { cellWidth: 30 },
-        7: { cellWidth: 32 }, // Accommodation column
-        8: { cellWidth: 30 }, // Parent Contact
-        9: { cellWidth: 28, halign: "center" }, // T-Shirt
-      };
-    } else if (isSpecialRegion && !includeContact) {
-      columnWidthStyles = {
-        0: { cellWidth: 12, halign: "center" },
-        1: { cellWidth: 30, fontStyle: "bold" },
-        2: { cellWidth: "auto" },
-        3: { cellWidth: 18, halign: "center" },
-        4: { cellWidth: 14, halign: "center" },
-        5: { cellWidth: 30 },
-        6: { cellWidth: 35 },
-        7: { cellWidth: 35 }, // Accommodation column
-        8: { cellWidth: 32, halign: "center" }, // T-Shirt
-      };
-    } else if (!isSpecialRegion && includeContact) {
-      columnWidthStyles = {
-        0: { cellWidth: 15, halign: "center" },
-        1: { cellWidth: 32, fontStyle: "bold" },
-        2: { cellWidth: "auto" },
-        3: { cellWidth: 20, halign: "center" },
-        4: { cellWidth: 15, halign: "center" },
-        5: { cellWidth: 30 },
-        6: { cellWidth: 35 },
-        7: { cellWidth: 38 }, // Accommodation column
-        8: { cellWidth: 35 }, // Parent Contact
-      };
+
+    if (isKenya) {
+      // Kenya Layouts (Always includes Room column)
+      if (includeContact) {
+        columnWidthStyles = {
+          0: { cellWidth: 12, halign: "center" },
+          1: { cellWidth: 26, fontStyle: "bold" },
+          2: { cellWidth: "auto" },
+          3: { cellWidth: 16, halign: "center" },
+          4: { cellWidth: 12, halign: "center" },
+          5: { cellWidth: 25 },
+          6: { cellWidth: 30 },
+          7: { cellWidth: 32 }, // Room Allocation column
+          8: { cellWidth: 30 }, // Parent Contact
+          9: { cellWidth: 28, halign: "center" }, // T-Shirt
+        };
+      } else {
+        columnWidthStyles = {
+          0: { cellWidth: 12, halign: "center" },
+          1: { cellWidth: 30, fontStyle: "bold" },
+          2: { cellWidth: "auto" },
+          3: { cellWidth: 18, halign: "center" },
+          4: { cellWidth: 14, halign: "center" },
+          5: { cellWidth: 30 },
+          6: { cellWidth: 35 },
+          7: { cellWidth: 35 }, // Room Allocation column
+          8: { cellWidth: 32, halign: "center" }, // T-Shirt
+        };
+      }
     } else {
-      // !isSpecialRegion && !includeContact
-      columnWidthStyles = {
-        0: { cellWidth: 15, halign: "center" },
-        1: { cellWidth: 35, fontStyle: "bold" },
-        2: { cellWidth: "auto" },
-        3: { cellWidth: 22, halign: "center" },
-        4: { cellWidth: 18, halign: "center" },
-        5: { cellWidth: 35 },
-        6: { cellWidth: 40 },
-        7: { cellWidth: 42 }, // Accommodation column
-      };
+      // Non-Kenya Layouts (Completely drops Room column to distribute space cleanly)
+      if (isSpecialRegion && includeContact) {
+        columnWidthStyles = {
+          0: { cellWidth: 15, halign: "center" },
+          1: { cellWidth: 32, fontStyle: "bold" },
+          2: { cellWidth: "auto" },
+          3: { cellWidth: 20, halign: "center" },
+          4: { cellWidth: 15, halign: "center" },
+          5: { cellWidth: 30 },
+          6: { cellWidth: 35 },
+          7: { cellWidth: 35 }, // Parent Contact
+          8: { cellWidth: 32, halign: "center" }, // T-Shirt
+        };
+      } else if (isSpecialRegion && !includeContact) {
+        columnWidthStyles = {
+          0: { cellWidth: 15, halign: "center" },
+          1: { cellWidth: 35, fontStyle: "bold" },
+          2: { cellWidth: "auto" },
+          3: { cellWidth: 24, halign: "center" },
+          4: { cellWidth: 18, halign: "center" },
+          5: { cellWidth: 35 },
+          6: { cellWidth: 40 },
+          7: { cellWidth: 35, halign: "center" }, // T-Shirt
+        };
+      } else if (!isSpecialRegion && includeContact) {
+        columnWidthStyles = {
+          0: { cellWidth: 15, halign: "center" },
+          1: { cellWidth: 35, fontStyle: "bold" },
+          2: { cellWidth: "auto" },
+          3: { cellWidth: 24, halign: "center" },
+          4: { cellWidth: 18, halign: "center" },
+          5: { cellWidth: 35 },
+          6: { cellWidth: 40 },
+          7: { cellWidth: 40 }, // Parent Contact
+        };
+      } else {
+        // !isSpecialRegion && !includeContact
+        columnWidthStyles = {
+          0: { cellWidth: 15, halign: "center" },
+          1: { cellWidth: 40, fontStyle: "bold" },
+          2: { cellWidth: "auto" },
+          3: { cellWidth: 26, halign: "center" },
+          4: { cellWidth: 20, halign: "center" },
+          5: { cellWidth: 40 },
+          6: { cellWidth: 45 },
+        };
+      }
     }
 
     const exportTimestamp = new Date().toLocaleString("en-US", {
@@ -458,10 +503,10 @@ export default function RegisteredRoster({
       body: bodyData,
       theme: "striped",
       styles: {
-        fontSize: 8, // Marginally scaled down to prevent room name linebreaks from eating vertical padding
+        fontSize: 8,
         font: "helvetica",
         cellPadding: { top: 3.5, bottom: 3.5, left: 3, right: 3 },
-        overflow: "linebreak", 
+        overflow: "linebreak",
         valign: "middle",
         lineColor: [226, 239, 249],
         lineWidth: 0.15,
@@ -536,8 +581,7 @@ export default function RegisteredRoster({
     );
     const contactToken = includeContact ? "" : "";
     doc.save(`${contactToken}Registered_${safeFileNameToken}.pdf`);
-  };
-  /* --- Core PDF Export Execution Logic --- */
+  };  /* --- Core PDF Export Execution Logic --- */
   const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;
     setIsDownloadingQR(true);
@@ -609,7 +653,10 @@ const executeExport = (includeContact) => {
         "Uganda",
       ].includes(regionScope);
 
-      // Set dynamic headers based on contact inclusion rules (including Room Allocation)
+      // Determine if we should include Room Allocation (strictly for Kenya)
+      const isKenya = String(regionScope).toLowerCase() === "kenya";
+
+      // Set dynamic headers based on contact inclusion rules and region
       const headers = [
         "Sr No.",
         "Member ID",
@@ -618,8 +665,11 @@ const executeExport = (includeContact) => {
         "Age",
         "Country",
         "Center",
-        "Room Allocation" // Added Accommodation column here
       ];
+      
+      if (isKenya) {
+        headers.push("Room Allocation"); // Only appended for Kenya
+      }
       if (includeContact) {
         headers.push("Parent Contact");
       }
@@ -636,8 +686,6 @@ const executeExport = (includeContact) => {
             row.region ||
             (regionScope !== "All" ? regionScope : "");
 
-          const accommodationRoom = row.accomodation || row.accommodation || "Unassigned";
-
           const baseFields = [
             `"${index + 1}"`,
             `"${finalId}"`,
@@ -646,8 +694,13 @@ const executeExport = (includeContact) => {
             `"${row.age}"`,
             `"${attendeeCountry}"`,
             `"${row.center}"`,
-            `"${accommodationRoom.replace(/"/g, '""')}"` // Safely inject room value
           ];
+
+          // Conditionally add Room Allocation value ONLY if the report is for Kenya
+          if (isKenya) {
+            const accommodationRoom = row.accomodation || row.accommodation || "Unassigned";
+            baseFields.push(`"${accommodationRoom.replace(/"/g, '""')}"`);
+          }
 
           // Conditional column payload injection
           if (includeContact) {
@@ -692,8 +745,7 @@ const executeExport = (includeContact) => {
     } finally {
       setIsExporting(false);
     }
-  }; 
-   const downloadQRImg = async (memberId, userName, storedQrUrl) => {
+  };   const downloadQRImg = async (memberId, userName, storedQrUrl) => {
     // Set the specific member ID as the active loader
     setDownloadingId(memberId);
     try {
@@ -1408,18 +1460,20 @@ const executeExport = (includeContact) => {
                         )}
 
   {/* Check both spellings so that whichever key the backend provides is successfully displayed */}
-<td style={attendee.region?.toLowerCase() !== 'kenya' ? { display: 'none' } : {}}>
-  {(attendee.accommodation || attendee.accomodation) ? (
-    <span className={styles.badgeGenderTag} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-      <FaBed style={{ fontSize: "12px" }} />
-      {attendee.accommodation || attendee.accomodation}
-    </span>
-  ) : (
-    <span style={{ color: "var(--text-muted)", fontSize: "12px", fontStyle: "italic" }}>
-      Not Assigned
-    </span>
-  )}
-</td>
+{regionScope === "Kenya" && (
+  <td>
+    {(attendee.accommodation || attendee.accomodation) ? (
+      <span className={styles.badgeGenderTag} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+        <FaBed style={{ fontSize: "12px" }} />
+        {attendee.accommodation || attendee.accomodation}
+      </span>
+    ) : (
+      <span style={{ color: "var(--text-muted)", fontSize: "12px", fontStyle: "italic" }}>
+        Not Assigned
+      </span>
+    )}
+  </td>
+)}
 
                       <td style={{ textAlign: "center" }}>
                         <button
