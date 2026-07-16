@@ -205,6 +205,19 @@
 
 .avatarPlaceholder { color: var(--text-muted); }
 .boldText { font-weight: 600; }
+.textHyphen { color: var(--text-muted); }
+
+.qrThumbnail {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  display: block;
+  margin: 0 auto;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.qrThumbnail:hover { transform: scale(1.1); }
 
 .regionTag {
   background: #fdfdf0;
