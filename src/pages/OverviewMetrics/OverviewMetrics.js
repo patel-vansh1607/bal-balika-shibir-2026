@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaUsers, FaUserPlus, FaChartBar, FaSpinner } from "react-icons/fa";
+import { FaUsers, FaUserPlus, FaSpinner } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 // Import your established API instance
 import { userRoles } from "../../apiClient"; 
@@ -39,7 +39,6 @@ export default function OverviewMetrics() {
   const navOptions = [
     { title: "Registered Roster", icon: <FaUsers />, path: "/dashboard/roster", color: "#34a853" },
     { title: "Register Attendee", icon: <FaUserPlus />, path: "/dashboard/add-new", color: "#4285f4" },
-    { title: "Session Master", icon: <FaChartBar />, path: "/dashboard/session/master", color: "#fbbc05" },
   ];
 
   return (
