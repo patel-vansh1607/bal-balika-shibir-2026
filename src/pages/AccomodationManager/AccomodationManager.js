@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { 
-  FaArrowLeft, 
   FaBed, 
   FaSearch, 
   FaSave, 
@@ -12,8 +10,6 @@ import {
   FaCheck,
   FaClipboardList,
   FaUsers,
-  FaUserShield,
-  FaSignOutAlt
 } from "react-icons/fa";
 
 import { FaBedPulse } from "react-icons/fa6";
@@ -30,7 +26,6 @@ export default function AccommodationManager({
   handleLogout, 
   isLoggingOut = false 
 }) {
-  const navigate = useNavigate();
 
   // 1. Lock the active region strictly to the system's selected region
   const activeRegion = currentRegion || localStorage.getItem("selectedRegion") || "Kenya";
@@ -53,6 +48,19 @@ export default function AccommodationManager({
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkRoomValue, setBulkRoomValue] = useState("");
   const [isBulkSaving, setIsBulkSaving] = useState(false);
+
+  // ID formatting matching the database system keys
+  const formatMemberId = useCallback((person) => {
+    const rawId = person.member_id;
+    if (!rawId) {
+      return targetGroup === "karyakars" ? `KP-${person.id}` : `MTRC-${person.id}`;
+    }
+    const strId = String(rawId).trim();
+    if (strId.toUpperCase().startsWith('PS-')) {
+      return strId.toUpperCase();
+    }
+    return `${strId}`;
+  }, [targetGroup]);
 
   // Memoized data fetching locked to activeRegion
   const fetchAttendees = useCallback(() => {
@@ -93,19 +101,6 @@ export default function AccommodationManager({
   useEffect(() => {
     fetchAttendees();
   }, [fetchAttendees]);
-
-  // ID formatting matching the database system keys
-  const formatMemberId = (person) => {
-    const rawId = person.member_id;
-    if (!rawId) {
-      return targetGroup === "karyakars" ? `KP-${person.id}` : `MTRC-${person.id}`;
-    }
-    const strId = String(rawId).trim();
-    if (strId.toUpperCase().startsWith('PS-')) {
-      return strId.toUpperCase();
-    }
-    return `${strId}`;
-  };
 
   const handleRoomChange = (id, rawValue) => {
     let formattedValue = rawValue;
@@ -279,7 +274,7 @@ export default function AccommodationManager({
 
       return matchesSearch && matchesCenter;
     });
-  }, [attendees, searchQuery, centerFilter]);
+  }, [attendees, searchQuery, centerFilter, formatMemberId]);
 
   const stats = useMemo(() => {
     const total = filteredAttendees.length;
