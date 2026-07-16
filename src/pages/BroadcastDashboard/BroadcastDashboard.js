@@ -19,6 +19,8 @@ export default function BroadcastDashboard({ attendees = [] }) {
   const [emailLogs, setEmailLogs] = useState({ success: 0, failed: 0, currentAction: '' });
   const [liveTerminalLogs, setLiveTerminalLogs] = useState(['[SYSTEM]: Live production transmission lines ready. Dual-template engine active.']);
   const [failedUsers, setFailedUsers] = useState([]);
+  const [sentRawIds, setSentRawIds] = useState(new Set());
+  const [selectedIds, setSelectedIds] = useState(new Set()); // checked rows in drawer
 
   const writeToTerminal = (text) => {
     const timeMarker = new Date().toLocaleTimeString();
@@ -35,12 +37,27 @@ export default function BroadcastDashboard({ attendees = [] }) {
     }, { selected: 0, notSelected: 0, pending: 0, total: attendees.length });
   }, [attendees]);
 
-  // Extract selected batch array
+  // Extract selected batch array — exclude anyone already emailed
   const previewBatchUsers = useMemo(() => {
     if (!activeReviewBatch) return [];
     const statusTarget = activeReviewBatch === 'agreed' ? 1 : 2;
-    return attendees.filter(user => user.is_selected === statusTarget);
-  }, [attendees, activeReviewBatch]);
+    const sentFlag     = activeReviewBatch === 'agreed' ? 'acceptance_email_sent' : 'rejection_email_sent';
+    return attendees.filter(user =>
+      user.is_selected === statusTarget &&
+      !user[sentFlag] &&
+      !sentRawIds.has(user._raw_id)
+    );
+  }, [attendees, activeReviewBatch, sentRawIds]);
+
+  const alreadySentCount = useMemo(() => {
+    if (!activeReviewBatch) return 0;
+    const statusTarget = activeReviewBatch === 'agreed' ? 1 : 2;
+    const sentFlag     = activeReviewBatch === 'agreed' ? 'acceptance_email_sent' : 'rejection_email_sent';
+    return attendees.filter(user =>
+      user.is_selected === statusTarget &&
+      (user[sentFlag] || sentRawIds.has(user._raw_id))
+    ).length;
+  }, [attendees, activeReviewBatch, sentRawIds]);
 
   // Execute live production mass delivery pipeline with template branching split
   const executeFinalizedBroadcast = async (usersToSend = null) => {
@@ -77,8 +94,10 @@ export default function BroadcastDashboard({ attendees = [] }) {
           email: targetEmail,
           name: targetUser.name,
           templateType: targetTemplate,
+          attendee_id: targetUser._raw_id,
         });
         successCount++;
+        setSentRawIds(prev => new Set([...prev, targetUser._raw_id]));
         writeToTerminal(`✅ [DELIVERED]: Successfully sent to ${targetEmail}`);
       } catch (error) {
         const reason = error.message || 'Unknown error';
@@ -158,7 +177,7 @@ export default function BroadcastDashboard({ attendees = [] }) {
               <h5>1. Selection Template</h5>
             </div>
             <button 
-              onClick={() => { setActiveReviewBatch('agreed'); setFailedUsers([]); }}
+              onClick={() => { setActiveReviewBatch('agreed'); setFailedUsers([]); setSelectedIds(new Set()); }}
               disabled={stats.selected === 0 || isSendingEmails}
               className={`${styles.launchBtn} ${styles.btnSelectColor}`}
             >
@@ -171,7 +190,7 @@ export default function BroadcastDashboard({ attendees = [] }) {
               <h5>2. Non-Acceptance Template</h5>
             </div>
             <button 
-              onClick={() => { setActiveReviewBatch('not_agreed'); setFailedUsers([]); }}
+              onClick={() => { setActiveReviewBatch('not_agreed'); setFailedUsers([]); setSelectedIds(new Set()); }}
               disabled={stats.notSelected === 0 || isSendingEmails}
               className={`${styles.launchBtn} ${styles.btnRejectColor}`}
             >
@@ -267,21 +286,56 @@ export default function BroadcastDashboard({ attendees = [] }) {
                 <div className={styles.drawerWarningAlert}>
                   <FaExclamationTriangle style={{ fontSize: '18px', flexShrink: 0 }} />
                   <p>
-                    You are reviewing a manual batch snapshot of <strong>{previewBatchUsers.length} profiles</strong>.{' '}
-                    Target template: <strong>{activeReviewBatch === 'agreed' ? 'ACCEPTANCE_CARD' : 'REJECTION_MINIMAL'}</strong>.
+                    <strong>{previewBatchUsers.length}</strong> pending •{' '}
+                    <strong>{alreadySentCount}</strong> already sent (hidden) •{' '}
+                    template: <strong>{activeReviewBatch === 'agreed' ? 'ACCEPTANCE_CARD' : 'REJECTION_MINIMAL'}</strong>.
+                    Check the recipients you want to include, then dispatch.
                   </p>
+                </div>
+
+                <div className={styles.drawerSelectAllRow}>
+                  <label className={styles.selectAllLabel}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size === previewBatchUsers.length && previewBatchUsers.length > 0}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setSelectedIds(new Set(previewBatchUsers.map(u => u._raw_id)));
+                        } else {
+                          setSelectedIds(new Set());
+                        }
+                      }}
+                    />
+                    Select all ({previewBatchUsers.length})
+                  </label>
+                  <span className={styles.selectedCountBadge}>{selectedIds.size} selected</span>
                 </div>
 
                 <div className={styles.drawerScrollList}>
                   {previewBatchUsers.map(user => {
                     const extractedEmail = user.email || user.email_address || user.parent_email;
+                    const checked = selectedIds.has(user._raw_id);
                     return (
-                      <div key={user.id || user.email} className={styles.drawerUserRow}>
-                        <span className={styles.drawerUserName}>{user.name || 'Anonymous User'}</span>
-                        <span className={`${styles.drawerUserEmail} ${!extractedEmail ? styles.emailMissingWarning : ''}`}>
-                          {extractedEmail || '⚠️ No email on record (will be skipped)'}
-                        </span>
-                      </div>
+                      <label key={user._raw_id || user.id} className={`${styles.drawerUserRow} ${styles.drawerUserRowCheckable} ${checked ? styles.drawerUserRowChecked : ''}`}>
+                        <input
+                          type="checkbox"
+                          className={styles.drawerCheckbox}
+                          checked={checked}
+                          onChange={() => {
+                            setSelectedIds(prev => {
+                              const next = new Set(prev);
+                              next.has(user._raw_id) ? next.delete(user._raw_id) : next.add(user._raw_id);
+                              return next;
+                            });
+                          }}
+                        />
+                        <div className={styles.drawerUserRowLeft}>
+                          <span className={styles.drawerUserName}>{user.name || 'Anonymous User'}</span>
+                          <span className={`${styles.drawerUserEmail} ${!extractedEmail ? styles.emailMissingWarning : ''}`}>
+                            {extractedEmail || '⚠️ No email on record (will be skipped)'}
+                          </span>
+                        </div>
+                      </label>
                     );
                   })}
                 </div>
@@ -290,8 +344,13 @@ export default function BroadcastDashboard({ attendees = [] }) {
                   <button className={styles.cancelBtn} onClick={() => setActiveReviewBatch(null)}>
                     Go Back &amp; Cancel
                   </button>
-                  <button className={styles.confirmSendBtn} onClick={() => executeFinalizedBroadcast()}>
-                    <FaPaperPlane style={{ marginRight: '8px' }} /> Dispatch Emails to ({previewBatchUsers.length}) Users Now
+                  <button
+                    className={styles.confirmSendBtn}
+                    disabled={selectedIds.size === 0}
+                    onClick={() => executeFinalizedBroadcast(previewBatchUsers.filter(u => selectedIds.has(u._raw_id)))}
+                  >
+                    <FaPaperPlane style={{ marginRight: '8px' }} />
+                    Dispatch to {selectedIds.size} Selected
                   </button>
                 </div>
               </>
