@@ -468,6 +468,7 @@ const getIsFemale = (karyakar) => {
               <tr>
                 <th> No.</th>
                 <th>Member ID</th>
+                <th>QR Code</th>
                 <th>Profile</th>
                 <th>Full Name</th>
                 <th>Region</th>
@@ -481,18 +482,27 @@ const getIsFemale = (karyakar) => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={10} className={styles.emptyTablePlaceholder}>
+                  <td colSpan={11} className={styles.emptyTablePlaceholder}>
                     <FaSpinner className={styles.spin} /> Loading directory records...
                   </td>
                 </tr>
               ) : filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className={styles.emptyTablePlaceholder}>No registered members found matching filters.</td>
+                  <td colSpan={11} className={styles.emptyTablePlaceholder}>No registered members found matching filters.</td>
                 </tr>
               ) : filteredList.map((k, index) => (
                 <tr key={k.id} className={confirmDeleteId === k.id ? styles.rowWarningHighlight : ''}>
                   <td className={styles.centerAlignCell}>{index + 1}</td>
                   <td className={`${styles.centerAlignCell} ${styles.monospaceId}`}>{k.member_id || '—'}</td>
+                  <td className={styles.centerAlignCell}>
+                    {k.qr_code_url ? (
+                      <a href={k.qr_code_url} target="_blank" rel="noreferrer" title={`QR for ${k.member_id}`}>
+                        <img src={k.qr_code_url} alt="QR" className={styles.qrThumbnail} />
+                      </a>
+                    ) : (
+                      <span className={styles.textHyphen}>—</span>
+                    )}
+                  </td>
                   <td className={styles.centerAlignCell}>
                     <div className={styles.avatarFrame}>
                       {k.photo_url ? (
