@@ -254,6 +254,40 @@
 .drawerHeader h3 { margin: 0; font-size: 17px; font-weight: 700; }
 .closeBtn { background: none; border: none; font-size: 16px; color: #64748b; cursor: pointer; }
 
+.drawerFailedAlert {
+  background-color: #fff1f2;
+  border: 1px solid #fecdd3;
+  padding: 14px;
+  margin: 0 24px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: #be123c;
+}
+.drawerFailedAlert p { margin: 0; font-size: 13px; line-height: 1.4; }
+
+.drawerUserRowFailed {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 12px;
+}
+.drawerUserRowFailed:last-child { border-bottom: none; }
+.drawerUserRowLeft { display: flex; flex-direction: column; gap: 2px; }
+.failReasonTag {
+  font-size: 11px;
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  border-radius: 4px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .drawerWarningAlert {
   background-color: #fffbeb;
   border: 1px solid #fef3c7;
