@@ -982,13 +982,13 @@ const [isModalOpen, setIsModalOpen] = useState(false);
           <label className={styles.label}>T-Shirt Size *</label>
           
           {/* Sizing Info Helper (Visible only for Uganda) */}
-          {selectedRegion === "Uganda" && (
+          {selectedRegion === "Uganda" || selectedRegion === "South Africa" && (
             <div className={styles.helperTooltipContainer}>
               <button
                 type="button"
                 className={styles.helperBtn}
                 onClick={() => setIsModalOpen(true)}
-                aria-label="View Uganda T-shirt size chart"
+                aria-label="View T-shirt size chart"
               >
                 <span className={styles.infoIcon}>ℹ</span> View Size Chart
               </button>
@@ -998,26 +998,26 @@ const [isModalOpen, setIsModalOpen] = useState(false);
         </div>
 
 
-        <select
+     <select
           className={`${styles.select} ${formError && !tshirtSize ? styles.inputError : ""}`}
           value={tshirtSize}
           onChange={(e) => setTshirtSize(e.target.value)}
           disabled={loading}
         >
           <option value="">Select Size</option>
-          {selectedRegion === "Uganda" ? (
-            /* Uganda Custom Alphabetical Sizes */
+          {selectedRegion === "Uganda" || selectedRegion === "South Africa" ? (
+            /* Uganda & South Africa Custom Alphabetical Sizes */
             <>
-  <option value="XXXS">XXXS - 57-62cm</option>
-  <option value="XXS">XXS - 62-67cm</option>
-  <option value="XS">XS - 67-72cm</option>
-  <option value="S">S - 72-75cm</option>
-  <option value="M">M - 77-82cm</option>
-  <option value="L">L - 82-88cm</option>
-  <option value="XL">XL - 88-93cm</option>
-  <option value="XXL">XXL - 93-98cm</option>
-  <option value="XXXL">XXXL - 98-103cm</option>
-</>
+              <option value="XXXS">XXXS - 57-62cm</option>
+              <option value="XXS">XXS - 62-67cm</option>
+              <option value="XS">XS - 67-72cm</option>
+              <option value="S">S - 72-75cm</option>
+              <option value="M">M - 77-82cm</option>
+              <option value="L">L - 82-88cm</option>
+              <option value="XL">XL - 88-93cm</option>
+              <option value="XXL">XXL - 93-98cm</option>
+              <option value="XXXL">XXXL - 98-103cm</option>
+            </>
           ) : (
             /* Classic Numeric Sizes for Southern Africa */
             <>
@@ -1044,7 +1044,7 @@ const [isModalOpen, setIsModalOpen] = useState(false);
       <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
         <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
           <div className={styles.modalHeader}>
-            <h4 className={styles.modalTitle}>Uganda T-Shirt Size Guide</h4>
+            <h4 className={styles.modalTitle}> T-Shirt Size Guide</h4>
             
             <div className={styles.modalHeaderActions}>
               {/* Download Button */}
@@ -1080,7 +1080,7 @@ const [isModalOpen, setIsModalOpen] = useState(false);
           >
             <img 
               src={shirtChartImg} 
-              alt="Uganda T-Shirt Sizing Grid Dimensions" 
+              alt=" T-Shirt Sizing Grid Dimensions" 
               className={styles.chartImage}
             />
           </div>
