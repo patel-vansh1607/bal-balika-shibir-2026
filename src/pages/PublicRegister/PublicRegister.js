@@ -646,13 +646,46 @@ const [isModalOpen, setIsModalOpen] = useState(false);
                   <span>{formError}</span>
                 </div>
               )}
-                {selectedRegion === "Uganda" && (
-                  <div className={styles.regionNoticeBox}>
-                    <span className={styles.noticeTitle}>For Uganda Parents</span>
-                    <p className={styles.noticeText}>
-                Kindly ensure that your Shibir registration fee of UGX 25,000 is submitted to the Accounts Department to finalize your registration.    </p>
-                  </div>
-                )}
+{selectedRegion === "Uganda" && (
+  <div className={styles.regionNoticeBox}>
+    <span className={styles.noticeTitle}>For Uganda Parents</span>
+    <p className={styles.noticeText}>
+      Kindly ensure that your Shibir registration fee of UGX 25,000 is submitted to the Accounts Department to finalize your registration.
+    </p>
+  </div>
+)}
+
+{selectedRegion === "South Africa" && (
+  <div className={styles.regionNoticeBox}>
+    <span className={styles.noticeTitle}>For South Africa Parents</span>
+    <div className={styles.noticeText}>
+      <p style={{ marginBottom: "12px", fontWeight: "600" }}>
+        Kindly note the following key processing details to finalize your registration:
+      </p>
+      
+      <ol style={{ paddingLeft: "20px", margin: "0 0 12px 0", lineHeight: "1.6" }}>
+        <li>Cost of the Shibir is <strong>R300 per Balak/Balika</strong>.</li>
+        <li style={{ marginTop: "8px" }}>
+          EFT can be made into the following Account:
+          <ul style={{ paddingLeft: "20px", marginTop: "4px", listStyleType: "disc" }}>
+            <li><strong>Account Name:</strong> BAPS Joburg</li>
+            <li><strong>Account Number:</strong> 402131231</li>
+            <li><strong>Bank:</strong> Standard Bank</li>
+            <li><strong>Branch Code:</strong> 051001</li>
+            <li><strong>Account Type:</strong> Current</li>
+          </ul>
+        </li>
+        <li style={{ marginTop: "8px" }}>
+          Please send the Proof of Payment to <strong>acct.za04@africa.baps.org</strong>
+        </li>
+        <li style={{ marginTop: "8px" }}>
+          Once registration is complete, parents will receive an indemnity form from their local Sanchalak (this form must be completed in order for registration to be valid).
+        </li>
+      </ol>
+    </div>
+  </div>
+)}
+                
               <div className={styles.previewGridSummary}>
                 <div className={styles.previewRow}>
                   <span className={styles.previewLabel}>Full Name:</span>
@@ -1091,17 +1124,45 @@ const [isModalOpen, setIsModalOpen] = useState(false);
     )}
   </>
 )}
-{/* Uganda Registration Fee Notice */}
-      {selectedRegion === "Uganda" && (
-        <div className={styles.ugandaDetailsBox}>
-          <div className={styles.feeNotice}>
-            <span className={styles.noticeTitle}>Registration Fee Notice</span>
-            <p className={styles.noticeText}>
-              Kindly ensure that your Shibir registration fee of <strong>UGX 25,000</strong> is submitted to the Accounts Department to finalize your registration.
-            </p>
-          </div>
-        </div>
-      )}
+{selectedRegion === "Uganda" && (
+  <div className={styles.regionNoticeBox}>
+    <span className={styles.noticeTitle}>For Uganda Parents</span>
+    <p className={styles.noticeText}>
+      Kindly ensure that your Shibir registration fee of UGX 25,000 is submitted to the Accounts Department to finalize your registration.
+    </p>
+  </div>
+)}
+
+{selectedRegion === "South Africa" && (
+  <div className={styles.regionNoticeBox}>
+    <span className={styles.noticeTitle}>For South Africa Parents</span>
+    <div className={styles.noticeText}>
+      <p style={{ marginBottom: "12px", fontWeight: "600" }}>
+        Kindly note the following key processing details to finalize your registration:
+      </p>
+      
+      <ol style={{ paddingLeft: "20px", margin: "0 0 12px 0", lineHeight: "1.6" }}>
+        <li>Cost of the Shibir is <strong>R300 per Balak/Balika</strong>.</li>
+        <li style={{ marginTop: "8px" }}>
+          EFT can be made into the following Account:
+          <ul style={{ paddingLeft: "20px", marginTop: "4px", listStyleType: "disc" }}>
+            <li><strong>Account Name:</strong> BAPS Joburg</li>
+            <li><strong>Account Number:</strong> 402131231</li>
+            <li><strong>Bank:</strong> Standard Bank</li>
+            <li><strong>Branch Code:</strong> 051001</li>
+            <li><strong>Account Type:</strong> Current</li>
+          </ul>
+        </li>
+        <li style={{ marginTop: "8px" }}>
+          Please send the Proof of Payment to <strong>acct.za04@africa.baps.org</strong>
+        </li>
+        <li style={{ marginTop: "8px" }}>
+          Once registration is complete, parents will receive an indemnity form from their local Sanchalak (this form must be completed in order for registration to be valid).
+        </li>
+      </ol>
+    </div>
+  </div>
+)}
                   <div className={styles.termsSection} ref={termsRef}>
                     <div className={styles.checkboxWrapper}>
                       <label
