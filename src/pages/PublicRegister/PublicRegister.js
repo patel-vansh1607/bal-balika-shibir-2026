@@ -982,58 +982,59 @@ const [isModalOpen, setIsModalOpen] = useState(false);
           <label className={styles.label}>T-Shirt Size *</label>
           
           {/* Sizing Info Helper (Visible only for Uganda) */}
-          {selectedRegion === "Uganda" || selectedRegion === "South Africa" && (
-            <div className={styles.helperTooltipContainer}>
-              <button
-                type="button"
-                className={styles.helperBtn}
-                onClick={() => setIsModalOpen(true)}
-                aria-label="View T-shirt size chart"
-              >
-                <span className={styles.infoIcon}>ℹ</span> View Size Chart
-              </button>
-              <div className={styles.tooltipText}>Click to open sizing guide image</div>
-            </div>
-          )}
+         {(selectedRegion === "Uganda" || selectedRegion === "South Africa") && (
+  <div className={styles.helperTooltipContainer}>
+    <button
+      type="button"
+      className={styles.helperBtn}
+      onClick={() => setIsModalOpen(true)}
+      aria-label="View T-shirt size chart"
+    >
+      <span className={styles.infoIcon}>ℹ</span> View Size Chart
+    </button>
+    <div className={styles.tooltipText}>Click to open sizing guide image</div>
+  </div>
+)}
         </div>
 
 
-     <select
-          className={`${styles.select} ${formError && !tshirtSize ? styles.inputError : ""}`}
-          value={tshirtSize}
-          onChange={(e) => setTshirtSize(e.target.value)}
-          disabled={loading}
-        >
-          <option value="">Select Size</option>
-          {selectedRegion === "Uganda" || selectedRegion === "South Africa" ? (
-            /* Uganda & South Africa Custom Alphabetical Sizes */
-            <>
-              <option value="XXXS">XXXS - 57-62cm</option>
-              <option value="XXS">XXS - 62-67cm</option>
-              <option value="XS">XS - 67-72cm</option>
-              <option value="S">S - 72-75cm</option>
-              <option value="M">M - 77-82cm</option>
-              <option value="L">L - 82-88cm</option>
-              <option value="XL">XL - 88-93cm</option>
-              <option value="XXL">XXL - 93-98cm</option>
-              <option value="XXXL">XXXL - 98-103cm</option>
-            </>
-          ) : (
-            /* Classic Numeric Sizes for Southern Africa */
-            <>
-              <option value="24">24</option>
-              <option value="26">26</option>
-              <option value="28">28</option>
-              <option value="30">30</option>
-              <option value="32">32</option>
-              <option value="34">34</option>
-              <option value="36">36</option>
-              <option value="38">38</option>
-              <option value="40">40</option>
-              <option value="42">42</option>
-            </>
-          )}
-        </select>
+<select
+  className={`${styles.select} ${formError && !tshirtSize ? styles.inputError : ""}`}
+  value={tshirtSize}
+  onChange={(e) => setTshirtSize(e.target.value)}
+  disabled={loading}
+>
+  <option value="">Select Size</option>
+  {/* Wrap the OR checks in parentheses to isolate them from any surrounding && logic */}
+  {(selectedRegion === "Uganda" || selectedRegion === "South Africa") ? (
+    /* Custom Alphabetical Sizes */
+    <>
+      <option value="XXXS">XXXS - 57-62cm</option>
+      <option value="XXS">XXS - 62-67cm</option>
+      <option value="XS">XS - 67-72cm</option>
+      <option value="S">S - 72-75cm</option>
+      <option value="M">M - 77-82cm</option>
+      <option value="L">L - 82-88cm</option>
+      <option value="XL">XL - 88-93cm</option>
+      <option value="XXL">XXL - 93-98cm</option>
+      <option value="XXXL">XXXL - 98-103cm</option>
+    </>
+  ) : (
+    /* Classic Numeric Sizes */
+    <>
+      <option value="24">24</option>
+      <option value="26">26</option>
+      <option value="28">28</option>
+      <option value="30">30</option>
+      <option value="32">32</option>
+      <option value="34">34</option>
+      <option value="36">36</option>
+      <option value="38">38</option>
+      <option value="40">40</option>
+      <option value="42">42</option>
+    </>
+  )}
+</select>
       </div>
 
       
