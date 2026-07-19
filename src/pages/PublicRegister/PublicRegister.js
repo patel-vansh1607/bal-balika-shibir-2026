@@ -16,9 +16,9 @@ import {
   FaPlusCircle,
   FaEdit,
   FaCheck,
-  FaCloudDownloadAlt
+  FaCloudDownloadAlt,
 } from "react-icons/fa";
-import shirtChartImg from '../../assets/images/t_shirt_size_guide.jpeg'
+import shirtChartImg from "../../assets/images/t_shirt_size_guide.jpeg";
 import styles from "./PublicRegister.module.css";
 import confetti from "canvas-confetti";
 export default function PublicRegister() {
@@ -27,7 +27,7 @@ export default function PublicRegister() {
   const [lastName, setLastName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
-const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState("");
   const [regionSearchQuery, setRegionSearchQuery] = useState("");
   const [isRegionDropdownOpen, setIsRegionDropdownOpen] = useState(false);
@@ -219,37 +219,17 @@ const [isModalOpen, setIsModalOpen] = useState(false);
     "South Africa": {
       code: "+27",
       centers: [
-        "Johannesburg",
-        "Cape Town",
-        "Durban",
-        "Pretoria",
-        "Port Elizabeth",
-        "Bloemfontein",
-        "East London",
-        "Polokwane",
-        "Nelspruit",
-        "Kimberley",
-        "Pietermaritzburg",
-        "Rustenburg",
-        "George",
-        "Welkom",
-        "Klerksdorp",
-        "Vereeniging",
-        "Stellenbosch",
-        "Paarl",
-        "Upington",
-        "Mthatha",
-        "Soweto",
         "Benoni",
-        "Tembisa",
-        "Mayfair",
-        "Laudium",
+        "Cape Town",
         "Germiston",
+        "Laudium",
         "Lenasia",
-        "Louis Trichard",
+        "Louis Trichardt",
+        "Mayfair",
         "Mogwase",
+        "Rustenburg",
         "Tzaneen",
-        "North Riding",
+        "Northriding",
       ],
     },
   };
@@ -365,7 +345,7 @@ const [isModalOpen, setIsModalOpen] = useState(false);
       selectedRegion === "South Africa" ||
       selectedRegion === "Malawi" ||
       selectedRegion === "Zambia" ||
-      selectedRegion === "Uganda" ;
+      selectedRegion === "Uganda";
     if (needsTshirt && !tshirtSize) {
       return fail("Please select a T-shirt size.", shirtRef);
     }
@@ -646,46 +626,80 @@ const [isModalOpen, setIsModalOpen] = useState(false);
                   <span>{formError}</span>
                 </div>
               )}
-{selectedRegion === "Uganda" && (
-  <div className={styles.regionNoticeBox}>
-    <span className={styles.noticeTitle}>For Uganda Parents</span>
-    <p className={styles.noticeText}>
-      Kindly ensure that your Shibir registration fee of UGX 25,000 is submitted to the Accounts Department to finalize your registration.
-    </p>
-  </div>
-)}
+              {selectedRegion === "Uganda" && (
+                <div className={styles.regionNoticeBox}>
+                  <span className={styles.noticeTitle}>For Uganda Parents</span>
+                  <p className={styles.noticeText}>
+                    Kindly ensure that your Shibir registration fee of UGX
+                    25,000 is submitted to the Accounts Department to finalize
+                    your registration.
+                  </p>
+                </div>
+              )}
 
-{selectedRegion === "South Africa" && (
-  <div className={styles.regionNoticeBox}>
-    <span className={styles.noticeTitle}>For South Africa Parents</span>
-    <div className={styles.noticeText}>
-      <p style={{ marginBottom: "12px", fontWeight: "600" }}>
-        Kindly note the following key processing details to finalize your registration:
-      </p>
-      
-      <ol style={{ paddingLeft: "20px", margin: "0 0 12px 0", lineHeight: "1.6" }}>
-        <li>Cost of the Shibir is <strong>R300 per Balak/Balika</strong>.</li>
-        <li style={{ marginTop: "8px" }}>
-          EFT can be made into the following Account:
-          <ul style={{ paddingLeft: "20px", marginTop: "4px", listStyleType: "disc" }}>
-            <li><strong>Account Name:</strong> BAPS Joburg</li>
-            <li><strong>Account Number:</strong> 402131231</li>
-            <li><strong>Bank:</strong> Standard Bank</li>
-            <li><strong>Branch Code:</strong> 051001</li>
-            <li><strong>Account Type:</strong> Current</li>
-          </ul>
-        </li>
-        <li style={{ marginTop: "8px" }}>
-          Please send the Proof of Payment to <strong>acct.za04@africa.baps.org</strong>
-        </li>
-        <li style={{ marginTop: "8px" }}>
-          Once registration is complete, parents will receive an indemnity form from their local Sanchalak (this form must be completed in order for registration to be valid).
-        </li>
-      </ol>
-    </div>
-  </div>
-)}
-                
+              {selectedRegion === "South Africa" && (
+                <div className={styles.regionNoticeBox}>
+                  <span className={styles.noticeTitle}>
+                    For South Africa Parents
+                  </span>
+                  <div className={styles.noticeText}>
+                    <p style={{ marginBottom: "12px", fontWeight: "600" }}>
+                      Kindly note the following key processing details to
+                      finalize your registration:
+                    </p>
+
+                    <ol
+                      style={{
+                        paddingLeft: "20px",
+                        margin: "0 0 12px 0",
+                        lineHeight: "1.6",
+                      }}
+                    >
+                      <li>
+                        Cost of the Shibir is{" "}
+                        <strong>R300 per Balak/Balika</strong>.
+                      </li>
+                      <li style={{ marginTop: "8px" }}>
+                        EFT can be made into the following Account:
+                        <ul
+                          style={{
+                            paddingLeft: "20px",
+                            marginTop: "4px",
+                            listStyleType: "disc",
+                          }}
+                        >
+                          <li>
+                            <strong>Account Name:</strong> BAPS Joburg
+                          </li>
+                          <li>
+                            <strong>Account Number:</strong> 402131231
+                          </li>
+                          <li>
+                            <strong>Bank:</strong> Standard Bank
+                          </li>
+                          <li>
+                            <strong>Branch Code:</strong> 051001
+                          </li>
+                          <li>
+                            <strong>Account Type:</strong> Current
+                          </li>
+                        </ul>
+                      </li>
+                      <li style={{ marginTop: "8px" }}>
+                        Please send the Proof of Payment to{" "}
+                        <strong>acct.za04@africa.baps.org</strong>
+                      </li>
+                      <li style={{ marginTop: "8px" }}>
+                        Once registration is complete, parents will receive an
+                        indemnity form from their local Sanchalak (this form
+                        must be completed in order for registration to be
+                        valid).
+                      </li>
+                    </ol>
+                  </div>
+                </div>
+              )}
+
               <div className={styles.previewGridSummary}>
                 <div className={styles.previewRow}>
                   <span className={styles.previewLabel}>Full Name:</span>
@@ -1003,166 +1017,226 @@ const [isModalOpen, setIsModalOpen] = useState(false);
                       />
                     </div>
                   </div>
-{(selectedRegion === "Botswana" ||
-  selectedRegion === "South Africa" ||
-  selectedRegion === "Malawi" ||
-  selectedRegion === "Zambia" ||
-  selectedRegion === "Uganda") && (
-  <>
-    <div className={styles.rowFieldContainer} ref={shirtRef}>
-      <div className={styles.formGroup}>
-        <div className={styles.labelWithHelper}>
-          <label className={styles.label}>T-Shirt Size *</label>
-          
-          {/* Sizing Info Helper (Visible only for Uganda) */}
-         {(selectedRegion === "Uganda" || selectedRegion === "South Africa") && (
-  <div className={styles.helperTooltipContainer}>
-    <button
-      type="button"
-      className={styles.helperBtn}
-      onClick={() => setIsModalOpen(true)}
-      aria-label="View T-shirt size chart"
-    >
-      <span className={styles.infoIcon}>ℹ</span> View Size Chart
-    </button>
-    <div className={styles.tooltipText}>Click to open sizing guide image</div>
-  </div>
-)}
-        </div>
+                  {(selectedRegion === "Botswana" ||
+                    selectedRegion === "South Africa" ||
+                    selectedRegion === "Malawi" ||
+                    selectedRegion === "Zambia" ||
+                    selectedRegion === "Uganda") && (
+                    <>
+                      <div className={styles.rowFieldContainer} ref={shirtRef}>
+                        <div className={styles.formGroup}>
+                          <div className={styles.labelWithHelper}>
+                            <label className={styles.label}>
+                              T-Shirt Size *
+                            </label>
 
+                            {/* Sizing Info Helper (Visible only for Uganda) */}
+                            {(selectedRegion === "Uganda" ||
+                              selectedRegion === "South Africa") && (
+                              <div className={styles.helperTooltipContainer}>
+                                <button
+                                  type="button"
+                                  className={styles.helperBtn}
+                                  onClick={() => setIsModalOpen(true)}
+                                  aria-label="View T-shirt size chart"
+                                >
+                                  <span className={styles.infoIcon}>ℹ</span>{" "}
+                                  View Size Chart
+                                </button>
+                                <div className={styles.tooltipText}>
+                                  Click to open sizing guide image
+                                </div>
+                              </div>
+                            )}
+                          </div>
 
-<select
-  className={`${styles.select} ${formError && !tshirtSize ? styles.inputError : ""}`}
-  value={tshirtSize}
-  onChange={(e) => setTshirtSize(e.target.value)}
-  disabled={loading}
->
-  <option value="">Select Size</option>
-  {/* Wrap the OR checks in parentheses to isolate them from any surrounding && logic */}
-  {(selectedRegion === "Uganda" || selectedRegion === "South Africa") ? (
-    /* Custom Alphabetical Sizes */
-    <>
-      <option value="XXXS">XXXS - 57-62cm</option>
-      <option value="XXS">XXS - 62-67cm</option>
-      <option value="XS">XS - 67-72cm</option>
-      <option value="S">S - 72-75cm</option>
-      <option value="M">M - 77-82cm</option>
-      <option value="L">L - 82-88cm</option>
-      <option value="XL">XL - 88-93cm</option>
-      <option value="XXL">XXL - 93-98cm</option>
-      <option value="XXXL">XXXL - 98-103cm</option>
-    </>
-  ) : (
-    /* Classic Numeric Sizes */
-    <>
-      <option value="24">24</option>
-      <option value="26">26</option>
-      <option value="28">28</option>
-      <option value="30">30</option>
-      <option value="32">32</option>
-      <option value="34">34</option>
-      <option value="36">36</option>
-      <option value="38">38</option>
-      <option value="40">40</option>
-      <option value="42">42</option>
-    </>
-  )}
-</select>
-      </div>
+                          <select
+                            className={`${styles.select} ${formError && !tshirtSize ? styles.inputError : ""}`}
+                            value={tshirtSize}
+                            onChange={(e) => setTshirtSize(e.target.value)}
+                            disabled={loading}
+                          >
+                            <option value="">Select Size</option>
+                            {/* Wrap the OR checks in parentheses to isolate them from any surrounding && logic */}
+                            {selectedRegion === "Uganda" ||
+                            selectedRegion === "South Africa" ? (
+                              /* Custom Alphabetical Sizes */
+                              <>
+                                <option value="XXXS">XXXS - 57-62cm</option>
+                                <option value="XXS">XXS - 62-67cm</option>
+                                <option value="XS">XS - 67-72cm</option>
+                                <option value="S">S - 72-75cm</option>
+                                <option value="M">M - 77-82cm</option>
+                                <option value="L">L - 82-88cm</option>
+                                <option value="XL">XL - 88-93cm</option>
+                                <option value="XXL">XXL - 93-98cm</option>
+                                <option value="XXXL">XXXL - 98-103cm</option>
+                              </>
+                            ) : (
+                              /* Classic Numeric Sizes */
+                              <>
+                                <option value="24">24</option>
+                                <option value="26">26</option>
+                                <option value="28">28</option>
+                                <option value="30">30</option>
+                                <option value="32">32</option>
+                                <option value="34">34</option>
+                                <option value="36">36</option>
+                                <option value="38">38</option>
+                                <option value="40">40</option>
+                                <option value="42">42</option>
+                              </>
+                            )}
+                          </select>
+                        </div>
+                      </div>
 
-      
-    </div>
+                      {/* Sizing Image Modal Popup */}
+                      {isModalOpen && (
+                        <div
+                          className={styles.modalOverlay}
+                          onClick={() => setIsModalOpen(false)}
+                        >
+                          <div
+                            className={styles.modalContent}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className={styles.modalHeader}>
+                              <h4 className={styles.modalTitle}>
+                                {" "}
+                                T-Shirt Size Guide
+                              </h4>
 
-    {/* Sizing Image Modal Popup */}
-    {isModalOpen && (
-      <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
-        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-          <div className={styles.modalHeader}>
-            <h4 className={styles.modalTitle}> T-Shirt Size Guide</h4>
-            
-            <div className={styles.modalHeaderActions}>
-              {/* Download Button */}
-              <a 
-                href={shirtChartImg} 
-                download="TShirt_Size_Guide.png" 
-                className={styles.modalDownloadBtn}
-                title="Download Sizing Chart"
-              >
-                 <FaCloudDownloadAlt />Download
-              </a>
-              
-              <button 
-                type="button" 
-                className={styles.modalCloseBtn} 
-                onClick={() => setIsModalOpen(false)}
-              >
-                &times;
-              </button>
-            </div>
-          </div>
-          
-          {/* Zoom-on-mouse-move Container */}
-          <div 
-            className={styles.modalImageContainer}
-            onMouseMove={(e) => {
-              const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-              const x = ((e.clientX - left) / width) * 100;
-              const y = ((e.clientY - top) / height) * 100;
-              e.currentTarget.style.setProperty('--x', `${x}%`);
-              e.currentTarget.style.setProperty('--y', `${y}%`);
-            }}
-          >
-            <img 
-              src={shirtChartImg} 
-              alt=" T-Shirt Sizing Grid Dimensions" 
-              className={styles.chartImage}
-            />
-          </div>
-          <p className={styles.zoomHint}>Move your mouse over the image to zoom in on details</p>
-        </div>
-      </div>
-    )}
-  </>
-)}
-{selectedRegion === "Uganda" && (
-  <div className={styles.regionNoticeBox}>
-    <span className={styles.noticeTitle}>For Uganda Parents</span>
-    <p className={styles.noticeText}>
-      Kindly ensure that your Shibir registration fee of UGX 25,000 is submitted to the Accounts Department to finalize your registration.
-    </p>
-  </div>
-)}
+                              <div className={styles.modalHeaderActions}>
+                                {/* Download Button */}
+                                <a
+                                  href={shirtChartImg}
+                                  download="TShirt_Size_Guide.png"
+                                  className={styles.modalDownloadBtn}
+                                  title="Download Sizing Chart"
+                                >
+                                  <FaCloudDownloadAlt />
+                                  Download
+                                </a>
 
-{selectedRegion === "South Africa" && (
-  <div className={styles.regionNoticeBox}>
-    <span className={styles.noticeTitle}>For South Africa Parents</span>
-    <div className={styles.noticeText}>
-      <p style={{ marginBottom: "12px", fontWeight: "600" }}>
-        Kindly note the following key processing details to finalize your registration:
-      </p>
-      
-      <ol style={{ paddingLeft: "20px", margin: "0 0 12px 0", lineHeight: "1.6" }}>
-        <li>Cost of the Shibir is <strong>R300 per Balak/Balika</strong>.</li>
-        <li style={{ marginTop: "8px" }}>
-          EFT can be made into the following Account:
-          <ul style={{ paddingLeft: "20px", marginTop: "4px", listStyleType: "disc" }}>
-            <li><strong>Account Name:</strong> BAPS Joburg</li>
-            <li><strong>Account Number:</strong> 402131231</li>
-            <li><strong>Bank:</strong> Standard Bank</li>
-            <li><strong>Branch Code:</strong> 051001</li>
-            <li><strong>Account Type:</strong> Current</li>
-          </ul>
-        </li>
-        <li style={{ marginTop: "8px" }}>
-          Please send the Proof of Payment to <strong>acct.za04@africa.baps.org</strong>
-        </li>
-        <li style={{ marginTop: "8px" }}>
-          Once registration is complete, parents will receive an indemnity form from their local Sanchalak (this form must be completed in order for registration to be valid).
-        </li>
-      </ol>
-    </div>
-  </div>
-)}
+                                <button
+                                  type="button"
+                                  className={styles.modalCloseBtn}
+                                  onClick={() => setIsModalOpen(false)}
+                                >
+                                  &times;
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Zoom-on-mouse-move Container */}
+                            <div
+                              className={styles.modalImageContainer}
+                              onMouseMove={(e) => {
+                                const { left, top, width, height } =
+                                  e.currentTarget.getBoundingClientRect();
+                                const x = ((e.clientX - left) / width) * 100;
+                                const y = ((e.clientY - top) / height) * 100;
+                                e.currentTarget.style.setProperty(
+                                  "--x",
+                                  `${x}%`,
+                                );
+                                e.currentTarget.style.setProperty(
+                                  "--y",
+                                  `${y}%`,
+                                );
+                              }}
+                            >
+                              <img
+                                src={shirtChartImg}
+                                alt=" T-Shirt Sizing Grid Dimensions"
+                                className={styles.chartImage}
+                              />
+                            </div>
+                            <p className={styles.zoomHint}>
+                              Move your mouse over the image to zoom in on
+                              details
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {selectedRegion === "Uganda" && (
+                    <div className={styles.regionNoticeBox}>
+                      <span className={styles.noticeTitle}>
+                        For Uganda Parents
+                      </span>
+                      <p className={styles.noticeText}>
+                        Kindly ensure that your Shibir registration fee of UGX
+                        25,000 is submitted to the Accounts Department to
+                        finalize your registration.
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedRegion === "South Africa" && (
+                    <div className={styles.regionNoticeBox}>
+                      <span className={styles.noticeTitle}>
+                        For South Africa Parents
+                      </span>
+                      <div className={styles.noticeText}>
+                        <p style={{ marginBottom: "12px", fontWeight: "600" }}>
+                          Kindly note the following key processing details to
+                          finalize your registration:
+                        </p>
+
+                        <ol
+                          style={{
+                            paddingLeft: "20px",
+                            margin: "0 0 12px 0",
+                            lineHeight: "1.6",
+                          }}
+                        >
+                          <li>
+                            Cost of the Shibir is{" "}
+                            <strong>R300 per Balak/Balika</strong>.
+                          </li>
+                          <li style={{ marginTop: "8px" }}>
+                            EFT can be made into the following Account:
+                            <ul
+                              style={{
+                                paddingLeft: "20px",
+                                marginTop: "4px",
+                                listStyleType: "disc",
+                              }}
+                            >
+                              <li>
+                                <strong>Account Name:</strong> BAPS Joburg
+                              </li>
+                              <li>
+                                <strong>Account Number:</strong> 402131231
+                              </li>
+                              <li>
+                                <strong>Bank:</strong> Standard Bank
+                              </li>
+                              <li>
+                                <strong>Branch Code:</strong> 051001
+                              </li>
+                              <li>
+                                <strong>Account Type:</strong> Current
+                              </li>
+                            </ul>
+                          </li>
+                          <li style={{ marginTop: "8px" }}>
+                            Please send the Proof of Payment to{" "}
+                            <strong>acct.za04@africa.baps.org</strong>
+                          </li>
+                          <li style={{ marginTop: "8px" }}>
+                            Once registration is complete, parents will receive
+                            an indemnity form from their local Sanchalak (this
+                            form must be completed in order for registration to
+                            be valid).
+                          </li>
+                        </ol>
+                      </div>
+                    </div>
+                  )}
                   <div className={styles.termsSection} ref={termsRef}>
                     <div className={styles.checkboxWrapper}>
                       <label
