@@ -637,7 +637,7 @@ export default function PublicRegister() {
                 </div>
               )}
 
-              {/* {selectedRegion === "South Africa" && (
+               {selectedRegion === "South Africa" && (
                 <div className={styles.regionNoticeBox}>
                   <span className={styles.noticeTitle}>
                     For South Africa Parents
@@ -698,7 +698,7 @@ export default function PublicRegister() {
                     </ol>
                   </div>
                 </div>
-              )} */}
+              )}
 
               <div className={styles.previewGridSummary}>
                 <div className={styles.previewRow}>
