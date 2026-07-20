@@ -16,6 +16,35 @@ const REGION_PREFIXES = {
   "South Africa": "MTRC-ZA-",
 };
 
+// Formats DB check-in time strictly to East Africa Time (EAT - Africa/Nairobi)
+const formatCheckInTime = (dateInput) => {
+  if (!dateInput) return "N/A";
+  try {
+    let date;
+    if (typeof dateInput === "string") {
+      let isoStr = dateInput.trim();
+      if (!isoStr.endsWith("Z") && !isoStr.includes("+") && !isoStr.includes("-")) {
+        isoStr = isoStr.replace(" ", "T") + "Z";
+      }
+      date = new Date(isoStr);
+    } else {
+      date = new Date(dateInput);
+    }
+
+    if (isNaN(date.getTime())) return "N/A";
+
+    return date.toLocaleTimeString("en-KE", {
+      timeZone: "Africa/Nairobi",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  } catch (err) {
+    return "N/A";
+  }
+};
+
 export default function SessionDataDetails() {
   const { sessionId } = useParams();
   const navigate      = useNavigate();
@@ -81,7 +110,7 @@ export default function SessionDataDetails() {
     try {
       setIsExporting(true);
       const doc       = new jsPDF();
-      const timestamp = new Date().toLocaleDateString();
+      const timestamp = new Date().toLocaleDateString("en-KE", { timeZone: "Africa/Nairobi" });
 
       doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(138, 21, 27);
       doc.text("Attendance Report", 14, 22);
@@ -101,8 +130,8 @@ export default function SessionDataDetails() {
       const presentRows = [...logs]
         .sort((a,b) => isGlobal ? a.region.localeCompare(b.region) : a.center.localeCompare(b.center))
         .map((log) => isGlobal
-          ? [log.memberId, log.fullName, log.region, log.center, new Date(log.created_at).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", second:"2-digit" })]
-          : [log.memberId, log.fullName, log.center, new Date(log.created_at).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", second:"2-digit" })]);
+          ? [log.memberId, log.fullName, log.region, log.center, formatCheckInTime(log.created_at)]
+          : [log.memberId, log.fullName, log.center, formatCheckInTime(log.created_at)]);
 
       doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(19,115,51);
       doc.text("1. Present Attendance Check-In List", 14, 76);
@@ -176,7 +205,7 @@ export default function SessionDataDetails() {
                   <td>{log.fullName}</td>
                   <td>{log.region}</td>
                   <td><span className={styles.centerBadgeTag}>{isGlobal && log.region && log.center !== "N/A" ? `${log.region} — ${log.center}` : log.center}</span></td>
-                  <td className={styles.stampSuccessText}><FaCheckCircle className={styles.inlineCheckIcon} />{new Date(log.created_at).toLocaleTimeString([], { hour:"2-digit",minute:"2-digit",second:"2-digit" })}</td>
+                  <td className={styles.stampSuccessText}><FaCheckCircle className={styles.inlineCheckIcon} />{formatCheckInTime(log.created_at)}</td>
                 </tr>
               ))}
             </tbody>

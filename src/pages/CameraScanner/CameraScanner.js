@@ -11,6 +11,36 @@ import {
 import { attendees as attendeesApi, sessionLogs, gateLogs, getStoredUser } from "../../apiClient";
 import styles from "./CameraScanner.module.css";
 
+// Formats DB UTC timestamps into correct 12-hour local time (+3 EAT)
+const getFormattedTime = (dateInput = new Date()) => {
+  try {
+    let date;
+    if (typeof dateInput === "string") {
+      let isoStr = dateInput.trim();
+      // Ensure string is recognized as UTC if missing 'Z' or offset
+      if (!isoStr.endsWith("Z") && !isoStr.includes("+") && !isoStr.includes("-")) {
+        isoStr = isoStr.replace(" ", "T") + "Z";
+      }
+      date = new Date(isoStr);
+    } else {
+      date = dateInput;
+    }
+
+    if (isNaN(date.getTime())) {
+      date = new Date();
+    }
+
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  } catch (err) {
+    return new Date().toLocaleTimeString();
+  }
+};
+
 export default function CameraScanner({
   sessionId = null,
   regionScope = "All",
@@ -74,7 +104,7 @@ export default function CameraScanner({
       return;
     }
 
-    const timestamp     = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const timestamp     = getFormattedTime();
     const operator      = operatorRef.current;
     const operatorEmail = operator?.email || "unknown@shibir.org";
     const operatorName  = operator?.name  || "system";
@@ -181,7 +211,6 @@ export default function CameraScanner({
     if (!container) { isStartingEngine.current = false; return; }
 
     try {
-      // Check for Native Hardware Accelerated Barcode Detector API
       if ("BarcodeDetector" in window) {
         try {
           const supportedFormats = await window.BarcodeDetector.getSupportedFormats();
@@ -225,7 +254,6 @@ export default function CameraScanner({
         }
       }
 
-      // Fallback: Optimized html5Qrcode Engine (Full Screen Scanning & Higher FPS)
       const scanner = new Html5Qrcode("qr-reader-container", {
         formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
         verbose: false,
@@ -234,10 +262,7 @@ export default function CameraScanner({
 
       await scanner.start(
         { facingMode: "environment" },
-        {
-          fps: 25, // Higher frame processing rate
-          // Removed qrbox so scanning evaluates the entire full view frame immediately
-        },
+        { fps: 25 },
         (decodedText) => handleDecodedText(decodedText),
         () => {}
       );
@@ -270,7 +295,7 @@ export default function CameraScanner({
         if (logs) {
           setScannerLog(logs.map((log) => ({
             id: log.id,
-            time: new Date(log.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+            time: getFormattedTime(log.created_at),
             type: log.status,
             text: log.message,
             processedBy: log.operator_name || log.operator_email?.split("@")[0] || "system",

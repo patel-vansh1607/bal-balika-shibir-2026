@@ -22,15 +22,34 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
   const activePrefix = prefixScope || localStorage.getItem("selected_shibir_prefix") || "";
   const isGlobal = activeRegion === "All";
 
-  // Helper for consistent Nakuru time
-  const formatNairobiTime = (isoString) => {
-    return new Date(isoString).toLocaleTimeString("en-KE", {
-      timeZone: "Africa/Nairobi",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: true
-    });
+  // Robust helper for consistent Nakuru / East Africa Time (EAT)
+  const formatNairobiTime = (dateInput) => {
+    if (!dateInput) return "—";
+    try {
+      let date;
+      if (typeof dateInput === "string") {
+        let isoStr = dateInput.trim();
+        // If DB returns UTC string missing 'Z' or offset, append 'Z' so JS treats it as UTC
+        if (!isoStr.endsWith("Z") && !isoStr.includes("+") && !isoStr.includes("-")) {
+          isoStr = isoStr.replace(" ", "T") + "Z";
+        }
+        date = new Date(isoStr);
+      } else {
+        date = new Date(dateInput);
+      }
+
+      if (isNaN(date.getTime())) return "—";
+
+      return date.toLocaleTimeString("en-KE", {
+        timeZone: "Africa/Nairobi",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      });
+    } catch (err) {
+      return "—";
+    }
   };
 
   useEffect(() => {
@@ -149,7 +168,6 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
           <p>Managing for: <strong>{isGlobal ? "Global African Database" : activeRegion}</strong></p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
-          {/* Modified trigger action here to drop down via router pathways */}
           <button 
             className={styles.actionScanFloatingBtn} 
             onClick={() => navigate(`../manual-scanner/${sessionId}`)}

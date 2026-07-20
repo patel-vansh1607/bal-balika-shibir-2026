@@ -11,7 +11,35 @@ const REGION_PREFIXES = {
   Kenya: "MTRC-KE-", Uganda: "MTRC-UG-",
   Tanzania: "MTRC-TZ-", Zambia: "MTRC-ZM-",
   Malawi: "MTRC-MW-", Botswana: "MTRC-BW-",
-  "South Africa": "MTRC-ZA-",
+  "South Africa": "MTRC-SA-",
+};
+
+// Formats DB session start time strictly to East Africa Time (EAT - Africa/Nairobi)
+const formatSessionTime = (dateInput) => {
+  if (!dateInput) return "N/A";
+  try {
+    let date;
+    if (typeof dateInput === "string") {
+      let isoStr = dateInput.trim();
+      if (!isoStr.endsWith("Z") && !isoStr.includes("+") && !isoStr.includes("-")) {
+        isoStr = isoStr.replace(" ", "T") + "Z";
+      }
+      date = new Date(isoStr);
+    } else {
+      date = new Date(dateInput);
+    }
+
+    if (isNaN(date.getTime())) return "N/A";
+
+    return date.toLocaleTimeString("en-KE", {
+      timeZone: "Africa/Nairobi",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+  } catch (err) {
+    return "N/A";
+  }
 };
 
 export default function SessionMasterDashboard({ activeRegion }) {
@@ -49,7 +77,7 @@ export default function SessionMasterDashboard({ activeRegion }) {
           return {
             id: session.id, title: session.title,
             total: totalExpectedCount, present, absent: Math.max(0, totalExpectedCount - present),
-            time: session.start_time ? new Date(session.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "N/A",
+            time: formatSessionTime(session.start_time),
           };
         });
 

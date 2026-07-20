@@ -24,6 +24,38 @@ const REGION_PREFIX_MAP = {
   "South Africa": "MTRC-ZA-",
 };
 
+// Robust East Africa Time (EAT - UTC+3) parser & formatter
+const getEATTimeString = (dateInput = new Date()) => {
+  try {
+    let date;
+
+    if (typeof dateInput === "string") {
+      let cleanStr = dateInput.trim();
+      // If DB string lacks UTC designation ('Z' or offset), force UTC format
+      if (!cleanStr.endsWith("Z") && !cleanStr.includes("+") && !cleanStr.includes("-")) {
+        cleanStr = cleanStr.replace(" ", "T") + "Z";
+      }
+      date = new Date(cleanStr);
+    } else {
+      date = new Date(dateInput);
+    }
+
+    if (isNaN(date.getTime())) {
+      date = new Date();
+    }
+
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "Africa/Nairobi",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    }).format(date);
+  } catch (err) {
+    return new Date().toLocaleTimeString();
+  }
+};
+
 export default function ManualScanner({ regionScope = "All", prefixScope = "" }) {
   const { sessionId } = useParams();
   const navigate = useNavigate();
@@ -55,7 +87,7 @@ export default function ManualScanner({ regionScope = "All", prefixScope = "" })
         if (logs) {
           setScannerLog(logs.map((log) => ({
             id: log.id,
-            time: new Date(log.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+            time: getEATTimeString(log.created_at),
             type: log.status,
             text: log.message,
             processedBy: log.operator_name || log.operator_email?.split("@")[0] || "system",
@@ -78,7 +110,7 @@ export default function ManualScanner({ regionScope = "All", prefixScope = "" })
     let scannedId = `${lockedPrefix}${cleanedSeq}`.toUpperCase();
     let rawNumericFallback = cleanedSeq;
 
-    const timestamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const timestamp = getEATTimeString();
     const operator = operatorRef.current;
     const operatorEmail = operator?.email || "unknown@shibir.org";
     const operatorName = operator?.name || "system";
@@ -149,22 +181,18 @@ export default function ManualScanner({ regionScope = "All", prefixScope = "" })
   };
 
   const handleDigitChange = (index, value) => {
-    // Strictly filter out non-numeric characters
     const safeValue = value.replace(/[^0-9]/g, "");
     if (!safeValue && value !== "") return; 
 
     const newDigits = [...digits];
-    // Take only the last typed character if field gets crowded
     const targetChar = safeValue.slice(-1);
     newDigits[index] = targetChar;
     setDigits(newDigits);
 
-    // Auto-advance focus to the next box if a number is input
     if (targetChar && index < 3) {
       inputRefs[index + 1].current.focus();
     }
 
-    // Auto-trigger fire-rate immediately when sequence reaches 4 digits
     const completeSequence = newDigits.join("");
     if (completeSequence.length === 4) {
       executeSearchLookup(completeSequence);
@@ -172,7 +200,6 @@ export default function ManualScanner({ regionScope = "All", prefixScope = "" })
   };
 
   const handleDigitKeyDown = (index, e) => {
-    // If user hits Backspace and the current box is empty, drop back one space
     if (e.key === "Backspace" && !digits[index] && index > 0) {
       inputRefs[index - 1].current.focus();
     }
@@ -194,7 +221,7 @@ export default function ManualScanner({ regionScope = "All", prefixScope = "" })
     const rawAttendeeId = attendeeRecord._raw_id || attendeeRecord.id;
     const scannedId = `${lockedPrefix}${digits.join("")}`.toUpperCase();
 
-    const timestamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const timestamp = getEATTimeString();
     const operator = operatorRef.current;
     const operatorEmail = operator?.email || "unknown@shibir.org";
     const operatorName = operator?.name || "system";
@@ -336,7 +363,6 @@ export default function ManualScanner({ regionScope = "All", prefixScope = "" })
                   </div>
                 )}
                 
-                {/* 4-Box Split Number Grid Layout */}
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                   {digits.map((digit, index) => (
                     <input
