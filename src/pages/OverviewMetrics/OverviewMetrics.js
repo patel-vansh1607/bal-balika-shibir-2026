@@ -527,11 +527,8 @@ export default function OverviewMetrics({
             </select>
           </div>
         ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f1f3f4", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
-            <FaLock style={{ color: "#5f6368", fontSize: "13px" }} />
-            <span style={{ fontSize: "14px", fontWeight: "600", color: "#3c4043" }}>
-              Region Locked: <span style={{ color: "#1a73e8" }}>{selectedRegion}</span>
-            </span>
+          <div style={{ display: "none", alignItems: "center", gap: "8px", background: "#f1f3f4", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
+
           </div>
         )}
       </section>
