@@ -496,6 +496,7 @@ export default function Dashboard() {
                   <OverviewMetrics
                     attendees={attendeesList}
                     dataFetching={dataFetching}
+                    regionScope={regionScope}
                   />
                 ) : (
                   <NotFound />
