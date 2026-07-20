@@ -632,10 +632,74 @@ export default function AdminRegister() {
                   <p className={styles.noticeText}>
                     Kindly ensure that your Shibir registration fee of UGX
                     25,000 is submitted to the Accounts Department to finalize
-                    your registration.{" "}
+                    your registration.
                   </p>
                 </div>
               )}
+
+              {selectedRegion === "South Africa" && (
+                <div className={styles.regionNoticeBox}>
+                  <span className={styles.noticeTitle}>
+                    For South Africa Parents
+                  </span>
+                  <div className={styles.noticeText}>
+                    <p style={{ marginBottom: "12px", fontWeight: "600" }}>
+                      Kindly note the following key processing details to
+                      finalize your registration:
+                    </p>
+
+                    <ol
+                      style={{
+                        paddingLeft: "20px",
+                        margin: "0 0 12px 0",
+                        lineHeight: "1.6",
+                      }}
+                    >
+                      <li>
+                        Cost of the Shibir is{" "}
+                        <strong>R300 per Balak/Balika</strong>.
+                      </li>
+                      <li style={{ marginTop: "8px" }}>
+                        EFT can be made into the following Account:
+                        <ul
+                          style={{
+                            paddingLeft: "20px",
+                            marginTop: "4px",
+                            listStyleType: "disc",
+                          }}
+                        >
+                          <li>
+                            <strong>Account Name:</strong> BAPS Joburg
+                          </li>
+                          <li>
+                            <strong>Account Number:</strong> 402131231
+                          </li>
+                          <li>
+                            <strong>Bank:</strong> Standard Bank
+                          </li>
+                          <li>
+                            <strong>Branch Code:</strong> 051001
+                          </li>
+                          <li>
+                            <strong>Account Type:</strong> Current
+                          </li>
+                        </ul>
+                      </li>
+                      <li style={{ marginTop: "8px" }}>
+                        Please send the Proof of Payment to{" "}
+                        <strong>acct.za04@africa.baps.org</strong>
+                      </li>
+                      <li style={{ marginTop: "8px" }}>
+                        Once registration is complete, parents will receive an
+                        indemnity form from their local Sanchalak (this form
+                        must be completed in order for registration to be
+                        valid).
+                      </li>
+                    </ol>
+                  </div>
+                </div>
+              )}
+
               <div className={styles.previewGridSummary}>
                 <div className={styles.previewRow}>
                   <span className={styles.previewLabel}>Full Name:</span>
@@ -967,13 +1031,14 @@ export default function AdminRegister() {
                             </label>
 
                             {/* Sizing Info Helper (Visible only for Uganda) */}
-                            {selectedRegion === "Uganda" && (
+                            {(selectedRegion === "Uganda" ||
+                              selectedRegion === "South Africa") && (
                               <div className={styles.helperTooltipContainer}>
                                 <button
                                   type="button"
                                   className={styles.helperBtn}
                                   onClick={() => setIsModalOpen(true)}
-                                  aria-label="View Uganda T-shirt size chart"
+                                  aria-label="View T-shirt size chart"
                                 >
                                   <span className={styles.infoIcon}>ℹ</span>{" "}
                                   View Size Chart
@@ -992,8 +1057,10 @@ export default function AdminRegister() {
                             disabled={loading}
                           >
                             <option value="">Select Size</option>
-                            {selectedRegion === "Uganda" ? (
-                              /* Uganda Custom Alphabetical Sizes */
+                            {/* Wrap the OR checks in parentheses to isolate them from any surrounding && logic */}
+                            {selectedRegion === "Uganda" ||
+                            selectedRegion === "South Africa" ? (
+                              /* Custom Alphabetical Sizes */
                               <>
                                 <option value="XXXS">XXXS - 57-62cm</option>
                                 <option value="XXS">XXS - 62-67cm</option>
@@ -1006,7 +1073,7 @@ export default function AdminRegister() {
                                 <option value="XXXL">XXXL - 98-103cm</option>
                               </>
                             ) : (
-                              /* Classic Numeric Sizes for Southern Africa */
+                              /* Classic Numeric Sizes */
                               <>
                                 <option value="24">24</option>
                                 <option value="26">26</option>
@@ -1036,7 +1103,8 @@ export default function AdminRegister() {
                           >
                             <div className={styles.modalHeader}>
                               <h4 className={styles.modalTitle}>
-                                Uganda T-Shirt Size Guide
+                                {" "}
+                                T-Shirt Size Guide
                               </h4>
 
                               <div className={styles.modalHeaderActions}>
@@ -1081,7 +1149,7 @@ export default function AdminRegister() {
                             >
                               <img
                                 src={shirtChartImg}
-                                alt="Uganda T-Shirt Sizing Grid Dimensions"
+                                alt=" T-Shirt Sizing Grid Dimensions"
                                 className={styles.chartImage}
                               />
                             </div>
@@ -1094,18 +1162,78 @@ export default function AdminRegister() {
                       )}
                     </>
                   )}
-                  {/* Uganda Registration Fee Notice */}
                   {selectedRegion === "Uganda" && (
-                    <div className={styles.ugandaDetailsBox}>
-                      <div className={styles.feeNotice}>
-                        <span className={styles.noticeTitle}>
-                          Registration Fee Notice
-                        </span>
-                        <p className={styles.noticeText}>
-                          Kindly ensure that your Shibir registration fee of{" "}
-                          <strong>UGX 25,000</strong> is submitted to the
-                          Accounts Department to finalize your registration.
+                    <div className={styles.regionNoticeBox}>
+                      <span className={styles.noticeTitle}>
+                        For Uganda Parents
+                      </span>
+                      <p className={styles.noticeText}>
+                        Kindly ensure that your Shibir registration fee of UGX
+                        25,000 is submitted to the Accounts Department to
+                        finalize your registration.
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedRegion === "South Africa" && (
+                    <div className={styles.regionNoticeBox}>
+                      <span className={styles.noticeTitle}>
+                        For South Africa Parents
+                      </span>
+                      <div className={styles.noticeText}>
+                        <p style={{ marginBottom: "12px", fontWeight: "600" }}>
+                          Kindly note the following key processing details to
+                          finalize your registration:
                         </p>
+
+                        <ol
+                          style={{
+                            paddingLeft: "20px",
+                            margin: "0 0 12px 0",
+                            lineHeight: "1.6",
+                          }}
+                        >
+                          <li>
+                            Cost of the Shibir is{" "}
+                            <strong>R300 per Balak/Balika</strong>.
+                          </li>
+                          <li style={{ marginTop: "8px" }}>
+                            EFT can be made into the following Account:
+                            <ul
+                              style={{
+                                paddingLeft: "20px",
+                                marginTop: "4px",
+                                listStyleType: "disc",
+                              }}
+                            >
+                              <li>
+                                <strong>Account Name:</strong> BAPS Joburg
+                              </li>
+                              <li>
+                                <strong>Account Number:</strong> 402131231
+                              </li>
+                              <li>
+                                <strong>Bank:</strong> Standard Bank
+                              </li>
+                              <li>
+                                <strong>Branch Code:</strong> 051001
+                              </li>
+                              <li>
+                                <strong>Account Type:</strong> Current
+                              </li>
+                            </ul>
+                          </li>
+                          <li style={{ marginTop: "8px" }}>
+                            Please send the Proof of Payment to{" "}
+                            <strong>acct.za04@africa.baps.org</strong>
+                          </li>
+                          <li style={{ marginTop: "8px" }}>
+                            Once registration is complete, parents will receive
+                            an indemnity form from their local Sanchalak (this
+                            form must be completed in order for registration to
+                            be valid).
+                          </li>
+                        </ol>
                       </div>
                     </div>
                   )}
