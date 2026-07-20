@@ -59,6 +59,54 @@ const getFullName = (person) => {
   return parts.length > 0 ? parts.join(" ") : "Unnamed Member";
 };
 
+// Robust helper to extract Member ID across all Attendee & Karyakar schemas
+const getMemberId = (person) => {
+  if (!person) return "N/A";
+
+  const idVal = 
+    person.member_id || 
+    person.memberId || 
+    person.code || 
+    person.karyakar_code || 
+    person.karyakarCode || 
+    person.karyakar_id || 
+    person.karyakarId || 
+    person.id || 
+    person.mtrc_code ||
+    person.registration_id;
+
+  if (idVal && typeof idVal === "string" && idVal.trim()) {
+    return idVal.trim();
+  }
+  return "N/A";
+};
+
+// Robust helper to extract T-Shirt Size across all Attendee & Karyakar schemas
+const getTshirtSize = (person) => {
+  if (!person) return "";
+
+  const rawSize = 
+    person.tshirt_size || 
+    person.tshirtSize || 
+    person.shirt_size || 
+    person.shirtSize || 
+    person.tshirt || 
+    person.size || 
+    person.t_shirt_size ||
+    person.tShirtSize;
+
+  if (rawSize) return String(rawSize);
+
+  // Fallback: If size is concatenated inside center/location string (e.g. "Eldoret_3XL")
+  const rawCenter = person.center || person.mandal || person.location || "";
+  const match = String(rawCenter).match(/_(3XL|2XL|XL|L|M|S|XS)/i);
+  if (match) {
+    return match[1];
+  }
+
+  return "";
+};
+
 // Helper function to strip region prefixes (e.g., "_3xl_South", "3xl_North")
 const cleanRegion = (rawRegion) => {
   if (!rawRegion || typeof rawRegion !== "string") return "";
@@ -69,17 +117,16 @@ const cleanRegion = (rawRegion) => {
   return sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
 };
 
-// Robust helper function to strip center prefixes & trailing size/code attachments
-// (e.g., "Eldoret_3XLMTRC-0085" -> "Eldoret", "_3xl_Mombasa" -> "Mombasa")
+// Helper function to strip center prefixes & trailing size/code attachments
 const cleanCenter = (rawCenter) => {
   if (!rawCenter || typeof rawCenter !== "string") return "";
 
   let sanitized = rawCenter.trim();
 
-  // Strip attached trailing sizes or next code markers like _3XLMTRC-0085 or _3XL
+  // Strip attached trailing sizes or next code markers
   sanitized = sanitized.replace(/(_?\d*[A-Z0-9]*MTRC-\d+|_?\d*XL.*|_?\d*XS|_?\d*S|_?\d*M|_?\d*L)$/i, "");
 
-  // Strip leading size/code prefixes like _3xl_, 3xl_, or leading underscores
+  // Strip leading size/code prefixes like _3xl_ or 3xl_
   sanitized = sanitized.replace(/^(_?\d*[a-zA-Z0-9]+_|_)/, "");
 
   sanitized = sanitized.trim();
@@ -88,7 +135,7 @@ const cleanCenter = (rawCenter) => {
   return sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
 };
 
-// Helper function to extract and sanitize T-shirt sizes
+// Helper function to sanitize T-shirt sizes
 const cleanTshirtSize = (rawSize) => {
   if (!rawSize || typeof rawSize !== "string") return "";
 
@@ -323,13 +370,13 @@ export default function OverviewMetrics({
     };
   }, [regionFilteredPeople, selectedRegion, selectedCenter]);
 
-  // Compute T-Shirt stats with Clean Sizes & Centers
+  // Compute T-Shirt stats with Clean Sizes, Member IDs, & Centers
   const { tshirtStats, unassignedCount } = useMemo(() => {
     const map = {};
     let missingTotal = 0;
 
     regionFilteredPeople.forEach((person) => {
-      const rawSize = person.tshirt_size || person.tshirtSize || person.shirt_size || person.shirtSize || person.size;
+      const rawSize = getTshirtSize(person);
       const sanitizedSize = cleanTshirtSize(rawSize);
 
       const isMissing = !sanitizedSize || sanitizedSize === "NONE" || sanitizedSize === "N/A";
@@ -373,7 +420,7 @@ export default function OverviewMetrics({
         map[size].balakCount += 1;
       }
 
-      const memberId = person.member_id || person.memberId || person.code || person.id || "N/A";
+      const memberId = getMemberId(person);
       const fullName = getFullName(person);
       const cleanCenterVal = person.normalizedCenter;
 
@@ -528,7 +575,10 @@ export default function OverviewMetrics({
           </div>
         ) : (
           <div style={{ display: "none", alignItems: "center", gap: "8px", background: "#f1f3f4", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
-
+            <FaLock style={{ color: "#5f6368", fontSize: "13px" }} />
+            <span style={{ fontSize: "14px", fontWeight: "600", color: "#3c4043" }}>
+              Region Locked: <span style={{ color: "#1a73e8" }}>{selectedRegion}</span>
+            </span>
           </div>
         )}
       </section>
