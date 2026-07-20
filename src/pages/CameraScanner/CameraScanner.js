@@ -8,8 +8,7 @@ import {
   FaShieldAlt,
   FaArrowRight
 } from "react-icons/fa";
-import { attendees as attendeesApi, sessionLogs, gateLogs } from "../../apiClient";
-import { getStoredUser } from "../../apiClient";
+import { attendees as attendeesApi, sessionLogs, gateLogs, getStoredUser } from "../../apiClient";
 import styles from "./CameraScanner.module.css";
 
 export default function CameraScanner({
@@ -25,6 +24,9 @@ export default function CameraScanner({
   const isProcessingScan    = useRef(false);
   const isStartingEngine    = useRef(false);
   const operatorRef         = useRef(null);
+  const activeStreamRef     = useRef(null);
+  const nativeDetectorRef   = useRef(null);
+  const animFrameRef        = useRef(null);
 
   const statusThemes = {
     success: { bg: "#f0fdf4", accent: "#22c55e", text: "#14532d", subtext: "#166534" },
@@ -34,6 +36,14 @@ export default function CameraScanner({
   const currentTheme = scanResult ? statusThemes[scanResult.status] || statusThemes.success : statusThemes.success;
 
   const stopCameraEngine = useCallback(async () => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (activeStreamRef.current) {
+      activeStreamRef.current.getTracks().forEach((track) => track.stop());
+      activeStreamRef.current = null;
+    }
     if (html5QrcodeInstance.current) {
       if (html5QrcodeInstance.current.isScanning) {
         try { await html5QrcodeInstance.current.stop(); } catch (err) {}
@@ -44,7 +54,121 @@ export default function CameraScanner({
     if (container) container.innerHTML = "";
   }, []);
 
-  const onScanFailure = useCallback(() => {}, []);
+  const handleDecodedText = useCallback(async (decodedText) => {
+    if (isProcessingScan.current) return;
+    isProcessingScan.current = true;
+    setIsProcessing(true);
+
+    let scannedId = decodedText.trim();
+    if (scannedId.includes("data=")) scannedId = scannedId.split("data=").pop().split("&")[0];
+    scannedId = decodeURIComponent(scannedId).toUpperCase().trim();
+
+    let rawNumericFallback = scannedId;
+    if (scannedId.startsWith("MTRC-") && !scannedId.match(/MTRC-(KE|TZ|UG|ZM|MW|BW|ZA)-/)) {
+      rawNumericFallback = scannedId.replace("MTRC-", "");
+    }
+
+    if (!scannedId) {
+      isProcessingScan.current = false;
+      setIsProcessing(false);
+      return;
+    }
+
+    const timestamp     = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const operator      = operatorRef.current;
+    const operatorEmail = operator?.email || "unknown@shibir.org";
+    const operatorName  = operator?.name  || "system";
+    let localLogPayload = { id: crypto.randomUUID(), time: timestamp, processedBy: operatorName };
+
+    const logGateEvent = (payload) => {
+      gateLogs.create(payload).catch((e) => {
+        console.error("gateLogs.create failed (non-blocking):", e);
+      });
+    };
+
+    try {
+      // Direct API lookup with fallback
+      let attendeeRecord = null;
+      try {
+        const { data: byMember } = await attendeesApi.get(scannedId);
+        attendeeRecord = byMember;
+        if (!attendeeRecord && !isNaN(rawNumericFallback)) {
+          const { data: byId } = await attendeesApi.get(parseInt(rawNumericFallback, 10));
+          attendeeRecord = byId;
+        }
+      } catch (e) {}
+
+      // 1. Unrecognized Token Verification
+      if (!attendeeRecord) {
+        const errorMsg = `Denied Entry: Token "${scannedId}" unrecognized.`;
+        logGateEvent({ scanned_id: scannedId, status: "error", message: errorMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: "Unknown Badge" });
+
+        localLogPayload.type = "error"; localLogPayload.text = errorMsg;
+        setScannerLog((prev) => [localLogPayload, ...prev]);
+        setScanResult({ status: "error", message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
+        setIsProcessing(false);
+        return;
+      }
+
+      // 2. Region Domain Verification
+      const assignedRegion    = attendeeRecord.region || "";
+      const targetRegionScope = regionScope || "All";
+      if (targetRegionScope !== "All" && assignedRegion.toLowerCase() !== targetRegionScope.toLowerCase()) {
+        const crossMsg = `Access Denied: ${attendeeRecord.name} belongs to ${assignedRegion} Region.`;
+        logGateEvent({ scanned_id: scannedId, status: "error", message: crossMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
+
+        localLogPayload.type = "error"; localLogPayload.text = crossMsg;
+        setScannerLog((prev) => [localLogPayload, ...prev]);
+        setScanResult({ status: "error", message: "Cross-Partition Domain Violation!", customDetail: `Restricted strictly to ${regionScope}. Entry rejected.` });
+        setIsProcessing(false);
+        return;
+      }
+
+      // 3. Duplicate Verification
+      const rawAttendeeId = attendeeRecord._raw_id || attendeeRecord.id;
+      let isAlreadyCheckedIn = false;
+      if (sessionId) {
+        try {
+          const { data: existingLogs } = await sessionLogs.list({ session_id: sessionId, attendee_id: rawAttendeeId });
+          if (existingLogs?.length > 0) isAlreadyCheckedIn = true;
+        } catch (e) {}
+      } else {
+        if (attendeeRecord.status === "Checked In") isAlreadyCheckedIn = true;
+      }
+
+      if (isAlreadyCheckedIn) {
+        const warnMsg = `Duplicate Flag: ${attendeeRecord.name} scanned again.`;
+        logGateEvent({ scanned_id: scannedId, status: "warning", message: warnMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
+
+        localLogPayload.type = "warning"; localLogPayload.text = warnMsg;
+        setScannerLog((prev) => [localLogPayload, ...prev]);
+        setScanResult({ status: "warning", message: "Duplicate Scan Warning!", attendee: attendeeRecord });
+        setIsProcessing(false);
+        return;
+      }
+
+      // 4. Record Success Entry
+      const successMsg = `Approved Admission: Check-in completed for ${attendeeRecord.name} (${attendeeRecord.center})`;
+      
+      // Update check-in state
+      if (sessionId) {
+        await sessionLogs.create({ session_id: sessionId, attendee_id: rawAttendeeId });
+      } else {
+        await attendeesApi.update(rawAttendeeId, { status: "Checked In" });
+      }
+
+      logGateEvent({ scanned_id: scannedId, status: "success", message: successMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
+
+      localLogPayload.type = "success"; localLogPayload.text = successMsg;
+      setScannerLog((prev) => [localLogPayload, ...prev]);
+      setScanResult({ status: "success", message: "Checked In Approved!", attendee: attendeeRecord });
+
+    } catch (err) {
+      console.error("Scanner execution pipeline failure:", err);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [regionScope, sessionId]);
 
   const startCameraEngineDirectly = useCallback(async () => {
     if (isStartingEngine.current) return;
@@ -57,11 +181,51 @@ export default function CameraScanner({
     if (!container) { isStartingEngine.current = false; return; }
 
     try {
-      // NOTE: removed the redundant getUserMedia() warm-up/stop cycle that used
-      // to run here before scanner.start(). Html5Qrcode.start() already requests
-      // the camera and surfaces permission errors on its own, so the old warm-up
-      // was just paying for a second camera init/teardown on every mount.
+      // Check for Native Hardware Accelerated Barcode Detector API
+      if ("BarcodeDetector" in window) {
+        try {
+          const supportedFormats = await window.BarcodeDetector.getSupportedFormats();
+          if (supportedFormats.includes("qr_code")) {
+            nativeDetectorRef.current = new window.BarcodeDetector({ formats: ["qr_code"] });
+            
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
+            });
+            activeStreamRef.current = stream;
 
+            const video = document.createElement("video");
+            video.srcObject = stream;
+            video.setAttribute("playsinline", "true");
+            video.style.width = "100%";
+            video.style.height = "100%";
+            video.style.objectFit = "cover";
+            video.style.display = "block";
+            await video.play();
+
+            container.appendChild(video);
+
+            const detectFrame = async () => {
+              if (!isProcessingScan.current && video.readyState === video.HAVE_ENOUGH_DATA) {
+                try {
+                  const barcodes = await nativeDetectorRef.current.detect(video);
+                  if (barcodes.length > 0 && barcodes[0].rawValue) {
+                    handleDecodedText(barcodes[0].rawValue);
+                  }
+                } catch (e) {}
+              }
+              animFrameRef.current = requestAnimationFrame(detectFrame);
+            };
+
+            detectFrame();
+            isStartingEngine.current = false;
+            return;
+          }
+        } catch (e) {
+          console.warn("Native BarcodeDetector initialization failed, falling back to html5Qrcode", e);
+        }
+      }
+
+      // Fallback: Optimized html5Qrcode Engine (Full Screen Scanning & Higher FPS)
       const scanner = new Html5Qrcode("qr-reader-container", {
         formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
         verbose: false,
@@ -71,131 +235,11 @@ export default function CameraScanner({
       await scanner.start(
         { facingMode: "environment" },
         {
-          // Dropped from 30 -> 10 fps. jsQR only needs a couple of frames to lock
-          // onto a steady code, and 30fps decode attempts were costing more in
-          // CPU/frame-drops on mid/low-end Android than they gained in speed.
-          fps: 10,
-          qrbox: (w, h) => { const s = Math.min(w, h) * 0.8; return { width: s, height: s }; },
+          fps: 25, // Higher frame processing rate
+          // Removed qrbox so scanning evaluates the entire full view frame immediately
         },
-        async (decodedText) => {
-          if (isProcessingScan.current) return;
-          isProcessingScan.current = true;
-          setIsProcessing(true); // Short loading indicator while network acts
-
-          let scannedId = decodedText.trim();
-          if (scannedId.includes("data=")) scannedId = scannedId.split("data=").pop().split("&")[0];
-          scannedId = decodeURIComponent(scannedId).toUpperCase().trim();
-
-          let rawNumericFallback = scannedId;
-          if (scannedId.startsWith("MTRC-") && !scannedId.match(/MTRC-(KE|TZ|UG|ZM|MW|BW|ZA)-/)) {
-            rawNumericFallback = scannedId.replace("MTRC-", "");
-          }
-
-          if (!scannedId) { isProcessingScan.current = false; setIsProcessing(false); return; }
-
-          const timestamp    = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-          const operator     = operatorRef.current;
-          const operatorEmail= operator?.email || "unknown@shibir.org";
-          const operatorName = operator?.name  || "system";
-          let localLogPayload = { id: crypto.randomUUID(), time: timestamp, processedBy: operatorName };
-
-          // Fire-and-forget helper for the audit log write. The operator doesn't
-          // need to wait on this round trip before seeing their result — it's a
-          // secondary record, not the source of truth for check-in state.
-          const logGateEvent = (payload) => {
-            gateLogs.create(payload).catch((e) => {
-              console.error("gateLogs.create failed (non-blocking):", e);
-            });
-          };
-
-          try {
-            // --- PARALLEL SPEED FETCH ---
-            // Grabs attendee records instantly without waiting step-by-step
-            const lookupPromise = (async () => {
-              try {
-                const { data: byMember } = await attendeesApi.get(scannedId);
-                if (byMember) return byMember;
-                if (!isNaN(rawNumericFallback)) {
-                  const { data: byId } = await attendeesApi.get(parseInt(rawNumericFallback, 10));
-                  return byId;
-                }
-              } catch (e) {}
-              return null;
-            })();
-
-            const attendeeRecord = await lookupPromise;
-
-            // 1. Unrecognized Token Verification
-            if (!attendeeRecord) {
-              const errorMsg = `Denied Entry: Token "${scannedId}" unrecognized.`;
-              logGateEvent({ scanned_id: scannedId, status: "error", message: errorMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: "Unknown Badge" });
-
-              localLogPayload.type = "error"; localLogPayload.text = errorMsg;
-              setScannerLog((prev) => [localLogPayload, ...prev]);
-              setScanResult({ status: "error", message: `Badge Unrecognized. Token "${scannedId}" not registered.` });
-              setIsProcessing(false);
-              return;
-            }
-
-            // 2. Region Domain Verification
-            const assignedRegion     = attendeeRecord.region || "";
-            const targetRegionScope  = regionScope || "All";
-            if (targetRegionScope !== "All" && assignedRegion.toLowerCase() !== targetRegionScope.toLowerCase()) {
-              const crossMsg = `Access Denied: ${attendeeRecord.name} belongs to ${assignedRegion} Region.`;
-              logGateEvent({ scanned_id: scannedId, status: "error", message: crossMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
-
-              localLogPayload.type = "error"; localLogPayload.text = crossMsg;
-              setScannerLog((prev) => [localLogPayload, ...prev]);
-              setScanResult({ status: "error", message: "Cross-Partition Domain Violation!", customDetail: `Restricted strictly to ${regionScope}. Entry rejected.` });
-              setIsProcessing(false);
-              return;
-            }
-
-            // 3. Duplicate Verification
-            const rawAttendeeId = attendeeRecord._raw_id || attendeeRecord.id;
-            let isAlreadyCheckedIn = false;
-            if (sessionId) {
-              try {
-                const { data: existingLogs } = await sessionLogs.list({ session_id: sessionId, attendee_id: rawAttendeeId });
-                if (existingLogs?.length > 0) isAlreadyCheckedIn = true;
-              } catch (e) {}
-            } else {
-              if (attendeeRecord.status === "Checked In") isAlreadyCheckedIn = true;
-            }
-
-            if (isAlreadyCheckedIn) {
-              const warnMsg = `Duplicate Flag: ${attendeeRecord.name} scanned again.`;
-              logGateEvent({ scanned_id: scannedId, status: "warning", message: warnMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
-
-              localLogPayload.type = "warning"; localLogPayload.text = warnMsg;
-              setScannerLog((prev) => [localLogPayload, ...prev]);
-              setScanResult({ status: "warning", message: "Duplicate Scan Warning!", attendee: attendeeRecord });
-              setIsProcessing(false);
-              return;
-            }
-
-            // 4. Record Success Entry
-            // These two are the source of truth for check-in state, so they
-            // stay awaited — everything below them is just UI + audit trail.
-            const successMsg = `Approved Admission: Check-in completed for ${attendeeRecord.name} (${attendeeRecord.center})`;
-            if (sessionId) {
-              await sessionLogs.create({ session_id: sessionId, attendee_id: rawAttendeeId });
-            } else {
-              await attendeesApi.update(rawAttendeeId, { status: "Checked In" });
-            }
-            logGateEvent({ scanned_id: scannedId, status: "success", message: successMsg, operator_email: operatorEmail, operator_name: operatorName, attendee_name: attendeeRecord.name });
-
-            localLogPayload.type = "success"; localLogPayload.text = successMsg;
-            setScannerLog((prev) => [localLogPayload, ...prev]);
-            setScanResult({ status: "success", message: "Checked In Approved!", attendee: attendeeRecord });
-
-          } catch (err) {
-            console.error("Scanner execution pipeline failure:", err);
-          } finally {
-            setIsProcessing(false);
-          }
-        },
-        onScanFailure,
+        (decodedText) => handleDecodedText(decodedText),
+        () => {}
       );
 
       const videoEl = container.querySelector("video");
@@ -213,7 +257,7 @@ export default function CameraScanner({
     } finally {
       isStartingEngine.current = false;
     }
-  }, [stopCameraEngine, onScanFailure, regionScope, sessionId]);
+  }, [stopCameraEngine, handleDecodedText]);
 
   useEffect(() => {
     async function initScannerSession() {
@@ -239,9 +283,9 @@ export default function CameraScanner({
     const timeout = setTimeout(() => startCameraEngineDirectly(), 150);
     return () => {
       clearTimeout(timeout);
-      if (html5QrcodeInstance.current?.isScanning) html5QrcodeInstance.current.stop().catch(() => {});
+      stopCameraEngine();
     };
-  }, [startCameraEngineDirectly]);
+  }, [startCameraEngineDirectly, stopCameraEngine]);
 
   const handleCloseResult = () => {
     setScanResult(null);
