@@ -1162,7 +1162,7 @@ export default function PublicRegister() {
                       )}
                     </>
                   )}
-                   {selectedRegion === "Uganda" && (
+                  {selectedRegion === "Uganda" && (
                     <div className={styles.regionNoticeBox}>
                       <span className={styles.noticeTitle}>
                         For Uganda Parents
@@ -1175,7 +1175,7 @@ export default function PublicRegister() {
                     </div>
                   )}
 
-                  {/* {selectedRegion === "South Africa" && (
+                  {selectedRegion === "South Africa" && (
                     <div className={styles.regionNoticeBox}>
                       <span className={styles.noticeTitle}>
                         For South Africa Parents
@@ -1236,7 +1236,7 @@ export default function PublicRegister() {
                         </ol>
                       </div>
                     </div>
-                  )} */}
+                  )}
                   <div className={styles.termsSection} ref={termsRef}>
                     <div className={styles.checkboxWrapper}>
                       <label
