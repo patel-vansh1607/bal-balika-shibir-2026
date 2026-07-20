@@ -32,6 +32,19 @@ import {
 import { userRoles, karayakars as karayakarsApi } from "../../apiClient"; 
 import styles from "../Dashboard/Dashboard.module.css";
 
+// Standard order of all available sizes
+const ALL_STANDARD_SIZES = [
+  "XXXS",
+  "XXS",
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "2XL",
+  "3XL"
+];
+
 // Helper function to extract and sanitize full name
 const getFullName = (person) => {
   if (!person) return "Unnamed Member";
@@ -59,7 +72,7 @@ const getFullName = (person) => {
   return parts.length > 0 ? parts.join(" ") : "Unnamed Member";
 };
 
-// Robust helper to extract Member ID across all Attendee & Karyakar schemas
+// Extract Member ID across all Attendee & Karyakar schemas
 const getMemberId = (person) => {
   if (!person) return "N/A";
 
@@ -81,7 +94,7 @@ const getMemberId = (person) => {
   return "N/A";
 };
 
-// Robust helper to extract T-Shirt Size across all Attendee & Karyakar schemas
+// Extract T-Shirt Size across all Attendee & Karyakar schemas
 const getTshirtSize = (person) => {
   if (!person) return "";
 
@@ -99,7 +112,7 @@ const getTshirtSize = (person) => {
 
   // Fallback: If size is concatenated inside center/location string (e.g. "Eldoret_3XL")
   const rawCenter = person.center || person.mandal || person.location || "";
-  const match = String(rawCenter).match(/_(3XL|2XL|XL|L|M|S|XS)/i);
+  const match = String(rawCenter).match(/_(3XL|XXXL|2XL|XXL|XL|L|M|S|XS|XXS|XXXS)/i);
   if (match) {
     return match[1];
   }
@@ -107,7 +120,7 @@ const getTshirtSize = (person) => {
   return "";
 };
 
-// Helper function to strip region prefixes (e.g., "_3xl_South", "3xl_North")
+// Helper function to strip region prefixes
 const cleanRegion = (rawRegion) => {
   if (!rawRegion || typeof rawRegion !== "string") return "";
   
@@ -117,16 +130,12 @@ const cleanRegion = (rawRegion) => {
   return sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
 };
 
-// Helper function to strip center prefixes & trailing size/code attachments
+// Helper function to strip center prefixes
 const cleanCenter = (rawCenter) => {
   if (!rawCenter || typeof rawCenter !== "string") return "";
 
   let sanitized = rawCenter.trim();
-
-  // Strip attached trailing sizes or next code markers
   sanitized = sanitized.replace(/(_?\d*[A-Z0-9]*MTRC-\d+|_?\d*XL.*|_?\d*XS|_?\d*S|_?\d*M|_?\d*L)$/i, "");
-
-  // Strip leading size/code prefixes like _3xl_ or 3xl_
   sanitized = sanitized.replace(/^(_?\d*[a-zA-Z0-9]+_|_)/, "");
 
   sanitized = sanitized.trim();
@@ -135,15 +144,15 @@ const cleanCenter = (rawCenter) => {
   return sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
 };
 
-// Helper function to sanitize T-shirt sizes
+// Helper function to sanitize T-shirt sizes (normalizes XXXS, XXS, XS, S, M, L, XL, 2XL, 3XL)
 const cleanTshirtSize = (rawSize) => {
   if (!rawSize || typeof rawSize !== "string") return "";
 
   let cleaned = rawSize.trim().toUpperCase();
-
-  // Strip attached code markers if concatenated (e.g., "3XLMTRC-0085" -> "3XL")
   cleaned = cleaned.replace(/MTRC-\d+/g, "").replace(/^(_+)/, "").trim();
 
+  if (cleaned.includes("XXXS") || cleaned.includes("3XS")) return "XXXS";
+  if (cleaned.includes("XXS") || cleaned.includes("2XS")) return "XXS";
   if (cleaned.includes("3XL") || cleaned.includes("XXXL")) return "3XL";
   if (cleaned.includes("2XL") || cleaned.includes("XXL")) return "2XL";
   if (cleaned.includes("XL")) return "XL";
@@ -179,16 +188,13 @@ export default function OverviewMetrics({
   const [tshirtCategory, setTshirtCategory] = useState("all");
   const [expandedSize, setExpandedSize] = useState(null);
 
-  // Is region locked by parent prop?
   const isRegionLocked = regionScope && regionScope !== "all";
 
-  // Sync region state if prop changes
   useEffect(() => {
     setSelectedRegion(cleanRegion(regionScope) || "all");
     setSelectedCenter(null);
   }, [regionScope]);
 
-  // Reset selected center if region changes
   const handleRegionChange = (newRegion) => {
     if (isRegionLocked) return; 
     setSelectedRegion(newRegion);
@@ -200,7 +206,6 @@ export default function OverviewMetrics({
     userRoles.me()
       .then((res) => {
         const rawName = res?.data?.name || res?.name;
-        
         if (rawName) {
           const cleanName = rawName
             .trim()
@@ -241,7 +246,7 @@ export default function OverviewMetrics({
     }
   }, []);
 
-  // Combine attendees and karyakars with normalized region AND normalized center
+  // Combine attendees and karyakars
   const combinedPeople = useMemo(() => {
     const formattedAttendees = attendees.map(a => {
       const rawCenter = a.center || a.mandal || a.location || "";
@@ -266,7 +271,7 @@ export default function OverviewMetrics({
     return [...formattedAttendees, ...formattedKaryakars];
   }, [attendees, karyakarsList]);
 
-  // Extract unique valid cleaned regions
+  // Extract unique regions
   const uniqueRegions = useMemo(() => {
     const set = new Set();
     combinedPeople.forEach((person) => {
@@ -287,7 +292,7 @@ export default function OverviewMetrics({
     );
   }, [combinedPeople, selectedRegion]);
 
-  // Compute metrics based on selected region & center drilldown
+  // Compute stats
   const stats = useMemo(() => {
     const total = regionFilteredPeople.length;
 
@@ -370,11 +375,36 @@ export default function OverviewMetrics({
     };
   }, [regionFilteredPeople, selectedRegion, selectedCenter]);
 
-  // Compute T-Shirt stats with Clean Sizes, Member IDs, & Centers
+  // Compute T-Shirt stats with 0-counts guaranteed for ALL standard sizes
   const { tshirtStats, unassignedCount } = useMemo(() => {
     const map = {};
     let missingTotal = 0;
 
+    // 1. Pre-initialize ALL standard sizes with 0 values
+    ALL_STANDARD_SIZES.forEach((size) => {
+      map[size] = {
+        size,
+        isMissingGroup: false,
+        count: 0,
+        balakCount: 0,
+        balikaCount: 0,
+        karyakarCount: 0,
+        members: []
+      };
+    });
+
+    // 2. Pre-initialize NOT ADDED group
+    map["NOT ADDED"] = {
+      size: "NOT ADDED",
+      isMissingGroup: true,
+      count: 0,
+      balakCount: 0,
+      balikaCount: 0,
+      karyakarCount: 0,
+      members: []
+    };
+
+    // 3. Process filtered list
     regionFilteredPeople.forEach((person) => {
       const rawSize = getTshirtSize(person);
       const sanitizedSize = cleanTshirtSize(rawSize);
@@ -399,6 +429,7 @@ export default function OverviewMetrics({
       if (tshirtCategory === "missing" && !isMissing) return;
       if (tshirtCategory !== "all" && tshirtCategory !== "missing" && tshirtCategory !== category) return;
 
+      // If a non-standard size appears, initialize dynamically
       if (!map[size]) {
         map[size] = {
           size,
@@ -432,10 +463,26 @@ export default function OverviewMetrics({
       });
     });
 
-    const list = Object.values(map).sort((a, b) => {
+    // 4. If filtering by specific category (Balak/Balika/Karyakar), recalculate top count for filtered category
+    let list = Object.values(map);
+    
+    if (tshirtCategory === "missing") {
+      list = list.filter(item => item.isMissingGroup);
+    }
+
+    // Sort according to ALL_STANDARD_SIZES array order, placing NOT ADDED at the bottom
+    list.sort((a, b) => {
       if (a.isMissingGroup) return 1;
       if (b.isMissingGroup) return -1;
-      return b.count - a.count;
+      
+      const idxA = ALL_STANDARD_SIZES.indexOf(a.size);
+      const idxB = ALL_STANDARD_SIZES.indexOf(b.size);
+
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+
+      return a.size.localeCompare(b.size);
     });
 
     return { tshirtStats: list, unassignedCount: missingTotal };
@@ -466,6 +513,11 @@ export default function OverviewMetrics({
     let grandKaryakars = 0;
 
     tshirtStats.forEach((item) => {
+      const displayCount = 
+        tshirtCategory === "balak" ? item.balakCount :
+        tshirtCategory === "balika" ? item.balikaCount :
+        tshirtCategory === "karyakar" ? item.karyakarCount : item.count;
+
       grandTotal += item.count;
       grandBalaks += item.balakCount;
       grandBalikas += item.balikaCount;
@@ -574,7 +626,7 @@ export default function OverviewMetrics({
             </select>
           </div>
         ) : (
-          <div style={{ display: "none", alignItems: "center", gap: "8px", background: "#f1f3f4", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f1f3f4", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
             <FaLock style={{ color: "#5f6368", fontSize: "13px" }} />
             <span style={{ fontSize: "14px", fontWeight: "600", color: "#3c4043" }}>
               Region Locked: <span style={{ color: "#1a73e8" }}>{selectedRegion}</span>
@@ -905,6 +957,12 @@ export default function OverviewMetrics({
                 const isExpanded = expandedSize === item.size;
                 const isMissingGroup = item.isMissingGroup;
 
+                // Determine display count based on selected category tab
+                const displayCount = 
+                  tshirtCategory === "balak" ? item.balakCount :
+                  tshirtCategory === "balika" ? item.balikaCount :
+                  tshirtCategory === "karyakar" ? item.karyakarCount : item.count;
+
                 return (
                   <div
                     key={item.size}
@@ -912,17 +970,18 @@ export default function OverviewMetrics({
                       border: isMissingGroup ? "1px solid #fde68a" : "1px solid #dadce0",
                       borderRadius: "8px",
                       background: isMissingGroup ? "#fffbeb" : "#f8f9fa",
+                      opacity: displayCount === 0 && !isMissingGroup ? 0.65 : 1,
                       overflow: "hidden"
                     }}
                   >
                     <div
-                      onClick={() => toggleSizeExpand(item.size)}
+                      onClick={() => displayCount > 0 && toggleSizeExpand(item.size)}
                       style={{
                         padding: "12px 16px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        cursor: "pointer",
+                        cursor: displayCount > 0 ? "pointer" : "default",
                         userSelect: "none"
                       }}
                     >
@@ -941,14 +1000,14 @@ export default function OverviewMetrics({
                         </span>
                         
                         <span style={{ 
-                          background: isMissingGroup ? "#fef3c7" : "#e8f0fe", 
-                          color: isMissingGroup ? "#92400e" : "#1a73e8", 
+                          background: isMissingGroup ? "#fef3c7" : displayCount === 0 ? "#e0e0e0" : "#e8f0fe", 
+                          color: isMissingGroup ? "#92400e" : displayCount === 0 ? "#5f6368" : "#1a73e8", 
                           fontWeight: "700", 
                           padding: "2px 10px", 
                           borderRadius: "12px", 
                           fontSize: "13px" 
                         }}>
-                          Total: {item.count}
+                          Total: {displayCount}
                         </span>
 
                         {tshirtCategory === "all" && (
@@ -966,13 +1025,17 @@ export default function OverviewMetrics({
                         )}
                       </div>
 
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#5f6368", fontSize: "13px" }}>
-                        <span>{isExpanded ? "Hide Members Left" : "View Members Left"}</span>
-                        {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
-                      </div>
+                      {displayCount > 0 ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#5f6368", fontSize: "13px" }}>
+                          <span>{isExpanded ? "Hide Members" : "View Members"}</span>
+                          {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: "12px", color: "#9aa0a6", fontStyle: "italic" }}>No entries</span>
+                      )}
                     </div>
 
-                    {isExpanded && (
+                    {isExpanded && displayCount > 0 && (
                       <div style={{ borderTop: isMissingGroup ? "1px solid #fde68a" : "1px solid #dadce0", background: "#fff", padding: "12px 16px" }}>
                         <div style={{ maxHeight: "240px", overflowY: "auto" }}>
                           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
