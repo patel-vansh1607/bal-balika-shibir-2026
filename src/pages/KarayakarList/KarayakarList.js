@@ -16,10 +16,14 @@ import {
   FaChevronDown,
   FaQrcode,
   FaBed,
+  FaDownload,
+  FaImage,
 } from "react-icons/fa6";
 import { karayakars as karayakarsApi, upload } from "../../apiClient";
 import styles from "./KarayakarList.module.css";
 import toast from "react-hot-toast";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 const REGIONS = [
   "All",
@@ -251,6 +255,8 @@ export default function KarayakarList({ defaultRegion = "" }) {
   const [isSevaDropdownOpen, setIsSevaDropdownOpen] = useState(false);
 
   const [isGeneratingQr, setIsGeneratingQr] = useState(false);
+  const [isDownloadingBatch, setIsDownloadingBatch] = useState(false);
+  const [isDownloadingPhotos, setIsDownloadingPhotos] = useState(false);
 
   const menuRef = useRef(null);
   const sevaDropdownRef = useRef(null);
@@ -566,10 +572,127 @@ export default function KarayakarList({ defaultRegion = "" }) {
     }
   };
 
+  // Helper to construct ID-first filename
+  const getFormattedFileName = (karyakar, extension = "png") => {
+    const idPrefix = karyakar.member_id || karyakar.id || "ID";
+    const sanitizedName = (karyakar.full_name || "Member")
+      .replace(/[^a-zA-Z0-9_-]/g, "_")
+      .trim();
+    return `${idPrefix}_${sanitizedName}.${extension}`;
+  };
+
+  // Safe fetch helper converts cross-origin images to Blob
+  const urlToBlob = async (url) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error("Canvas conversion failed"));
+        }, "image/png");
+      };
+      img.onerror = () => {
+        fetch(url, { mode: "cors" })
+          .then((res) => res.blob())
+          .then(resolve)
+          .catch(reject);
+      };
+      img.src = url;
+    });
+  };
+
+  const handleBatchDownloadQr = async () => {
+    const listWithQr = filteredList.filter((k) => k.qr_code_url);
+    if (listWithQr.length === 0) {
+      return toast.error("No QR codes available to download for the current filter.");
+    }
+
+    setIsDownloadingBatch(true);
+    const toastId = toast.loading(`Preparing ${listWithQr.length} QR codes...`);
+
+    try {
+      const zip = new JSZip();
+      const qrFolder = zip.folder("QR_Codes");
+
+      const downloadPromises = listWithQr.map(async (k) => {
+        try {
+          const blob = await urlToBlob(k.qr_code_url);
+          const fileName = getFormattedFileName(k, "png");
+          qrFolder.file(fileName, blob);
+        } catch (error) {
+          console.error(`Failed to download QR code for ${k.full_name}`, error);
+        }
+      });
+
+      await Promise.all(downloadPromises);
+
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `QR_Codes_${region}_${Date.now()}.zip`);
+
+      toast.success("QR Codes downloaded successfully!", { id: toastId });
+    } catch (err) {
+      console.error("Batch QR Download Error:", err);
+      toast.error("Failed to generate QR ZIP file.", { id: toastId });
+    } finally {
+      setIsDownloadingBatch(false);
+    }
+  };
+
+  const handleBatchDownloadPhotos = async () => {
+    const listWithPhotos = filteredList.filter((k) => k.photo_url);
+    if (listWithPhotos.length === 0) {
+      return toast.error("No profile photos available to download for the current filter.");
+    }
+
+    setIsDownloadingPhotos(true);
+    const toastId = toast.loading(`Preparing ${listWithPhotos.length} profile photos...`);
+
+    try {
+      const zip = new JSZip();
+      const photosFolder = zip.folder("Profile_Photos");
+
+      const downloadPromises = listWithPhotos.map(async (k) => {
+        try {
+          const blob = await urlToBlob(k.photo_url);
+
+          let ext = "jpg";
+          if (blob.type === "image/png") ext = "png";
+          else if (blob.type === "image/webp") ext = "webp";
+          else if (k.photo_url.includes(".")) {
+            const urlExt = k.photo_url.split(".").pop().split("?")[0];
+            if (urlExt && urlExt.length <= 4) ext = urlExt;
+          }
+
+          const fileName = getFormattedFileName(k, ext);
+          photosFolder.file(fileName, blob);
+        } catch (error) {
+          console.error(`Failed to download profile photo for ${k.full_name}`, error);
+        }
+      });
+
+      await Promise.all(downloadPromises);
+
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `Profile_Photos_${region}_${Date.now()}.zip`);
+
+      toast.success("Profile photos downloaded successfully!", { id: toastId });
+    } catch (err) {
+      console.error("Batch Photo Download Error:", err);
+      toast.error("Failed to generate Photos ZIP file.", { id: toastId });
+    } finally {
+      setIsDownloadingPhotos(false);
+    }
+  };
+
   const handleExportCSV = () => {
     if (filteredList.length === 0) return;
 
-    // Setup headers dynamically: add Accommodation if Kenya is chosen
     const headers = [
       "No.",
       "Member ID",
@@ -617,14 +740,10 @@ export default function KarayakarList({ defaultRegion = "" }) {
 
   const selectedSevaCount = editForm.sevaDesignation.length;
 
-  // Determine if Region Column should render (Only when 'All' is selected)
   const showRegionColumn = region === "All";
-
-  // Determine if Accommodation should render (Only when 'Kenya' is selected)
   const showAccommodationColumn = region.toLowerCase() === "kenya";
 
-  // Compute colspan dynamically for loader and fallback rows
-  let totalColumns = 10; // default columns
+  let totalColumns = 10;
   if (showRegionColumn) totalColumns += 1;
   if (showAccommodationColumn) totalColumns += 1;
   if (canEdit || canDelete) totalColumns += 1;
@@ -731,6 +850,32 @@ export default function KarayakarList({ defaultRegion = "" }) {
               disabled={filteredList.length === 0}
             >
               <FaFileExport /> Export to Excel
+            </button>
+
+            <button
+              onClick={handleBatchDownloadPhotos}
+              className={styles.exportExcelButton}
+              disabled={isDownloadingPhotos || filteredList.length === 0}
+            >
+              {isDownloadingPhotos ? (
+                <FaSpinner className={styles.spin} />
+              ) : (
+                <FaImage />
+              )}
+              {isDownloadingPhotos ? " Archiving..." : " Download Photos"}
+            </button>
+
+            <button
+              onClick={handleBatchDownloadQr}
+              className={styles.exportExcelButton}
+              disabled={isDownloadingBatch || filteredList.length === 0}
+            >
+              {isDownloadingBatch ? (
+                <FaSpinner className={styles.spin} />
+              ) : (
+                <FaDownload />
+              )}
+              {isDownloadingBatch ? " Archiving..." : " Download QR Codes"}
             </button>
 
             {canGenerateQr && (
@@ -849,7 +994,6 @@ export default function KarayakarList({ defaultRegion = "" }) {
                       </span>
                     </td>
 
-                    {/* Kenya-Only Accommodation Database render */}
                     {showAccommodationColumn && (
                       <td className={styles.centerAlignCell}>
                         {k.accomodation || k.accommodation ? (
@@ -935,74 +1079,65 @@ export default function KarayakarList({ defaultRegion = "" }) {
                           </button>
 
                           {activeMenuId === k.id && (
-                            <div className={styles.dropdownActionPopover}>
-                              {confirmDeleteId === k.id ? (
-                                <div className={styles.menuDeleteConfirmBlock}>
-                                  <span
-                                    className={styles.confirmDeleteMsgLabel}
-                                  >
-                                    Confirm Delete?
-                                  </span>
-                                  <div className={styles.confirmActionBtnRow}>
-                                    <button
-                                      onClick={() => handleConfirmDelete(k.id)}
-                                      disabled={deleting === k.id}
-                                      className={styles.popoverConfirmBtn}
-                                    >
-                                      {deleting === k.id ? (
-                                        <FaSpinner className={styles.spin} />
-                                      ) : (
-                                        "Yes"
-                                      )}
-                                    </button>
-                                    <button
-                                      onClick={() => setConfirmDeleteId(null)}
-                                      disabled={deleting === k.id}
-                                      className={styles.popoverCancelBtn}
-                                    >
-                                      No
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
+                            <div className={styles.actionDropdownMenu}>
+                              {canEdit && (
+                                <button
+                                  className={styles.dropdownMenuItem}
+                                  onClick={() => handleOpenEditModal(k)}
+                                >
+                                  <FaPenToSquare /> Edit Profile
+                                </button>
+                              )}
+
+                              {canEdit && (
+                                <button
+                                  className={styles.dropdownMenuItem}
+                                  onClick={() => handleTogglePayment(k)}
+                                >
+                                  <FaWallet />
+                                  {Number(k.is_paid) === 1
+                                    ? "Mark as Unpaid"
+                                    : "Mark as Paid"}
+                                </button>
+                              )}
+
+                              {canDelete && (
                                 <>
-                                  {canEdit && (
-                                    <>
-                                      <button
-                                        onClick={() => handleOpenEditModal(k)}
-                                        className={styles.dropdownOptionRowItem}
-                                      >
-                                        <FaPenToSquare
-                                          className={styles.editIconBtn}
-                                        />{" "}
-                                        Edit Profile
-                                      </button>
-                                      <button
-                                        onClick={() => handleTogglePayment(k)}
-                                        className={styles.dropdownOptionRowItem}
-                                      >
-                                        <FaWallet
-                                          className={
-                                            Number(k.is_paid) === 1
-                                              ? styles.statusPaidIcon
-                                              : styles.statusUnpaidIcon
+                                  {confirmDeleteId === k.id ? (
+                                    <div className={styles.deleteConfirmPanel}>
+                                      <p className={styles.confirmDeletePrompt}>
+                                        Confirm removal?
+                                      </p>
+                                      <div className={styles.confirmActionRow}>
+                                        <button
+                                          className={styles.confirmYesBtn}
+                                          disabled={deleting === k.id}
+                                          onClick={() =>
+                                            handleConfirmDelete(k.id)
                                           }
-                                        />
-                                        {Number(k.is_paid) === 1
-                                          ? "Mark as Unpaid"
-                                          : "Mark as Paid"}
-                                      </button>
-                                    </>
-                                  )}
-                                  {canDelete && (
+                                        >
+                                          {deleting === k.id ? (
+                                            <FaSpinner className={styles.spin} />
+                                          ) : (
+                                            <FaCheck />
+                                          )}
+                                        </button>
+                                        <button
+                                          className={styles.confirmNoBtn}
+                                          onClick={() =>
+                                            setConfirmDeleteId(null)
+                                          }
+                                        >
+                                          <FaXmark />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
                                     <button
+                                      className={styles.dropdownMenuItemDanger}
                                       onClick={() => setConfirmDeleteId(k.id)}
-                                      className={styles.dropdownOptionRowItem}
                                     >
-                                      <FaTrash
-                                        className={styles.deleteIconBtn}
-                                      />{" "}
-                                      Delete Member
+                                      <FaTrash /> Delete Member
                                     </button>
                                   )}
                                 </>
@@ -1020,13 +1155,13 @@ export default function KarayakarList({ defaultRegion = "" }) {
         </div>
       </div>
 
-      {isEditModalOpen && editingItem && (
+      {isEditModalOpen && (
         <div className={styles.modalOverlay}>
-          <div className={styles.modalContentCard}>
+          <div className={styles.modalCard}>
             <div className={styles.modalHeader}>
-              <h3>Edit Karayakar Profile</h3>
+              <h3>Edit Member Profile</h3>
               <button
-                className={styles.modalCloseIconBtn}
+                className={styles.closeModalBtn}
                 onClick={() => setIsEditModalOpen(false)}
               >
                 <FaXmark />
@@ -1034,25 +1169,16 @@ export default function KarayakarList({ defaultRegion = "" }) {
             </div>
 
             <div className={styles.modalBody}>
-              <div className={styles.modalAvatarSection}>
-                <label className={styles.photoUploadTrigger}>
-                  <div className={styles.photoUploadBoxFrame}>
-                    {editPreview ? (
-                      <img
-                        src={editPreview}
-                        alt="Preview"
-                        className={styles.modalPreviewImg}
-                      />
-                    ) : (
-                      <FaUser className={styles.modalPlaceholderIcon} />
-                    )}
-                    <div className={styles.cameraOverlay}>
-                      <FaCamera />
-                    </div>
-                  </div>
-                  <span className={styles.uploadTextLabel}>
-                    Update Profile Photo
-                  </span>
+              <div className={styles.modalPhotoSection}>
+                <div className={styles.modalAvatarPreview}>
+                  {editPreview ? (
+                    <img src={editPreview} alt="Preview" />
+                  ) : (
+                    <FaUser />
+                  )}
+                </div>
+                <label className={styles.uploadPhotoBtn}>
+                  <FaCamera /> Change Photo
                   <input
                     type="file"
                     accept="image/*"
@@ -1062,30 +1188,30 @@ export default function KarayakarList({ defaultRegion = "" }) {
                 </label>
               </div>
 
-              <div className={styles.modalFormGroup}>
+              <div className={styles.formGroup}>
                 <label>Full Name</label>
                 <input
                   type="text"
                   value={editForm.full_name}
                   onChange={(e) =>
-                    setEditForm((p) => ({ ...p, full_name: e.target.value }))
+                    setEditForm({ ...editForm, full_name: e.target.value })
                   }
-                  className={styles.modalInput}
+                  className={styles.styledInput}
                 />
               </div>
 
-              <div className={styles.modalFormGroup}>
-                <label>Center Location</label>
+              <div className={styles.formGroup}>
+                <label>Center</label>
                 <select
                   value={editForm.center}
                   onChange={(e) =>
-                    setEditForm((p) => ({ ...p, center: e.target.value }))
+                    setEditForm({ ...editForm, center: e.target.value })
                   }
-                  className={styles.modalSelect}
+                  className={styles.styledSelect}
                 >
-                  <option value="">Select Center Hub...</option>
+                  <option value="">Select Center</option>
                   {(
-                    REGION_CENTERS[editingItem.region] || REGION_CENTERS["All"]
+                    REGION_CENTERS[editingItem?.region] || REGION_CENTERS.All
                   ).map((c) => (
                     <option key={c} value={c}>
                       {c}
@@ -1094,121 +1220,87 @@ export default function KarayakarList({ defaultRegion = "" }) {
                 </select>
               </div>
 
-              <div className={styles.modalFormGroup}>
-                <label>
-                  Seva Designation Badges{" "}
-                  <span className={styles.subtextLabel}>
-                    (Select all that apply)
-                  </span>
-                </label>
+              <div className={styles.formGroup} ref={sevaDropdownRef}>
+                <label>Seva Designation</label>
                 <div
-                  className={styles.customDropdownContainer}
-                  ref={sevaDropdownRef}
+                  className={styles.multiSelectTrigger}
+                  onClick={() => setIsSevaDropdownOpen(!isSevaDropdownOpen)}
                 >
-                  <button
-                    type="button"
-                    className={styles.customDropdownTrigger}
-                    onClick={() => setIsSevaDropdownOpen(!isSevaDropdownOpen)}
-                  >
-                    <span>
-                      {selectedSevaCount === 0
-                        ? "Select Seva Designations"
-                        : `${selectedSevaCount} Designation${selectedSevaCount > 1 ? "s" : ""} Selected`}
-                    </span>
-                    <FaChevronDown
-                      className={`${styles.customDropdownChevron} ${isSevaDropdownOpen ? styles.customDropdownChevronOpen : ""}`}
-                    />
-                  </button>
-
-                  {isSevaDropdownOpen && (
-                    <div className={styles.customDropdownMenu}>
-                      {SEVA_DESIGNATIONS.map((d) => {
-                        const isSelected = editForm.sevaDesignation.includes(d);
-                        return (
-                          <button
-                            type="button"
-                            key={d}
-                            className={`${styles.customDropdownOption} ${isSelected ? styles.customDropdownOptionActive : ""}`}
-                            onClick={() => handleModalSevaToggle(d)}
-                          >
-                            <div className={styles.customDropdownCheckboxArea}>
-                              {isSelected && (
-                                <FaCheck
-                                  className={styles.customDropdownCheckIcon}
-                                />
-                              )}
-                            </div>
-                            <span className={styles.customDropdownOptionText}>
-                              {d}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <span>
+                    {selectedSevaCount > 0
+                      ? `${selectedSevaCount} Selected`
+                      : "Select Designations"}
+                  </span>
+                  <FaChevronDown />
                 </div>
+
+                {isSevaDropdownOpen && (
+                  <div className={styles.multiSelectDropdown}>
+                    {SEVA_DESIGNATIONS.map((role) => (
+                      <label key={role} className={styles.checkboxRow}>
+                        <input
+                          type="checkbox"
+                          checked={editForm.sevaDesignation.includes(role)}
+                          onChange={() => handleModalSevaToggle(role)}
+                        />
+                        <span>{role}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className={styles.modalFormRowHalfLayout}>
-                <div className={styles.modalFormGroup}>
-                  <label>T-Shirt Size</label>
-                  <select
-                    value={editForm.tshirt_size || ""}
-                    onChange={(e) =>
-                      setEditForm((p) => ({
-                        ...p,
-                        tshirt_size: e.target.value,
-                      }))
-                    }
-                    className={styles.modalSelect}
-                  >
-                    <option value="">Select Size...</option>
-                    {TSHIRT_SIZES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className={styles.formGroup}>
+                <label>T-Shirt Size</label>
+                <select
+                  value={editForm.tshirt_size}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, tshirt_size: e.target.value })
+                  }
+                  className={styles.styledSelect}
+                >
+                  <option value="">Select Size</option>
+                  {TSHIRT_SIZES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                <div className={styles.modalFormGroup}>
-                  <label>Payment Status</label>
-                  <select
-                    value={String(editForm.is_paid)}
-                    onChange={(e) =>
-                      setEditForm((p) => ({
-                        ...p,
-                        is_paid: parseInt(e.target.value, 10),
-                      }))
-                    }
-                    className={styles.modalSelect}
-                  >
-                    <option value="0">Unpaid</option>
-                    <option value="1">Paid</option>
-                  </select>
-                </div>
+              <div className={styles.formGroup}>
+                <label>Payment Status</label>
+                <select
+                  value={editForm.is_paid}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, is_paid: Number(e.target.value) })
+                  }
+                  className={styles.styledSelect}
+                >
+                  <option value={0}>Unpaid</option>
+                  <option value={1}>Paid</option>
+                </select>
               </div>
             </div>
 
-            <div className={styles.modalFooterActions}>
+            <div className={styles.modalFooter}>
               <button
+                className={styles.cancelBtn}
                 onClick={() => setIsEditModalOpen(false)}
-                className={styles.modalCancelBtn}
-                disabled={modalUploading}
               >
                 Cancel
               </button>
               <button
+                className={styles.saveBtn}
                 onClick={handleSaveModalEdit}
-                className={styles.modalSaveBtn}
                 disabled={modalUploading}
               >
                 {modalUploading ? (
                   <>
-                    <FaSpinner className={styles.spin} /> Processing...
+                    <FaSpinner className={styles.spin} /> Saving...
                   </>
                 ) : (
-                  "Save Profile Changes"
+                  "Save Changes"
                 )}
               </button>
             </div>

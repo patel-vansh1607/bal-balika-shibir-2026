@@ -11,7 +11,7 @@ const REGION_PREFIXES = {
   Kenya: "MTRC-KE-", Uganda: "MTRC-UG-",
   Tanzania: "MTRC-TZ-", Zambia: "MTRC-ZM-",
   Malawi: "MTRC-MW-", Botswana: "MTRC-BW-",
-  "South Africa": "MTRC-SA-",
+  "South Africa": "MTRC-ZA-",
 };
 
 // Formats DB session start time strictly to East Africa Time (EAT - Africa/Nairobi)
