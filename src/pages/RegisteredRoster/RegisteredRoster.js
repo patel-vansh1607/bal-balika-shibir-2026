@@ -110,8 +110,7 @@ export default function RegisteredRoster({
         (selectedCenter === "All" || attendee.center === selectedCenter) &&
         (selectedGender === "All" || attendee.gender === selectedGender);
 
-      // Check conditional payment criteria specifically for Kenya context values
-      if (regionScope === "Kenya" && paymentFilter !== "All") {
+      if ((regionScope === "Kenya" || regionScope === "South Africa" )&& paymentFilter !== "All") {
         // If it's missing or null, treat it as 0 (not paid)
         const currentPaymentStatus = attendee.is_paid === 1 ? 1 : 0;
         return (
@@ -1023,7 +1022,7 @@ const executeExport = (includeContact) => {
             </div>
 
             {/* --- NEW KENYA-ONLY PAYMENT FILTER DROPDOWN --- */}
-            {regionScope === "Kenya" && (
+            {(regionScope === "Kenya" || regionScope === "South Africa") && (
                 <div className={styles.filterSelectContainer}>
                   <FaMoneyBillWave style={{ color: "var(--accent-primary)" }} />
                   <select
@@ -1308,7 +1307,7 @@ const executeExport = (includeContact) => {
                     "Uganda",
                   ].includes(regionScope) && <th>T-Shirt</th>}
                   {regionScope === "Tanzania" && <th>Selection Status</th>}
-                  {regionScope === "Kenya" && <th>Payment Status</th>}
+                  {(regionScope === "Kenya" || regionScope === "South Africa")&& <th>Payment Status</th>}
                   {regionScope === "Kenya" &&<th>Accomodation</th>}
                   <th style={{ textAlign: "center" }}>QR</th>
                   {(userRole === "master_admin" ||
@@ -1429,7 +1428,7 @@ const executeExport = (includeContact) => {
                       )}
 
                       {/* --- Kenya Specific Column --- */}
-                      {regionScope === "Kenya" && (
+                      {(regionScope === "Kenya" || regionScope === "South Africa")&& (
                           <td>
                             {attendee.is_paid === 1 ? (
                               <span
@@ -1528,7 +1527,7 @@ const executeExport = (includeContact) => {
                               onClick={(e) => e.stopPropagation()}
                             >
                               {/* --- Kenya Payment Actions --- */}
-                              {regionScope === "Kenya" &&
+                              {(regionScope === "Kenya" || regionScope === "South Africa")&&
                                   (userRole === "master_admin" ||
                                     userRole === "super_admin") && (
                                     <button
