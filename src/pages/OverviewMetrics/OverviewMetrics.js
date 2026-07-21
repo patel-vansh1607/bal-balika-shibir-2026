@@ -489,22 +489,41 @@ export default function OverviewMetrics({
   }, [regionFilteredPeople, tshirtCategory]);
 
   // Export T-Shirt Summary & Members List to CSV
-  const handleExportTshirts = () => {
+const handleExportTshirts = () => {
     if (tshirtStats.length === 0) return;
+
+    // Mapping size codes to chest measurement ranges
+    const SIZE_MEASUREMENTS = {
+      XXXS: "57 - 62cm",
+      XXS: "62 - 67cm",
+      XS: "67 - 72cm",
+      S: "72 - 75cm",
+      M: "77 - 82cm",
+      L: "82 - 88cm",
+      XL: "88 - 93cm",
+      XXL: "93 - 98cm",
+      XXXL: "98 - 103cm",
+    };
+
+    const getFormattedSize = (sizeCode) => {
+      const cleanSize = (sizeCode || "").trim().toUpperCase();
+      const measurement = SIZE_MEASUREMENTS[cleanSize];
+      return measurement ? `${cleanSize} (${measurement})` : sizeCode;
+    };
 
     let csvContent = "data:text/csv;charset=utf-8,";
 
     csvContent += "--- T-SHIRT SUMMARY TOTALS ---\n";
     if (tshirtCategory === "balak") {
-      csvContent += "Size,Total Balaks Count\n";
+      csvContent += "Size (Chest Measurement),Total Balaks Count\n";
     } else if (tshirtCategory === "balika") {
-      csvContent += "Size,Total Balikas Count\n";
+      csvContent += "Size (Chest Measurement),Total Balikas Count\n";
     } else if (tshirtCategory === "karyakar") {
-      csvContent += "Size,Total Karyakars Count\n";
+      csvContent += "Size (Chest Measurement),Total Karyakars Count\n";
     } else if (tshirtCategory === "missing") {
-      csvContent += "Size,Total Missing T-Shirts Count\n";
+      csvContent += "Size (Chest Measurement),Total Missing T-Shirts Count\n";
     } else {
-      csvContent += "Size,Total Count,Balaks Count,Balikas Count,Karyakars Count\n";
+      csvContent += "Size (Chest Measurement),Total Count,Balaks Count,Balikas Count,Karyakars Count\n";
     }
 
     let grandTotal = 0;
@@ -523,18 +542,20 @@ export default function OverviewMetrics({
       grandBalikas += item.balikaCount;
       grandKaryakars += item.karyakarCount;
 
+      const formattedSize = getFormattedSize(item.size);
+
       if (tshirtCategory === "balak") {
-        csvContent += `"${item.size}",${item.balakCount}\n`;
+        csvContent += `"${formattedSize}",${item.balakCount}\n`;
       } else if (tshirtCategory === "balika") {
-        csvContent += `"${item.size}",${item.balikaCount}\n`;
+        csvContent += `"${formattedSize}",${item.balikaCount}\n`;
       } else if (tshirtCategory === "karyakar") {
-        csvContent += `"${item.size}",${item.karyakarCount}\n`;
+        csvContent += `"${formattedSize}",${item.karyakarCount}\n`;
       } else if (tshirtCategory === "missing") {
-        csvContent += `"${item.size}",${item.count}\n`;
+        csvContent += `"${formattedSize}",${item.count}\n`;
       } else {
-        csvContent += `"${item.size}",${item.count},${item.balakCount},${item.balikaCount},${item.karyakarCount}\n`;
+        csvContent += `"${formattedSize}",${item.count},${item.balakCount},${item.balikaCount},${item.karyakarCount}\n`;
       }
-      console.log(displayCount)
+      console.log(displayCount);
     });
 
     if (tshirtCategory === "balak") {
@@ -548,13 +569,14 @@ export default function OverviewMetrics({
     }
 
     csvContent += "--- MEMBER BREAKDOWN LIST ---\n";
-    csvContent += "Member ID,Full Name,Category,Center,T-Shirt Size\n";
+    csvContent += "Member ID,Full Name,Category,Center,T-Shirt Size (Chest Measurement)\n";
 
     tshirtStats.forEach((item) => {
+      const formattedSize = getFormattedSize(item.size);
       item.members.forEach((member) => {
         const cleanName = `"${member.name.replace(/"/g, '""')}"`;
         const cleanCenterStr = `"${member.center.replace(/"/g, '""')}"`;
-        csvContent += `"${member.member_id}",${cleanName},"${member.category}",${cleanCenterStr},"${item.size}"\n`;
+        csvContent += `"${member.member_id}",${cleanName},"${member.category}",${cleanCenterStr},"${formattedSize}"\n`;
       });
     });
 
@@ -568,7 +590,6 @@ export default function OverviewMetrics({
     link.click();
     document.body.removeChild(link);
   };
-
   const handleBarClick = (data) => {
     if (selectedRegion !== "all" && data && data.name) {
       setSelectedCenter(data.name);
