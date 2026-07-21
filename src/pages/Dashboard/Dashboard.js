@@ -38,6 +38,7 @@ import {
   FaGlobeAfrica,
   FaCopy,
   FaEnvelope,
+  FaHotel
 } from "react-icons/fa";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
@@ -345,7 +346,7 @@ export default function Dashboard() {
                   }
                   className={`${styles.navLink} ${location.pathname === "/dashboard/accommodation/metrics" ? styles.navLinkActive : ""}`}
                 >
-                  <FaBed className={styles.iconMargin} /> Accomodation Metrics
+                  <FaHotel className={styles.iconMargin} /> Accomodation Metrics
                 </button> 
                 )}
                 <button
@@ -380,7 +381,7 @@ export default function Dashboard() {
                   </button>
                 )}
 
-                {userRole === "master_admin" && (
+                {(userRole === "master_admin"  || userRole === "super_admin")&& (
                   <button
                     onClick={() => handleNavigation("/dashboard/admin-control")}
                     className={`${styles.navLink} ${location.pathname === "/dashboard/admin-control" ? styles.navLinkActive : ""}`}
