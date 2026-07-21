@@ -444,149 +444,151 @@ export default function AccommodationManager({
           <div className={styles.errorState}>{error}</div>
         ) : (
           <div className={styles.tableCard}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th style={{ width: "40px" }} className={styles.checkboxCol}>
-                    <input 
-                      type="checkbox"
-                      className={styles.styledCheckbox}
-                      checked={filteredAttendees.length > 0 && selectedIds.length === filteredAttendees.length}
-                      onChange={() => handleToggleSelectAll(filteredAttendees)}
-                    />
-                  </th>
-                  <th>ID</th>
-                  <th>Full Name</th>
-                  <th>Center</th>
-                  <th>Gender</th>
-                  <th>Accommodation Space</th>
-                  <th>Assign Room</th>
-                  <th className={styles.actionHeader}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAttendees.length === 0 ? (
+            <div className={styles.tableResponsiveWrapper}>
+              <table className={styles.table}>
+                <thead>
                   <tr>
-                    <td colSpan="8" className={styles.noDataCell}>
-                      No records matched the selected query parameters.
-                    </td>
+                    <th style={{ width: "40px" }} className={styles.checkboxCol}>
+                      <input 
+                        type="checkbox"
+                        className={styles.styledCheckbox}
+                        checked={filteredAttendees.length > 0 && selectedIds.length === filteredAttendees.length}
+                        onChange={() => handleToggleSelectAll(filteredAttendees)}
+                      />
+                    </th>
+                    <th>ID</th>
+                    <th>Full Name</th>
+                    <th>Center</th>
+                    <th>Gender</th>
+                    <th>Accommodation Space</th>
+                    <th>Assign Room</th>
+                    <th className={styles.actionHeader}>Action</th>
                   </tr>
-                ) : (
-                  filteredAttendees.map(person => {
-                    const currentRoom = person.accomodation || person.accommodation || "";
-                    const draftRoomValue = editedRooms[person.id] !== undefined ? editedRooms[person.id] : currentRoom;
-                    const isModified = editedRooms[person.id] !== undefined && editedRooms[person.id] !== currentRoom;
-                    const isSaving = savingIds[person.id];
-                    const wasSaved = savedNotifications[person.id];
-                    const isChecked = selectedIds.includes(person.id);
-                    const formattedCenter = cleanCenterMap(person.center);
+                </thead>
+                <tbody>
+                  {filteredAttendees.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className={styles.noDataCell}>
+                        No records matched the selected query parameters.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredAttendees.map(person => {
+                      const currentRoom = person.accomodation || person.accommodation || "";
+                      const draftRoomValue = editedRooms[person.id] !== undefined ? editedRooms[person.id] : currentRoom;
+                      const isModified = editedRooms[person.id] !== undefined && editedRooms[person.id] !== currentRoom;
+                      const isSaving = savingIds[person.id];
+                      const wasSaved = savedNotifications[person.id];
+                      const isChecked = selectedIds.includes(person.id);
+                      const formattedCenter = cleanCenterMap(person.center);
 
-                    const isPresetRoom = roomOptions.includes(draftRoomValue);
+                      const isPresetRoom = roomOptions.includes(draftRoomValue);
 
-                    return (
-                      <tr key={person.id} className={`${isModified ? styles.modifiedRow : ""} ${isChecked ? styles.selectedRow : ""}`}>
-                        <td className={styles.checkboxCol}>
-                          <input 
-                            type="checkbox"
-                            className={styles.styledCheckbox}
-                            checked={isChecked}
-                            onChange={() => handleToggleSelectRow(person.id)}
-                          />
-                        </td>
-                        <td className={styles.idCell}>{formatMemberId(person)}</td>
-                        <td className={styles.nameCell}>{person.name || person.full_name}</td>
-                        <td>
-                          <span className={styles.centerTag}>
-                            <FaMapMarkerAlt /> {formattedCenter}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={styles.genderTag}>
-                            {person.gender || person.sex || person.sanch || person.category || "—"}
-                          </span>
-                        </td>
-                        <td>
-                          {currentRoom ? (
-                            <span className={styles.currentRoomTag}>
-                              <FaBed /> {currentRoom}
+                      return (
+                        <tr key={person.id} className={`${isModified ? styles.modifiedRow : ""} ${isChecked ? styles.selectedRow : ""}`}>
+                          <td className={styles.checkboxCol}>
+                            <input 
+                              type="checkbox"
+                              className={styles.styledCheckbox}
+                              checked={isChecked}
+                              onChange={() => handleToggleSelectRow(person.id)}
+                            />
+                          </td>
+                          <td className={styles.idCell}>{formatMemberId(person)}</td>
+                          <td className={styles.nameCell}>{person.name || person.full_name}</td>
+                          <td>
+                            <span className={styles.centerTag}>
+                              <FaMapMarkerAlt /> {formattedCenter}
                             </span>
-                          ) : (
-                            <span className={styles.noRoomTag}>Unassigned</span>
-                          )}
-                        </td>
-                        <td>
-                          <div className={styles.inputWrapper}>
-                            <select
-                              className={styles.roomSelect}
-                              value={isPresetRoom ? draftRoomValue : draftRoomValue ? "__CUSTOM__" : ""}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === "__CUSTOM__") {
-                                  handleRoomChange(person.id, "PS-");
-                                } else {
-                                  handleRoomChange(person.id, val);
-                                }
-                              }}
-                              disabled={isSaving}
-                            >
-                              <option value="">-- Select Room --</option>
-                              <optgroup label="Floors 1 to 7 (101-104 Series)">
-                                {roomOptions.filter(r => !r.includes("Floor")).map(room => (
-                                  <option key={room} value={room}>{room}</option>
-                                ))}
-                              </optgroup>
-                              <optgroup label="Floors 8 to 11 (Floor Groups)">
-                                {roomOptions.filter(r => r.includes("Floor")).map(room => (
-                                  <option key={room} value={room}>{room}</option>
-                                ))}
-                              </optgroup>
-                              <option value="__CUSTOM__">✍️ Enter Custom Room...</option>
-                            </select>
-
-                            {(!isPresetRoom && draftRoomValue !== "") && (
-                              <input
-                                type="text"
-                                placeholder="e.g. PS-105"
-                                className={styles.roomInput}
-                                value={draftRoomValue}
-                                onChange={(e) => handleRoomChange(person.id, e.target.value)}
-                                onKeyDown={(e) => handleKeyDown(e, person.id)}
-                                disabled={isSaving}
-                              />
+                          </td>
+                          <td>
+                            <span className={styles.genderTag}>
+                              {person.gender || person.sex || person.sanch || person.category || "—"}
+                            </span>
+                          </td>
+                          <td>
+                            {currentRoom ? (
+                              <span className={styles.currentRoomTag}>
+                                <FaBed /> {currentRoom}
+                              </span>
+                            ) : (
+                              <span className={styles.noRoomTag}>Unassigned</span>
                             )}
+                          </td>
+                          <td>
+                            <div className={styles.inputWrapper}>
+                              <select
+                                className={styles.roomSelect}
+                                value={isPresetRoom ? draftRoomValue : draftRoomValue ? "__CUSTOM__" : ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === "__CUSTOM__") {
+                                    handleRoomChange(person.id, "PS-");
+                                  } else {
+                                    handleRoomChange(person.id, val);
+                                  }
+                                }}
+                                disabled={isSaving}
+                              >
+                                <option value="">-- Select Room --</option>
+                                <optgroup label="Floors 1 to 7 (101-104 Series)">
+                                  {roomOptions.filter(r => !r.includes("Floor")).map(room => (
+                                    <option key={room} value={room}>{room}</option>
+                                  ))}
+                                </optgroup>
+                                <optgroup label="Floors 8 to 11 (Floor Groups)">
+                                  {roomOptions.filter(r => r.includes("Floor")).map(room => (
+                                    <option key={room} value={room}>{room}</option>
+                                  ))}
+                                </optgroup>
+                                <option value="__CUSTOM__">✍️ Enter Custom Room...</option>
+                              </select>
 
-                            {draftRoomValue && (
-                              <button className={styles.clearBtn} onClick={() => handleRoomChange(person.id, "")}>
-                                <FaTimes />
+                              {(!isPresetRoom && draftRoomValue !== "") && (
+                                <input
+                                  type="text"
+                                  placeholder="e.g. PS-105"
+                                  className={styles.roomInput}
+                                  value={draftRoomValue}
+                                  onChange={(e) => handleRoomChange(person.id, e.target.value)}
+                                  onKeyDown={(e) => handleKeyDown(e, person.id)}
+                                  disabled={isSaving}
+                                />
+                              )}
+
+                              {draftRoomValue && (
+                                <button className={styles.clearBtn} onClick={() => handleRoomChange(person.id, "")}>
+                                  <FaTimes />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td className={styles.actionCell}>
+                            {isSaving ? (
+                              <span className={styles.savingTag}>
+                                <FaSpinner className={styles.spin} /> Saving...
+                              </span>
+                            ) : wasSaved ? (
+                              <span className={styles.savedTag}>
+                                <FaCheckCircle /> Saved
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleSaveRoom(person.id)}
+                                className={`${styles.saveBtn} ${isModified ? styles.activeSave : ""}`}
+                                disabled={!isModified}
+                              >
+                                <FaSave /> Save
                               </button>
                             )}
-                          </div>
-                        </td>
-                        <td className={styles.actionCell}>
-                          {isSaving ? (
-                            <span className={styles.savingTag}>
-                              <FaSpinner className={styles.spin} /> Saving...
-                            </span>
-                          ) : wasSaved ? (
-                            <span className={styles.savedTag}>
-                              <FaCheckCircle /> Saved
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => handleSaveRoom(person.id)}
-                              className={`${styles.saveBtn} ${isModified ? styles.activeSave : ""}`}
-                              disabled={!isModified}
-                            >
-                              <FaSave /> Save
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

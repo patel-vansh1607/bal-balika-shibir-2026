@@ -844,54 +844,56 @@ export default function KarayakarList({ defaultRegion = "" }) {
               />
             </div>
 
-            <button
-              onClick={handleExportCSV}
-              className={styles.exportExcelButton}
-              disabled={filteredList.length === 0}
-            >
-              <FaFileExport /> Export to Excel
-            </button>
+           <div className={styles.actionButtonGroup}>
+  <button
+    onClick={handleExportCSV}
+    className={styles.exportExcelButton}
+    disabled={filteredList.length === 0}
+  >
+    <FaFileExport /> Export to Excel
+  </button>
 
-            <button
-              onClick={handleBatchDownloadPhotos}
-              className={styles.exportExcelButton}
-              disabled={isDownloadingPhotos || filteredList.length === 0}
-            >
-              {isDownloadingPhotos ? (
-                <FaSpinner className={styles.spin} />
-              ) : (
-                <FaImage />
-              )}
-              {isDownloadingPhotos ? " Archiving..." : " Download Photos"}
-            </button>
+  <button
+    onClick={handleBatchDownloadPhotos}
+    className={`${styles.exportExcelButton} ${styles.secondaryActionButton}`}
+    disabled={isDownloadingPhotos || filteredList.length === 0}
+  >
+    {isDownloadingPhotos ? (
+      <FaSpinner className={styles.spin} />
+    ) : (
+      <FaImage />
+    )}
+    {isDownloadingPhotos ? " Archiving..." : " Download Photos"}
+  </button>
 
-            <button
-              onClick={handleBatchDownloadQr}
-              className={styles.exportExcelButton}
-              disabled={isDownloadingBatch || filteredList.length === 0}
-            >
-              {isDownloadingBatch ? (
-                <FaSpinner className={styles.spin} />
-              ) : (
-                <FaDownload />
-              )}
-              {isDownloadingBatch ? " Archiving..." : " Download QR Codes"}
-            </button>
+  <button
+    onClick={handleBatchDownloadQr}
+    className={`${styles.exportExcelButton} ${styles.secondaryActionButton}`}
+    disabled={isDownloadingBatch || filteredList.length === 0}
+  >
+    {isDownloadingBatch ? (
+      <FaSpinner className={styles.spin} />
+    ) : (
+      <FaDownload />
+    )}
+    {isDownloadingBatch ? " Archiving..." : " Download QR Codes"}
+  </button>
 
-            {canGenerateQr && (
-              <button
-                onClick={handleGenerateAllQr}
-                className={styles.exportExcelButton}
-                disabled={isGeneratingQr}
-              >
-                {isGeneratingQr ? (
-                  <FaSpinner className={styles.spin} />
-                ) : (
-                  <FaQrcode />
-                )}
-                {isGeneratingQr ? " Generating..." : " Generate QR Codes"}
-              </button>
-            )}
+  {canGenerateQr && (
+    <button
+      onClick={handleGenerateAllQr}
+      className={styles.exportExcelButton}
+      disabled={isGeneratingQr}
+    >
+      {isGeneratingQr ? (
+        <FaSpinner className={styles.spin} />
+      ) : (
+        <FaQrcode />
+      )}
+      {isGeneratingQr ? " Generating..." : " Generate QR Codes"}
+    </button>
+  )}
+</div>
           </div>
         </div>
 

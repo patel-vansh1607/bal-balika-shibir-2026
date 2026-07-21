@@ -1,13 +1,29 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  FaArrowLeft, FaSpinner, FaCheckCircle,
-  FaUserClock, FaUsers, FaQrcode, FaClock, FaKeyboard, FaArrowRight
+  FaArrowLeft,
+  FaSpinner,
+  FaCheckCircle,
+  FaUserClock,
+  FaUsers,
+  FaQrcode,
+  FaClock,
+  FaKeyboard,
+  FaArrowRight,
 } from "react-icons/fa";
-import { sessions as sessionsApi, sessionLogs, attendees as attendeesApi } from "../../apiClient";
+import {
+  sessions as sessionsApi,
+  sessionLogs,
+  attendees as attendeesApi,
+} from "../../apiClient";
 import styles from "./Sessions.module.css";
 
-export default function Sessions({ regionScope, prefixScope, globalAttendeesList, isDataFetching }) {
+export default function Sessions({
+  regionScope,
+  prefixScope,
+  globalAttendeesList,
+  isDataFetching,
+}) {
   const { sessionId } = useParams();
   const navigate = useNavigate();
 
@@ -15,22 +31,31 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
   const [sessionInfo, setSessionInfo] = useState(null);
   const [attendanceLogs, setAttendanceLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [metrics, setMetrics] = useState({ totalExpected: 0, present: 0, absent: 0 });
-  
+  const [metrics, setMetrics] = useState({
+    totalExpected: 0,
+    present: 0,
+    absent: 0,
+  });
+
   const isMenuSelectionMode = !sessionId || sessionId === "attendance";
-  const activeRegion = regionScope || localStorage.getItem("selected_shibir_region") || "All";
-  const activePrefix = prefixScope || localStorage.getItem("selected_shibir_prefix") || "";
+  const activeRegion =
+    regionScope || localStorage.getItem("selected_shibir_region") || "All";
+  const activePrefix =
+    prefixScope || localStorage.getItem("selected_shibir_prefix") || "";
   const isGlobal = activeRegion === "All";
 
-  // Robust helper for consistent Nakuru / East Africa Time (EAT)
+  // Helper for consistent East Africa Time (EAT) / Nairobi formatting
   const formatNairobiTime = (dateInput) => {
     if (!dateInput) return "—";
     try {
       let date;
       if (typeof dateInput === "string") {
         let isoStr = dateInput.trim();
-        // If DB returns UTC string missing 'Z' or offset, append 'Z' so JS treats it as UTC
-        if (!isoStr.endsWith("Z") && !isoStr.includes("+") && !isoStr.includes("-")) {
+        if (
+          !isoStr.endsWith("Z") &&
+          !isoStr.includes("+") &&
+          !isoStr.includes("-")
+        ) {
           isoStr = isoStr.replace(" ", "T") + "Z";
         }
         date = new Date(isoStr);
@@ -68,22 +93,40 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
 
         let scopedRoster = globalAttendeesList || [];
         if (scopedRoster.length === 0) {
-          const params = isGlobal ? {} : activePrefix ? { prefix: activePrefix } : { region: activeRegion };
+          const params = isGlobal
+            ? {}
+            : activePrefix
+            ? { prefix: activePrefix }
+            : { region: activeRegion };
           const { data } = await attendeesApi.list(params);
           scopedRoster = data || [];
         }
-        
-        const rosterCount = scopedRoster.length;
-        const attendeeLookupMap = new Map(scopedRoster.map((a) => [String(a._raw_id || parseInt(a.id, 10)), a]));
-        const { data: logsData } = await sessionLogs.list({ session_id: sessionId });
-        const logs = logsData || [];
-        const logsCheckedInIds = new Set(logs.map((log) => String(log._raw_attendee_id)));
 
-        let filteredRoster = isGlobal || !activePrefix ? scopedRoster : scopedRoster.filter((a) => a.member_id?.startsWith(activePrefix));
+        const rosterCount = scopedRoster.length;
+        const attendeeLookupMap = new Map(
+          scopedRoster.map((a) => [
+            String(a._raw_id || parseInt(a.id, 10)),
+            a,
+          ])
+        );
+        const { data: logsData } = await sessionLogs.list({
+          session_id: sessionId,
+        });
+        const logs = logsData || [];
+        const logsCheckedInIds = new Set(
+          logs.map((log) => String(log._raw_attendee_id))
+        );
+
+        let filteredRoster =
+          isGlobal || !activePrefix
+            ? scopedRoster
+            : scopedRoster.filter((a) => a.member_id?.startsWith(activePrefix));
 
         let parsedRosterStatus = filteredRoster.map((attendee) => {
           const key = String(attendee._raw_id || parseInt(attendee.id, 10));
-          const matchingLog = logs.find((log) => String(log._raw_attendee_id) === key);
+          const matchingLog = logs.find(
+            (log) => String(log._raw_attendee_id) === key
+          );
           const hasCheckedIn = logsCheckedInIds.has(key);
           return {
             id: attendee.id,
@@ -92,15 +135,26 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
             subgroup: attendee.subgroup || "N/A",
             category: attendee.category || "General",
             checkedIn: hasCheckedIn,
-            checkInTime: hasCheckedIn && matchingLog?.created_at ? formatNairobiTime(matchingLog.created_at) : "—",
+            checkInTime:
+              hasCheckedIn && matchingLog?.created_at
+                ? formatNairobiTime(matchingLog.created_at)
+                : "—",
           };
         });
 
         logs.forEach((log) => {
           const key = String(log._raw_attendee_id);
           if (!attendeeLookupMap.has(key) && log.attendee_name) {
-            if (!parsedRosterStatus.some((item) => String(parseInt(item.id, 10)) === key)) {
-              if (isGlobal || !activePrefix || log.member_id?.startsWith(activePrefix)) {
+            if (
+              !parsedRosterStatus.some(
+                (item) => String(parseInt(item.id, 10)) === key
+              )
+            ) {
+              if (
+                isGlobal ||
+                !activePrefix ||
+                log.member_id?.startsWith(activePrefix)
+              ) {
                 parsedRosterStatus.push({
                   id: log.attendee_id,
                   memberId: log.member_id || "N/A",
@@ -108,17 +162,28 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
                   subgroup: "Cross-Region",
                   category: "General",
                   checkedIn: true,
-                  checkInTime: log.created_at ? formatNairobiTime(log.created_at) : "—",
+                  checkInTime: log.created_at
+                    ? formatNairobiTime(log.created_at)
+                    : "—",
                 });
               }
             }
           }
         });
 
-        const presentCount = parsedRosterStatus.filter((item) => item.checkedIn).length;
-        const adjustedTotalCount = Math.max(rosterCount, parsedRosterStatus.length);
+        const presentCount = parsedRosterStatus.filter(
+          (item) => item.checkedIn
+        ).length;
+        const adjustedTotalCount = Math.max(
+          rosterCount,
+          parsedRosterStatus.length
+        );
         setAttendanceLogs(parsedRosterStatus);
-        setMetrics({ totalExpected: adjustedTotalCount, present: presentCount, absent: Math.max(0, adjustedTotalCount - presentCount) });
+        setMetrics({
+          totalExpected: adjustedTotalCount,
+          present: presentCount,
+          absent: Math.max(0, adjustedTotalCount - presentCount),
+        });
       } catch (err) {
         console.error("Session fetch error:", err.message);
       } finally {
@@ -127,29 +192,64 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
     };
 
     if (!isDataFetching) fetchSessionWorkspace();
-  }, [sessionId, isMenuSelectionMode, activeRegion, activePrefix, globalAttendeesList, isDataFetching, isGlobal]);
+  }, [
+    sessionId,
+    isMenuSelectionMode,
+    activeRegion,
+    activePrefix,
+    globalAttendeesList,
+    isDataFetching,
+    isGlobal,
+  ]);
 
-  if (loading || isDataFetching) return <div className={styles.loaderContainer}><FaSpinner className={styles.spin} /> Loading...</div>;
+  if (loading || isDataFetching) {
+    return (
+      <div className={styles.loaderContainer}>
+        <FaSpinner className={styles.spin} /> Loading session parameters...
+      </div>
+    );
+  }
 
   if (isMenuSelectionMode) {
     return (
       <div className={styles.container}>
         <div className={styles.viewHeader}>
-          <button onClick={() => navigate("/dashboard/session/master")} className={styles.circleBackBtn}><FaArrowLeft /></button>
+          <button
+            onClick={() => navigate("/dashboard/session/master")}
+            className={styles.circleBackBtn}
+          >
+            <FaArrowLeft />
+          </button>
           <div className={styles.headerInfoText}>
             <h1>Sessions Attendance</h1>
-            <p>Select a Session track to manage attendance for: <strong>{activeRegion}</strong></p>
+            <p>
+              Select a Session track to manage attendance for:{" "}
+              <strong>{activeRegion}</strong>
+            </p>
           </div>
         </div>
+
         <div className={styles.selectionGridList}>
           {sessionsList.map((session, index) => (
             <div key={session.id} className={styles.gateSelectionCard}>
               <div className={styles.cardInfoPanel}>
-                <div className={styles.sessionIndexBadge}>Session {index + 1}</div>
+                <div className={styles.sessionIndexBadge}>
+                  Session {index + 1}
+                </div>
                 <h3>{session.title}</h3>
-                <span className={styles.timeTagStamp}><FaClock /> {session.start_time ? formatNairobiTime(session.start_time) : "N/A"}</span>
+                <span className={styles.timeTagStamp}>
+                  <FaClock />{" "}
+                  {session.start_time
+                    ? formatNairobiTime(session.start_time)
+                    : "N/A"}
+                </span>
               </div>
-              <button className={styles.launchGateBtn} onClick={() => navigate(`/dashboard/session/attendance/${session.id}`)}>
+              <button
+                className={styles.launchGateBtn}
+                onClick={() =>
+                  navigate(`/dashboard/session/attendance/${session.id}`)
+                }
+              >
                 <FaQrcode /> Mark Attendance <FaArrowRight />
               </button>
             </div>
@@ -162,20 +262,30 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
   return (
     <div className={styles.container}>
       <div className={styles.viewHeader}>
-        <button onClick={() => navigate("/dashboard/session/attendance")} className={styles.circleBackBtn}><FaArrowLeft /></button>
+        <button
+          onClick={() => navigate("/dashboard/session/attendance")}
+          className={styles.circleBackBtn}
+        >
+          <FaArrowLeft />
+        </button>
         <div className={styles.headerInfoText}>
-          <h1>{sessionInfo?.title}</h1>
-          <p>Managing for: <strong>{isGlobal ? "Global African Database" : activeRegion}</strong></p>
+          <h1>{sessionInfo?.title || "Session Attendance"}</h1>
+          <p>
+            Managing for:{" "}
+            <strong>
+              {isGlobal ? "Global Regional Directory" : activeRegion}
+            </strong>
+          </p>
         </div>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button 
-            className={styles.actionScanFloatingBtn} 
+        <div className={styles.headerActionGroup}>
+          <button
+            className={styles.actionScanFloatingBtn}
             onClick={() => navigate(`../manual-scanner/${sessionId}`)}
           >
             <FaKeyboard /> Manual Entry
           </button>
-          <button 
-            className={styles.actionScanFloatingBtn} 
+          <button
+            className={styles.actionScanFloatingBtn}
             onClick={() => navigate(`/dashboard/scanner/${sessionId}`)}
           >
             <FaQrcode /> Scan Badge
@@ -183,29 +293,109 @@ export default function Sessions({ regionScope, prefixScope, globalAttendeesList
         </div>
       </div>
 
-      {/* Metrics Bar */}
+      {/* Scoreboard Metrics */}
       <div className={styles.metricsBarGrid}>
-        <div className={styles.metricCard}><div className={styles.metricIconWrap} style={{ backgroundColor: "#f5f2ef" }}><FaUsers /></div><div className={styles.metricData}><h3>{metrics.totalExpected}</h3><span>Expected</span></div></div>
-        <div className={styles.metricCard}><div className={styles.metricIconWrap} style={{ backgroundColor: "#e6f4ea", color: "#137333" }}><FaCheckCircle /></div><div className={styles.metricData}><h3 style={{ color: "#137333" }}>{metrics.present}</h3><span>Present</span></div></div>
-        <div className={styles.metricCard}><div className={styles.metricIconWrap} style={{ backgroundColor: "#fce8e6", color: "#c5221f" }}><FaUserClock /></div><div className={styles.metricData}><h3 style={{ color: "#c5221f" }}>{metrics.absent}</h3><span>Pending</span></div></div>
+        <div className={styles.metricCard}>
+          <div
+            className={styles.metricIconWrap}
+            style={{ backgroundColor: "#f5f2ef", color: "#52525b" }}
+          >
+            <FaUsers />
+          </div>
+          <div className={styles.metricData}>
+            <h3>{metrics.totalExpected}</h3>
+            <span>Expected</span>
+          </div>
+        </div>
+        <div className={styles.metricCard}>
+          <div
+            className={styles.metricIconWrap}
+            style={{ backgroundColor: "#e6f4ea", color: "#137333" }}
+          >
+            <FaCheckCircle />
+          </div>
+          <div className={styles.metricData}>
+            <h3 style={{ color: "#137333" }}>{metrics.present}</h3>
+            <span>Present</span>
+          </div>
+        </div>
+        <div className={styles.metricCard}>
+          <div
+            className={styles.metricIconWrap}
+            style={{ backgroundColor: "#fce8e6", color: "#c5221f" }}
+          >
+            <FaUserClock />
+          </div>
+          <div className={styles.metricData}>
+            <h3 style={{ color: "#c5221f" }}>{metrics.absent}</h3>
+            <span>Pending</span>
+          </div>
+        </div>
       </div>
 
       <div className={styles.tableCardContainer}>
-        <table className={styles.attendanceTable}>
-          <thead><tr><th>ID No</th><th>Full Name</th><th>Subgroup Track</th><th>Category</th><th>Status</th><th>Verification</th></tr></thead>
-          <tbody>
-            {attendanceLogs.map((record) => (
-              <tr key={record.id} className={record.checkedIn ? styles.rowCheckedIn : styles.rowAbsent}>
-                <td className={styles.badgeIdCell}><code>{record.memberId}</code></td>
-                <td>{record.fullName}</td>
-                <td><span className={styles.subgroupTag}>{record.subgroup}</span></td>
-                <td>{record.category}</td>
-                <td><span className={`${styles.statusLabel} ${record.checkedIn ? styles.statusCleared : styles.statusPending}`}>{record.checkedIn ? "Cleared" : "Pending"}</span></td>
-                <td className={styles.timeStampCell}>{record.checkInTime}</td>
+        <div className={styles.tableScrollWrapper}>
+          <table className={styles.attendanceTable}>
+            <thead>
+              <tr>
+                <th>ID No</th>
+                <th>Full Name</th>
+                <th>Subgroup Track</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Verification</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {attendanceLogs.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="6"
+                    className={styles.emptyTablePlaceholder}
+                  >
+                    No attendance records logged for this session scope.
+                  </td>
+                </tr>
+              ) : (
+                attendanceLogs.map((record) => (
+                  <tr
+                    key={record.id}
+                    className={
+                      record.checkedIn
+                        ? styles.rowCheckedIn
+                        : styles.rowAbsent
+                    }
+                  >
+                    <td className={styles.badgeIdCell}>
+                      <code>{record.memberId}</code>
+                    </td>
+                    <td className={styles.nameCell}>{record.fullName}</td>
+                    <td>
+                      <span className={styles.subgroupTag}>
+                        {record.subgroup}
+                      </span>
+                    </td>
+                    <td>{record.category}</td>
+                    <td>
+                      <span
+                        className={`${styles.statusLabel} ${
+                          record.checkedIn
+                            ? styles.statusCleared
+                            : styles.statusPending
+                        }`}
+                      >
+                        {record.checkedIn ? "Cleared" : "Pending"}
+                      </span>
+                    </td>
+                    <td className={styles.timeStampCell}>
+                      {record.checkInTime}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

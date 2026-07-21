@@ -168,6 +168,7 @@
   color: var(--text-main);
   outline: none;
   transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 
 .searchInput:focus {
@@ -185,6 +186,7 @@
   outline: none;
   cursor: pointer;
   min-width: 160px;
+  box-sizing: border-box;
 }
 
 .filterSelect:focus {
@@ -271,10 +273,17 @@
   box-shadow: 0 4px 20px rgba(45, 41, 38, 0.03);
 }
 
+.tableResponsiveWrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  min-width: 900px;
 }
 
 .table th {
@@ -287,6 +296,7 @@
   letter-spacing: 0.05em;
   padding: 14px 16px;
   border-bottom: 1px solid var(--border-light);
+  white-space: nowrap;
 }
 
 .table td {
@@ -295,6 +305,7 @@
   font-size: 0.95rem;
   color: var(--text-main);
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .table tbody tr:hover {
@@ -399,6 +410,10 @@
   color: #e53e3e;
 }
 
+.actionHeader {
+  text-align: right;
+}
+
 .actionCell {
   text-align: right;
 }
@@ -457,4 +472,70 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Responsive Media Queries */
+@media (max-width: 992px) {
+  .dashboardContainer {
+    padding: 16px;
+  }
+
+  .statsBentoGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .filterBar {
+    flex-direction: column;
+  }
+
+  .searchWrapper, .filterSelect {
+    width: 100%;
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboardContainer {
+    padding: 12px;
+  }
+
+  .controlRow {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .toggleGroup {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .toggleSwitchContainer {
+    width: 100%;
+  }
+
+  .toggleBtn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .statsBentoGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .bulkActionPanel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bulkForm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bulkSelect, .bulkSubmitBtn, .bulkCancelBtn {
+    width: 100%;
+  }
 }

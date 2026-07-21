@@ -765,3 +765,38 @@
   background-color: rgba(255, 255, 255, 0.2) !important;
   border-radius: 10px;
 }
+.manualRefreshBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background-color: var(--accent-soft, #f4ece6);
+  color: var(--text-dark, #2d2723);
+  border: 1px solid var(--border-light, #e6dfd9);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.manualRefreshBtn:hover {
+  background-color: var(--border-light, #e6dfd9);
+}
+
+.refreshIcon {
+  font-size: 0.9rem;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

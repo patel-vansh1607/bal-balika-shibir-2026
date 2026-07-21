@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Dashboard Module Workspace Framework Container Layout
+   Dashboard Workspace Framework Container Layout
    ========================================================================== */
 .container {
   width: 100%;
@@ -83,6 +83,13 @@
   transform: translateX(-2px);
 }
 
+.headerActionGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
 .actionScanFloatingBtn {
   display: inline-flex;
   align-items: center;
@@ -100,13 +107,36 @@
   box-shadow: 0 4px 12px rgba(138, 21, 27, 0.15);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .actionScanFloatingBtn:hover {
   background-color: #721015;
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(138, 21, 27, 0.25);
+}
+
+.actionScanFloatingBtnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background-color: var(--bg-card, #ffffff);
+  color: var(--text-main, #1a1a1a);
+  border: 1px solid var(--border-light, #e4e4e7);
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-family: var(--font-sans, sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.actionScanFloatingBtnSecondary:hover {
+  background-color: var(--bg-main, #f8f9fa);
+  border-color: var(--border-hover, #d4d4d8);
+  transform: translateY(-2px);
 }
 
 /* ==========================================================================
@@ -271,7 +301,7 @@
 .tableScrollWrapper {
   width: 100%;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch; /* Kinetic rubber-band scrolling for iOS hardware touch acceleration */
+  -webkit-overflow-scrolling: touch;
 }
 
 .attendanceTable {
@@ -301,13 +331,12 @@
   white-space: nowrap;
 }
 
-/* Row Background Modifiers Based on Sync Status states */
 .attendanceTable tr:last-child td {
   border-bottom: none;
 }
 
 .rowCheckedIn td {
-  background-color: rgba(34, 197, 94, 0.01);
+  background-color: rgba(34, 197, 94, 0.015);
 }
 
 .rowAbsent td {
@@ -380,16 +409,15 @@
 /* ==========================================================================
    ⚡ SYSTEM BREAKPOINTS (DYNAMIC RESPONSIVE ADJUSTMENTS)
    ========================================================================== */
-
 @media (max-width: 992px) {
   .viewHeader {
     margin-bottom: 24px;
   }
-  
+
   .headerInfoText h1 {
     font-size: 24px;
   }
-  
+
   .metricsBarGrid {
     grid-template-columns: repeat(3, 1fr);
     gap: 14px;
@@ -407,17 +435,26 @@
 
 @media (max-width: 768px) {
   .viewHeader {
-    flex-wrap: wrap; /* Wraps action floating scan button downwards gracefully when space runs out */
+    flex-wrap: wrap;
     gap: 16px;
   }
 
-  .actionScanFloatingBtn {
-    width: 100%; /* Spans button layout horizontally on mid to small viewports cleanly */
-    order: 3;    /* Pushes scan container bar block safely below text titles */
+  .headerActionGroup {
+    width: 100%;
+    order: 3;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .actionScanFloatingBtn,
+  .actionScanFloatingBtnSecondary {
+    width: 100%;
+    padding: 12px 14px;
   }
 
   .metricsBarGrid {
-    grid-template-columns: 1fr; /* Stacks scoreboard metrics vertically */
+    grid-template-columns: 1fr;
     gap: 12px;
   }
 
@@ -426,7 +463,7 @@
   }
 
   .selectionGridList {
-    grid-template-columns: 1fr; /* Stacks track choice rows vertically */
+    grid-template-columns: 1fr;
     gap: 16px;
   }
 }
@@ -441,9 +478,13 @@
     height: 36px;
   }
 
-  .attendanceTable th, 
+  .headerActionGroup {
+    grid-template-columns: 1fr;
+  }
+
+  .attendanceTable th,
   .attendanceTable td {
-    padding: 12px 14px; /* Condenses tracking table cell breathing footprint size */
+    padding: 12px 14px;
   }
 }
 
@@ -451,11 +492,21 @@
    Animation Timings
    ========================================================================== */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

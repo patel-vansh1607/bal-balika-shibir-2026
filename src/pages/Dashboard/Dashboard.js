@@ -38,7 +38,9 @@ import {
   FaGlobeAfrica,
   FaCopy,
   FaEnvelope,
-  FaHotel
+  FaHotel,
+  FaExclamationTriangle,
+  FaRedoAlt
 } from "react-icons/fa";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
@@ -48,6 +50,12 @@ import ManualScanner from "../ManualScanner/ManualScanner";
 import AccommodationManager from "../AccomodationManager/AccomodationManager";
 import { FaBed } from "react-icons/fa6";
 import AccommodationMetrics from "../AccomodationMetrics/AccomodationMetrics";
+
+// ---------------------------------------------------------------------------
+// PRODUCTION TIMERS
+// ---------------------------------------------------------------------------
+const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 60 Minutes Inactivity
+const BROWSER_CLOSE_MAX_AGE_MS = 30 * 60 * 1000; // 30 Minutes Max Age on Re-opening
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -75,6 +83,90 @@ export default function Dashboard() {
   const [prefixScope, setPrefixScope] = useState("MTRC-");
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // State for controlling the Session Expiration modal
+  const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
+
+  // Core logout logic that cleans up storage and redirects to /admin
+  const performLogoutAndRedirect = useCallback(async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      localStorage.removeItem("selected_shibir_region");
+      localStorage.removeItem("selected_shibir_prefix");
+      localStorage.removeItem("last_active_timestamp");
+    } catch (err) {
+      console.error("Logout execution error:", err);
+    } finally {
+      setIsLoggingOut(false);
+      setShowSessionExpiredModal(false);
+      navigate("/admin", { replace: true });
+    }
+  }, [logout, navigate]);
+
+  // Trigger modal when session expires due to inactivity
+  const handleSessionTimeout = useCallback(() => {
+    setShowSessionExpiredModal(true);
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // AUTO-LOGOUT SYSTEM
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    // 1. Check if session expired while the tab/browser was closed
+    const lastActiveStr = localStorage.getItem("last_active_timestamp");
+    const currentTime = Date.now();
+
+    if (lastActiveStr) {
+      const lastActiveTime = parseInt(lastActiveStr, 10);
+      if (!isNaN(lastActiveTime) && currentTime - lastActiveTime > BROWSER_CLOSE_MAX_AGE_MS) {
+        handleSessionTimeout();
+        return;
+      }
+    }
+
+    // Update timestamp in storage
+    localStorage.setItem("last_active_timestamp", currentTime.toString());
+
+    // 2. Setup Inactivity Timer
+    let inactivityTimer = setTimeout(() => {
+      handleSessionTimeout();
+    }, INACTIVITY_LIMIT_MS);
+
+    // Reset inactivity timer and update timestamp on user interaction
+    const resetInactivityTimer = () => {
+      // Don't reset if expiration modal is already active
+      if (showSessionExpiredModal) return;
+
+      const now = Date.now();
+      localStorage.setItem("last_active_timestamp", now.toString());
+
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        handleSessionTimeout();
+      }, INACTIVITY_LIMIT_MS);
+    };
+
+    const activityEvents = [
+      "mousemove",
+      "keydown",
+      "click",
+      "scroll",
+      "touchstart",
+    ];
+
+    activityEvents.forEach((event) => {
+      window.addEventListener(event, resetInactivityTimer, { passive: true });
+    });
+
+    return () => {
+      clearTimeout(inactivityTimer);
+      activityEvents.forEach((event) => {
+        window.removeEventListener(event, resetInactivityTimer);
+      });
+    };
+  }, [handleSessionTimeout, showSessionExpiredModal]);
+
+  // Initializing regional context
   useEffect(() => {
     const cachedRegion = localStorage.getItem("selected_shibir_region");
     if (!cachedRegion) {
@@ -86,15 +178,15 @@ export default function Dashboard() {
     if (user) setUserEmail(user.email || "");
     setLoading(false);
   }, [navigate, user]);
-  // Calculate the exact number of duplicate matching groups
+
+  // Calculate duplicate matching groups
   const duplicateCount = useMemo(() => {
     if (!attendeesList || attendeesList.length === 0 || dataFetching) return 0;
 
     const groups = {};
     attendeesList.forEach((person) => {
-      if (person.is_archived) return; // Skip archived records
+      if (person.is_archived) return;
 
-      // Normalize name
       const cleanName = (person.name || "")
         .trim()
         .toLowerCase()
@@ -108,12 +200,12 @@ export default function Dashboard() {
       groups[cleanName].push(person);
     });
 
-    // Filter to find groups with 2 or more occurrences, then return the count
     const duplicateGroups = Object.values(groups).filter(
       (group) => group.length > 1,
     );
     return duplicateGroups.length;
   }, [attendeesList, dataFetching]);
+
   const fetchIsolatedDataset = useCallback(async () => {
     try {
       setDataFetching(true);
@@ -140,6 +232,20 @@ export default function Dashboard() {
     }
   };
 
+  // Hard Refresh Handler to clear cache and reload app completely
+  const handleHardRefresh = async () => {
+    try {
+      if ("caches" in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
+      }
+    } catch (err) {
+      console.error("Error clearing browser caches:", err);
+    } finally {
+      window.location.reload(true);
+    }
+  };
+
   const handleUpdateSelectionStatus = async (attendee, newStatusValue) => {
     try {
       setDataFetching(true);
@@ -156,20 +262,6 @@ export default function Dashboard() {
       console.error("Failed to update status parameters:", err.message);
     } finally {
       setDataFetching(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logout();
-      localStorage.removeItem("selected_shibir_region");
-      localStorage.removeItem("selected_shibir_prefix");
-      navigate("/admin", { replace: true });
-    } catch (err) {
-      console.error("Logout failed", err);
-    } finally {
-      setIsLoggingOut(false);
     }
   };
 
@@ -199,7 +291,8 @@ export default function Dashboard() {
     if (path.startsWith("/dashboard/session/master")) return "Session Master";
     if (path.startsWith("/dashboard/session/add-session")) return "Add Session";
     if (path.startsWith("/dashboard/duplicates")) return "Duplicate Profiles";
-        if (path.startsWith("/dashboard/accommodation")) return "Accommodation";
+    if (path.startsWith("/dashboard/accommodation/metrics")) return "Accommodation Metrics";
+    if (path.startsWith("/dashboard/accommodation")) return "Accommodation";
 
     if (path.startsWith("/dashboard/session/attendance"))
       return "Sessions Attendance";
@@ -224,6 +317,114 @@ export default function Dashboard() {
 
   return (
     <div className={styles.layout}>
+      {/* Session Expired Styled Overlay Modal */}
+      {showSessionExpiredModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            fontFamily: "var(--font-sans, 'Plus Jakarta Sans', sans-serif)",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--accent-soft, #f4ece6)",
+              border: "1px solid var(--border-light, #e6dfd9)",
+              borderRadius: "16px",
+              padding: "32px 28px",
+              maxWidth: "420px",
+              width: "100%",
+              textAlign: "center",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+              color: "#2d2723",
+            }}
+          >
+            <div
+              style={{
+                width: "60px",
+                height: "60px",
+                backgroundColor: "rgba(231, 133, 36, 0.12)",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 20px auto",
+              }}
+            >
+              <FaExclamationTriangle
+                style={{
+                  fontSize: "28px",
+                  color: "var(--accent-primary, #e78524)",
+                }}
+              />
+            </div>
+            <h3
+              style={{
+                fontFamily: "var(--font-display, 'Arima Madurai Local', serif)",
+                fontSize: "1.5rem",
+                fontWeight: "700",
+                color: "#1c1917",
+                marginBottom: "10px",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Session Expired
+            </h3>
+            <p
+              style={{
+                fontFamily: "var(--font-sans, 'Plus Jakarta Sans', sans-serif)",
+                fontSize: "0.95rem",
+                color: "#57534e",
+                marginBottom: "28px",
+                lineHeight: "1.5",
+              }}
+            >
+              You have been inactive for over 60 minutes. For security reasons,
+              your session has timed out.
+            </p>
+            <button
+              onClick={performLogoutAndRedirect}
+              disabled={isLoggingOut}
+              style={{
+                width: "100%",
+                padding: "12px 20px",
+                backgroundColor: "var(--accent-primary, #e78524)",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "10px",
+                fontWeight: "600",
+                fontSize: "0.95rem",
+                fontFamily: "var(--font-sans, 'Plus Jakarta Sans', sans-serif)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                transition: "opacity 0.2s ease",
+              }}
+            >
+              {isLoggingOut ? (
+                <>
+                  <FaSpinner className={styles.spin} /> Returning to login...
+                </>
+              ) : (
+                "Return to Login"
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       <aside
         className={`${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarOpen : ""}`}
       >
@@ -299,10 +500,9 @@ export default function Dashboard() {
                 <button
                   onClick={() => handleNavigation("/dashboard/duplicates")}
                   className={`${styles.navLink} ${location.pathname === "/dashboard/duplicates" ? styles.navLinkActive : ""}`}
-                  style={{ position: "relative" }} // Keeps badge anchored correctly
+                  style={{ position: "relative" }}
                 >
                   <FaCopy className={styles.iconMargin} /> Duplicates
-                  {/* Display the active count bubble if duplicates > 0 */}
                   {duplicateCount > 0 && (
                     <span
                       style={{
@@ -310,12 +510,12 @@ export default function Dashboard() {
                         top: "50%",
                         right: "16px",
                         transform: "translateY(-50%)",
-                        backgroundColor: "#ef4444", // Tailwind Red-500
+                        backgroundColor: "#ef4444",
                         color: "#ffffff",
                         minWidth: "20px",
                         height: "20px",
                         padding: "0 6px",
-                        borderRadius: "10px", // pill-shaped so multi-digit numbers fit
+                        borderRadius: "10px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -330,24 +530,24 @@ export default function Dashboard() {
                   )}
                 </button>
                 {regionScope === "Kenya" && (
-                <button
-                  onClick={() =>
-                    handleNavigation("/dashboard/accommodation")
-                  }
-                  className={`${styles.navLink} ${location.pathname === "/dashboard/accommodation" ? styles.navLinkActive : ""}`}
-                >
-                  <FaBed className={styles.iconMargin} /> Accomodation
-                </button> 
+                  <button
+                    onClick={() =>
+                      handleNavigation("/dashboard/accommodation")
+                    }
+                    className={`${styles.navLink} ${location.pathname === "/dashboard/accommodation" ? styles.navLinkActive : ""}`}
+                  >
+                    <FaBed className={styles.iconMargin} /> Accomodation
+                  </button>
                 )}
                 {regionScope === "Kenya" && (
-                <button
-                  onClick={() =>
-                    handleNavigation("/dashboard/accommodation/metrics")
-                  }
-                  className={`${styles.navLink} ${location.pathname === "/dashboard/accommodation/metrics" ? styles.navLinkActive : ""}`}
-                >
-                  <FaHotel className={styles.iconMargin} /> Accomodation Metrics
-                </button> 
+                  <button
+                    onClick={() =>
+                      handleNavigation("/dashboard/accommodation/metrics")
+                    }
+                    className={`${styles.navLink} ${location.pathname === "/dashboard/accommodation/metrics" ? styles.navLinkActive : ""}`}
+                  >
+                    <FaHotel className={styles.iconMargin} /> Accomodation Metrics
+                  </button>
                 )}
                 <button
                   onClick={() => handleNavigation("/dashboard/add-new")}
@@ -369,7 +569,6 @@ export default function Dashboard() {
                 >
                   <FaUserPlus className={styles.iconMargin} /> Add Karyakar
                 </button>
-                
 
                 {(userRole === "master_admin" ||
                   userRole === "super_admin") && (
@@ -381,7 +580,7 @@ export default function Dashboard() {
                   </button>
                 )}
 
-                {(userRole === "master_admin"  || userRole === "super_admin")&& (
+                {(userRole === "master_admin" || userRole === "super_admin") && (
                   <button
                     onClick={() => handleNavigation("/dashboard/admin-control")}
                     className={`${styles.navLink} ${location.pathname === "/dashboard/admin-control" ? styles.navLinkActive : ""}`}
@@ -437,7 +636,7 @@ export default function Dashboard() {
             </span>
           </div>
           <button
-            onClick={handleLogout}
+            onClick={performLogoutAndRedirect}
             className={styles.logoutBtn}
             disabled={isLoggingOut}
           >
@@ -473,7 +672,7 @@ export default function Dashboard() {
             </h2>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button
               className={styles.manualRefreshBtn}
               onClick={handleManualRefresh}
@@ -485,6 +684,17 @@ export default function Dashboard() {
               />
               <span>Refresh</span>
             </button>
+
+            <button
+              className={styles.manualRefreshBtn}
+              onClick={handleHardRefresh}
+              aria-label="Hard refresh application to fetch latest code changes"
+              title="Clears browser cache and reloads application"
+            >
+              <FaRedoAlt className={styles.refreshIcon} />
+              <span>Hard Refresh</span>
+            </button>
+
             <span className={styles.systemStatusText}>
               {dataFetching ? (
                 <span className={styles.syncingIndicator}>
