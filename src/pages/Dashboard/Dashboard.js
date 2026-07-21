@@ -46,6 +46,7 @@ import KarayakarList from "../KarayakarList/KarayakarList";
 import ManualScanner from "../ManualScanner/ManualScanner";
 import AccommodationManager from "../AccomodationManager/AccomodationManager";
 import { FaBed } from "react-icons/fa6";
+import AccommodationMetrics from "../AccomodationMetrics/AccomodationMetrics";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -337,6 +338,16 @@ export default function Dashboard() {
                   <FaBed className={styles.iconMargin} /> Accomodation
                 </button> 
                 )}
+                {regionScope === "Kenya" && (
+                <button
+                  onClick={() =>
+                    handleNavigation("/dashboard/accommodation/metrics")
+                  }
+                  className={`${styles.navLink} ${location.pathname === "/dashboard/accommodation/metrics" ? styles.navLinkActive : ""}`}
+                >
+                  <FaBed className={styles.iconMargin} /> Accomodation Metrics
+                </button> 
+                )}
                 <button
                   onClick={() => handleNavigation("/dashboard/add-new")}
                   className={`${styles.navLink} ${location.pathname === "/dashboard/add-new" ? styles.navLinkActive : ""}`}
@@ -586,6 +597,12 @@ export default function Dashboard() {
               path="accommodation"
               element={
                 userRole !== "operator" ? <AccommodationManager /> : <NotFound />
+              }
+            />
+            <Route
+              path="accommodation/metrics"
+              element={
+                userRole !== "operator" ? <AccommodationMetrics /> : <NotFound />
               }
             />
             <Route

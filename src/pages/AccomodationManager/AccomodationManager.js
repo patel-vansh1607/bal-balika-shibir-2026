@@ -9,7 +9,7 @@ import {
   FaTimes,
   FaCheck,
   FaClipboardList,
-  FaUsers,
+  FaUsers
 } from "react-icons/fa";
 
 import { FaBedPulse } from "react-icons/fa6";
@@ -17,39 +17,54 @@ import { attendees as attendeesApi, karayakars as karayakarsApi } from "../../ap
 import styles from "./AccomodationManager.module.css";
 import toast from "react-hot-toast";
 
-// Assuming you have access to user state (or storage fallback)
 export default function AccommodationManager({ 
   onBack, 
-  currentRegion,       // Passed down from your routing/auth layout
+  currentRegion,       
   userEmail = "", 
   userRole = "", 
   handleLogout, 
   isLoggingOut = false 
 }) {
 
-  // 1. Lock the active region strictly to the system's selected region
-  const activeRegion = currentRegion || localStorage.getItem("selectedRegion") || "Kenya";
+  const cleanRegion = (reg) => {
+    if (!reg) return localStorage.getItem("selectedRegion") || "Kenya";
+    const str = String(reg).trim();
+    const basePart = str.split(/[_-\s]+/)[0];
+    if (!basePart) return "Kenya";
+    return basePart.charAt(0).toUpperCase() + basePart.slice(1).toLowerCase();
+  };
 
-  // Directory State (Karyakars vs Children)
+  const activeRegion = cleanRegion(currentRegion);
+
   const [targetGroup, setTargetGroup] = useState("karyakars");
-
   const [attendees, setAttendees] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [centerFilter, setCenterFilter] = useState("all");
+  const [genderFilter, setGenderFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Inline edit states
   const [editedRooms, setEditedRooms] = useState({});
   const [savingIds, setSavingIds] = useState({});
   const [savedNotifications, setSavedNotifications] = useState({});
 
-  // Bulk Assignment State
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkRoomValue, setBulkRoomValue] = useState("");
   const [isBulkSaving, setIsBulkSaving] = useState(false);
 
-  // ID formatting matching the database system keys
+  const roomOptions = useMemo(() => {
+    const list = [];
+    for (let floor = 1; floor <= 7; floor++) {
+      for (let roomNum = 1; roomNum <= 4; roomNum++) {
+        list.push(`PS-${floor}0${roomNum}`);
+      }
+    }
+    for (let floor = 8; floor <= 11; floor++) {
+      list.push(`PS-${floor}th Floor`);
+    }
+    return list;
+  }, []);
+
   const formatMemberId = useCallback((person) => {
     const rawId = person.member_id;
     if (!rawId) {
@@ -62,7 +77,14 @@ export default function AccommodationManager({
     return `${strId}`;
   }, [targetGroup]);
 
-  // Memoized data fetching locked to activeRegion
+  const cleanCenterName = (val) => {
+    if (!val) return "Unknown";
+    const str = String(val).trim();
+    const basePart = str.split(/[_-\s]+/)[0];
+    if (!basePart) return "Unknown";
+    return basePart.charAt(0).toUpperCase() + basePart.slice(1).toLowerCase();
+  };
+
   const fetchAttendees = useCallback(() => {
     setLoading(true);
     setAttendees([]); 
@@ -70,7 +92,6 @@ export default function AccommodationManager({
     setSelectedIds([]);
     setBulkRoomValue("");
     
-    // Only query parameters for the enforced region
     const queryParams = { region: activeRegion };
     
     let fetchPromise;
@@ -104,7 +125,7 @@ export default function AccommodationManager({
 
   const handleRoomChange = (id, rawValue) => {
     let formattedValue = rawValue;
-    if (rawValue.trim() !== "") {
+    if (rawValue.trim() !== "" && rawValue !== "__CUSTOM__") {
       const upperVal = rawValue.toUpperCase();
       if (!upperVal.startsWith("PS-")) {
         if (upperVal.startsWith("PS")) {
@@ -115,12 +136,6 @@ export default function AccommodationManager({
       }
     }
     setEditedRooms(prev => ({ ...prev, [id]: formattedValue }));
-  };
-
-  const handleInputFocus = (id, currentValue) => {
-    if (!currentValue && (!editedRooms[id] || editedRooms[id] === "")) {
-      setEditedRooms(prev => ({ ...prev, [id]: "PS-" }));
-    }
   };
 
   const handleSaveRoom = (id) => {
@@ -182,7 +197,6 @@ export default function AccommodationManager({
     }
   };
 
-  // Bulk updates
   const handleToggleSelectAll = (filteredList) => {
     if (selectedIds.length === filteredList.length) {
       setSelectedIds([]);
@@ -200,7 +214,7 @@ export default function AccommodationManager({
   const handleBulkAssign = async () => {
     if (selectedIds.length === 0) return;
     if (!bulkRoomValue.trim() || bulkRoomValue === "PS-") {
-      return toast.error("Please provide a valid Room code/name");
+      return toast.error("Please select or enter a valid Room code");
     }
 
     const cleanRoom = bulkRoomValue.trim().toUpperCase();
@@ -254,9 +268,12 @@ export default function AccommodationManager({
     setBulkRoomValue(formattedValue);
   };
 
-  // Memoized UI layout structures
   const uniqueCenters = useMemo(() => {
-    return [...new Set(attendees.map(p => p.center).filter(Boolean))].sort();
+    const centersSet = new Set();
+    attendees.forEach(p => {
+      if (p.center) centersSet.add(cleanCenterName(p.center));
+    });
+    return [...centersSet].sort();
   }, [attendees]);
 
   const filteredAttendees = useMemo(() => {
@@ -264,17 +281,29 @@ export default function AccommodationManager({
       const currentRoom = p.accomodation || p.accommodation || "";
       const nameToSearch = p.name || p.full_name || ""; 
       const calculatedId = formatMemberId(p);
+      const personCenter = cleanCenterName(p.center || "");
+      
+      const rawGender = String(p.gender || p.sex || p.sanch || p.category || "").trim().toLowerCase();
 
       const matchesSearch = 
         nameToSearch.toLowerCase().includes(searchQuery.toLowerCase()) ||
         calculatedId.toLowerCase().includes(searchQuery.toLowerCase()) ||
         currentRoom.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesCenter = centerFilter === "all" || p.center === centerFilter;
+      const matchesCenter = centerFilter === "all" || personCenter === centerFilter;
 
-      return matchesSearch && matchesCenter;
+      let matchesGender = true;
+      if (genderFilter !== "all") {
+        if (genderFilter === "male") {
+          matchesGender = rawGender === "m" || rawGender === "male" || rawGender.startsWith("m") || rawGender.includes("kishore") || rawGender.includes("yuvak");
+        } else if (genderFilter === "female") {
+          matchesGender = rawGender === "f" || rawGender === "female" || rawGender.startsWith("f") || rawGender.includes("kishori") || rawGender.includes("mahila");
+        }
+      }
+
+      return matchesSearch && matchesCenter && matchesGender;
     });
-  }, [attendees, searchQuery, centerFilter, formatMemberId]);
+  }, [attendees, searchQuery, centerFilter, genderFilter, formatMemberId]);
 
   const stats = useMemo(() => {
     const total = filteredAttendees.length;
@@ -285,8 +314,6 @@ export default function AccommodationManager({
 
   return (
     <div className={styles.dashboardContainer}>
-    
-      {/* Main Accommodation Area */}
       <div className={styles.managerContainer}>
 
         {/* Filters and Control Blocks */}
@@ -297,13 +324,13 @@ export default function AccommodationManager({
               <div className={styles.toggleSwitchContainer}>
                 <button 
                   className={`${styles.toggleBtn} ${targetGroup === "karyakars" ? styles.toggleBtnActive : ""}`}
-                  onClick={() => { setTargetGroup("karyakars"); setCenterFilter("all"); }}
+                  onClick={() => { setTargetGroup("karyakars"); setCenterFilter("all"); setGenderFilter("all"); }}
                 >
                   Karyakars
                 </button>
                 <button 
                   className={`${styles.toggleBtn} ${targetGroup === "children" ? styles.toggleBtnActive : ""}`}
-                  onClick={() => { setTargetGroup("children"); setCenterFilter("all"); }}
+                  onClick={() => { setTargetGroup("children"); setCenterFilter("all"); setGenderFilter("all"); }}
                 >
                   Children
                 </button>
@@ -320,19 +347,19 @@ export default function AccommodationManager({
               </div>
               <span className={styles.statValue}>{stats.total}</span>
             </div>
-            <div className={styles.statCard} style={{ borderColor: 'rgba(72,187,120,0.3)' }}>
+            <div className={styles.statCard} style={{ borderColor: 'rgba(231,133,36,0.2)' }}>
               <div className={styles.statMeta}>
-                <span className={styles.statLabel} style={{ color: '#68d391' }}>Assigned</span>
-                <FaCheck className={styles.statIcon} style={{ color: '#68d391' }} />
+                <span className={styles.statLabel} style={{ color: '#e78524' }}>Assigned</span>
+                <FaCheck className={styles.statIcon} style={{ color: '#e78524' }} />
               </div>
-              <span className={styles.statValue} style={{ color: '#68d391' }}>{stats.assigned}</span>
+              <span className={styles.statValue} style={{ color: '#e78524' }}>{stats.assigned}</span>
             </div>
-            <div className={styles.statCard} style={{ borderColor: 'rgba(237,137,54,0.3)' }}>
+            <div className={styles.statCard} style={{ borderColor: 'rgba(108,99,92,0.2)' }}>
               <div className={styles.statMeta}>
-                <span className={styles.statLabel} style={{ color: '#f6ad55' }}>Pending</span>
-                <FaBedPulse className={styles.statIcon} style={{ color: '#f6ad55' }} />
+                <span className={styles.statLabel} style={{ color: '#6c635c' }}>Pending</span>
+                <FaBedPulse className={styles.statIcon} style={{ color: '#6c635c' }} />
               </div>
-              <span className={styles.statValue} style={{ color: '#f6ad55' }}>{stats.unassigned}</span>
+              <span className={styles.statValue} style={{ color: '#6c635c' }}>{stats.unassigned}</span>
             </div>
           </div>
 
@@ -353,10 +380,20 @@ export default function AccommodationManager({
               value={centerFilter}
               onChange={(e) => setCenterFilter(e.target.value)}
             >
-              <option value="all">All Centers</option>
+              <option value="all">All Centers ({activeRegion})</option>
               {uniqueCenters.map(center => (
                 <option key={center} value={center}>{center}</option>
               ))}
+            </select>
+
+            <select
+              className={styles.filterSelect}
+              value={genderFilter}
+              onChange={(e) => setGenderFilter(e.target.value)}
+            >
+              <option value="all">All Genders</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
             </select>
           </div>
         </div>
@@ -369,14 +406,24 @@ export default function AccommodationManager({
               <span><strong>{selectedIds.length}</strong> selected for bulk update</span>
             </div>
             <div className={styles.bulkForm}>
-              <input 
-                type="text"
-                placeholder="Enter Bulk Room e.g. PS-102"
+              <select 
                 value={bulkRoomValue}
-                onFocus={() => { if(!bulkRoomValue) setBulkRoomValue("PS-"); }}
                 onChange={(e) => handleBulkRoomChange(e.target.value)}
-                className={styles.bulkInput}
-              />
+                className={styles.bulkSelect}
+              >
+                <option value="">-- Select Bulk Room --</option>
+                <optgroup label="Floors 1 to 7 (Individual Rooms)">
+                  {roomOptions.filter(r => !r.includes("Floor")).map(room => (
+                    <option key={room} value={room}>{room}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Floors 8 to 11 (Floor Groups)">
+                  {roomOptions.filter(r => r.includes("Floor")).map(room => (
+                    <option key={room} value={room}>{room}</option>
+                  ))}
+                </optgroup>
+              </select>
+
               <button onClick={handleBulkAssign} className={styles.bulkSubmitBtn} disabled={isBulkSaving}>
                 {isBulkSaving ? <FaSpinner className={styles.spin} /> : "Assign to Room"}
               </button>
@@ -411,6 +458,7 @@ export default function AccommodationManager({
                   <th>ID</th>
                   <th>Full Name</th>
                   <th>Center</th>
+                  <th>Gender</th>
                   <th>Accommodation Space</th>
                   <th>Assign Room</th>
                   <th className={styles.actionHeader}>Action</th>
@@ -419,7 +467,7 @@ export default function AccommodationManager({
               <tbody>
                 {filteredAttendees.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className={styles.noDataCell}>
+                    <td colSpan="8" className={styles.noDataCell}>
                       No records matched the selected query parameters.
                     </td>
                   </tr>
@@ -431,6 +479,9 @@ export default function AccommodationManager({
                     const isSaving = savingIds[person.id];
                     const wasSaved = savedNotifications[person.id];
                     const isChecked = selectedIds.includes(person.id);
+                    const formattedCenter = cleanCenterMap(person.center);
+
+                    const isPresetRoom = roomOptions.includes(draftRoomValue);
 
                     return (
                       <tr key={person.id} className={`${isModified ? styles.modifiedRow : ""} ${isChecked ? styles.selectedRow : ""}`}>
@@ -446,7 +497,12 @@ export default function AccommodationManager({
                         <td className={styles.nameCell}>{person.name || person.full_name}</td>
                         <td>
                           <span className={styles.centerTag}>
-                            <FaMapMarkerAlt /> {person.center || "—"}
+                            <FaMapMarkerAlt /> {formattedCenter}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={styles.genderTag}>
+                            {person.gender || person.sex || person.sanch || person.category || "—"}
                           </span>
                         </td>
                         <td>
@@ -460,16 +516,45 @@ export default function AccommodationManager({
                         </td>
                         <td>
                           <div className={styles.inputWrapper}>
-                            <input
-                              type="text"
-                              placeholder="Type Room..."
-                              className={styles.roomInput}
-                              value={draftRoomValue}
-                              onFocus={() => handleInputFocus(person.id, currentRoom)}
-                              onChange={(e) => handleRoomChange(person.id, e.target.value)}
-                              onKeyDown={(e) => handleKeyDown(e, person.id)}
+                            <select
+                              className={styles.roomSelect}
+                              value={isPresetRoom ? draftRoomValue : draftRoomValue ? "__CUSTOM__" : ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "__CUSTOM__") {
+                                  handleRoomChange(person.id, "PS-");
+                                } else {
+                                  handleRoomChange(person.id, val);
+                                }
+                              }}
                               disabled={isSaving}
-                            />
+                            >
+                              <option value="">-- Select Room --</option>
+                              <optgroup label="Floors 1 to 7 (101-104 Series)">
+                                {roomOptions.filter(r => !r.includes("Floor")).map(room => (
+                                  <option key={room} value={room}>{room}</option>
+                                ))}
+                              </optgroup>
+                              <optgroup label="Floors 8 to 11 (Floor Groups)">
+                                {roomOptions.filter(r => r.includes("Floor")).map(room => (
+                                  <option key={room} value={room}>{room}</option>
+                                ))}
+                              </optgroup>
+                              <option value="__CUSTOM__">✍️ Enter Custom Room...</option>
+                            </select>
+
+                            {(!isPresetRoom && draftRoomValue !== "") && (
+                              <input
+                                type="text"
+                                placeholder="e.g. PS-105"
+                                className={styles.roomInput}
+                                value={draftRoomValue}
+                                onChange={(e) => handleRoomChange(person.id, e.target.value)}
+                                onKeyDown={(e) => handleKeyDown(e, person.id)}
+                                disabled={isSaving}
+                              />
+                            )}
+
                             {draftRoomValue && (
                               <button className={styles.clearBtn} onClick={() => handleRoomChange(person.id, "")}>
                                 <FaTimes />
@@ -507,4 +592,12 @@ export default function AccommodationManager({
       </div>
     </div>
   );
+}
+
+function cleanCenterMap(val) {
+  if (!val) return "—";
+  const str = String(val).trim();
+  const basePart = str.split(/[_-\s]+/)[0];
+  if (!basePart) return "—";
+  return basePart.charAt(0).toUpperCase() + basePart.slice(1).toLowerCase();
 }

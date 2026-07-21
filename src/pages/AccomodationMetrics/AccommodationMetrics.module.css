@@ -1,0 +1,251 @@
+/* ==========================================================================
+   Accommodation Analytics & Metrics Layout
+   ========================================================================== */
+
+.metricsWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metricCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardTitle {
+  font-family: var(--font-subbrand);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cardIcon {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.cardValue {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.cardSubtitle {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Success Card Accent */
+.successCard {
+  border-color: rgba(43, 92, 46, 0.2);
+}
+
+.successCard .cardTitle,
+.successCard .cardIcon,
+.successCard .cardValue {
+  color: #2b5c2e;
+}
+
+/* Warning Card Accent */
+.warningCard {
+  border-color: rgba(231, 133, 36, 0.3);
+}
+
+.warningCard .cardTitle,
+.warningCard .cardIcon,
+.warningCard .cardValue {
+  color: var(--accent-primary);
+}
+
+/* Progress Bar */
+.progressBarBg {
+  width: 100%;
+  height: 6px;
+  background-color: var(--accent-soft);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.progressBarFill {
+  height: 100%;
+  background-color: var(--accent-primary);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+/* Analytics Breakdown Grid */
+.analyticsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .analyticsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.analyticsCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 12px;
+}
+
+.sectionHeader h3 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  margin: 0;
+}
+
+.sectionIcon {
+  color: var(--accent-primary);
+  font-size: 1.1rem;
+}
+
+.emptyText {
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 12px 0;
+}
+
+/* Floor Rows */
+.floorList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.floorRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.floorInfo {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+}
+
+.floorName {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.floorCount {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.miniBarBg {
+  width: 100%;
+  height: 5px;
+  background: var(--bg-main);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.miniBarFill {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: 3px;
+}
+
+/* Center Breakdown Table */
+.centerTableWrapper {
+  overflow-x: auto;
+  max-height: 240px;
+}
+
+.centerTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+}
+
+.centerTable th, .centerTable td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.centerTable th {
+  font-family: var(--font-subbrand);
+  font-weight: 700;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.centerName {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.assignedText {
+  color: #2b5c2e;
+  font-weight: 700;
+}
+
+.pendingText {
+  color: var(--accent-primary);
+  font-weight: 700;
+}
