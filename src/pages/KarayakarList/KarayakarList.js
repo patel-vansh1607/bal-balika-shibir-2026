@@ -690,8 +690,28 @@ export default function KarayakarList({ defaultRegion = "" }) {
     }
   };
 
-  const handleExportCSV = () => {
+const handleExportCSV = () => {
     if (filteredList.length === 0) return;
+
+    // Mapping size codes to chest measurement ranges
+    const SIZE_MEASUREMENTS = {
+      XXXS: "57 - 62cm",
+      XXS: "62 - 67cm",
+      XS: "67 - 72cm",
+      S: "72 - 75cm",
+      M: "77 - 82cm",
+      L: "82 - 88cm",
+      XL: "88 - 93cm",
+      XXL: "93 - 98cm",
+      XXXL: "98 - 103cm",
+    };
+
+    const getFormattedSize = (sizeCode) => {
+      if (!sizeCode) return "N/A";
+      const cleanSize = sizeCode.trim().toUpperCase();
+      const measurement = SIZE_MEASUREMENTS[cleanSize];
+      return measurement ? `${cleanSize} (${measurement})` : sizeCode;
+    };
 
     const headers = [
       "No.",
@@ -701,12 +721,14 @@ export default function KarayakarList({ defaultRegion = "" }) {
       "Region",
       "Center",
       "Seva Designations",
-      "T-Shirt Size",
+      "T-Shirt Size (Chest Measurement)",
       "Payment Status",
       ...(region.toLowerCase() === "kenya" ? ["Accommodation"] : []),
     ];
 
     const rows = filteredList.map((k, idx) => {
+      const formattedSize = getFormattedSize(k.tshirt_size);
+
       const rowData = [
         idx + 1,
         `"${k.member_id || ""}"`,
@@ -715,7 +737,7 @@ export default function KarayakarList({ defaultRegion = "" }) {
         `"${k.region || ""}"`,
         `"${k.center || ""}"`,
         `"${k.seva_designation || "None"}"`,
-        `"${k.tshirt_size || "N/A"}"`,
+        `"${formattedSize}"`,
         Number(k.is_paid) === 1 ? "Paid" : "Unpaid",
       ];
       if (region.toLowerCase() === "kenya") {
@@ -737,7 +759,6 @@ export default function KarayakarList({ defaultRegion = "" }) {
     link.download = `Karyakar_Report.csv`;
     link.click();
   };
-
   const selectedSevaCount = editForm.sevaDesignation.length;
 
   const showRegionColumn = region === "All";
