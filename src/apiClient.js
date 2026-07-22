@@ -153,6 +153,7 @@ export const karayakars = {
   // Generates QR PNGs server-side for all karayakars with a member_id.
   // Pass force=true to regenerate ones that already have a qr_code_url.
   generateQr:  (force = false) => apiFetch('POST', `/karayakars/generate-qr${force ? '?force=1' : ''}`),
+  exportQrUrls: (region = null) => apiFetch('GET', `/karayakars/qr-export${region ? '?region=' + encodeURIComponent(region) : ''}`),
 };
 
 // Default export for convenience
