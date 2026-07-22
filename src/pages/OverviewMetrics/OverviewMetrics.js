@@ -492,17 +492,21 @@ export default function OverviewMetrics({
 const handleExportTshirts = () => {
     if (tshirtStats.length === 0) return;
 
-    // Mapping size codes to chest measurement ranges
+    // Mapping size codes (both numeric and standard) to chest measurement ranges
     const SIZE_MEASUREMENTS = {
       XXXS: "57 - 62cm",
+      "3XS": "57 - 62cm",
       XXS: "62 - 67cm",
+      "2XS": "62 - 67cm",
       XS: "67 - 72cm",
       S: "72 - 75cm",
       M: "77 - 82cm",
       L: "82 - 88cm",
       XL: "88 - 93cm",
       XXL: "93 - 98cm",
+      "2XL": "93 - 98cm",
       XXXL: "98 - 103cm",
+      "3XL": "98 - 103cm",
     };
 
     const getFormattedSize = (sizeCode) => {
