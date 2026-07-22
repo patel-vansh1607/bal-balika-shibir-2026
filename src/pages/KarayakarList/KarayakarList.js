@@ -223,6 +223,65 @@ const SEVA_DESIGNATIONS = [
 ];
 const TSHIRT_SIZES = ["XXXS", "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"];
 
+// Helper to pause execution for rate-limit protection
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Helper to construct ID-first filename safely
+const getFormattedFileName = (karyakar, extension = "png") => {
+  const idPrefix = karyakar?.member_id || karyakar?.id || "ID";
+  const sanitizedName = (karyakar?.full_name || "Member")
+    .replace(/[^a-zA-Z0-9_-]/g, "_")
+    .trim();
+  return `${idPrefix}_${sanitizedName}.${extension}`;
+};
+
+// Robust fetch helper with multi-proxy fallback & retry mechanism
+const urlToBlob = async (url, retries = 2) => {
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    if (res.ok) return await res.blob();
+  } catch (_) {
+    // Direct fetch blocked by CORS, try proxies
+  }
+
+  const proxies = [
+    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+  ];
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    for (const getProxyUrl of proxies) {
+      try {
+        const proxiedUrl = getProxyUrl(url);
+        const proxyRes = await fetch(proxiedUrl);
+        if (proxyRes.ok) {
+          const blob = await proxyRes.blob();
+          if (blob.size > 0) return blob;
+        }
+      } catch (_) {
+        // Try next proxy option
+      }
+    }
+    await delay(500 * (attempt + 1));
+  }
+
+  throw new Error("Failed to load resource through available CORS proxies.");
+};
+
+// Helper to process bulk array tasks in controlled batch sizes
+const processInBatches = async (items, batchSize, taskFn) => {
+  const results = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchResults = await Promise.all(batch.map(taskFn));
+    results.push(...batchResults);
+    if (i + batchSize < items.length) {
+      await delay(300);
+    }
+  }
+  return results;
+};
+
 export default function KarayakarList({ defaultRegion = "" }) {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -572,41 +631,6 @@ export default function KarayakarList({ defaultRegion = "" }) {
     }
   };
 
-  // Helper to construct ID-first filename
-  const getFormattedFileName = (karyakar, extension = "png") => {
-    const idPrefix = karyakar.member_id || karyakar.id || "ID";
-    const sanitizedName = (karyakar.full_name || "Member")
-      .replace(/[^a-zA-Z0-9_-]/g, "_")
-      .trim();
-    return `${idPrefix}_${sanitizedName}.${extension}`;
-  };
-
-  // Safe fetch helper converts cross-origin images to Blob
-  const urlToBlob = async (url) => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "Anonymous";
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth || img.width;
-        canvas.height = img.naturalHeight || img.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error("Canvas conversion failed"));
-        }, "image/png");
-      };
-      img.onerror = () => {
-        fetch(url, { mode: "cors" })
-          .then((res) => res.blob())
-          .then(resolve)
-          .catch(reject);
-      };
-      img.src = url;
-    });
-  };
-
   const handleBatchDownloadQr = async () => {
     const listWithQr = filteredList.filter((k) => k.qr_code_url);
     if (listWithQr.length === 0) {
@@ -619,26 +643,30 @@ export default function KarayakarList({ defaultRegion = "" }) {
     try {
       const zip = new JSZip();
       const qrFolder = zip.folder("QR_Codes");
+      let successCount = 0;
 
-      const downloadPromises = listWithQr.map(async (k) => {
+      await processInBatches(listWithQr, 5, async (k) => {
         try {
           const blob = await urlToBlob(k.qr_code_url);
           const fileName = getFormattedFileName(k, "png");
           qrFolder.file(fileName, blob);
+          successCount++;
         } catch (error) {
           console.error(`Failed to download QR code for ${k.full_name}`, error);
         }
       });
 
-      await Promise.all(downloadPromises);
+      if (successCount === 0) {
+        throw new Error("Could not download any QR code files.");
+      }
 
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, `QR_Codes_${region}_${Date.now()}.zip`);
 
-      toast.success("QR Codes downloaded successfully!", { id: toastId });
+      toast.success(`Downloaded ${successCount} QR code(s) successfully!`, { id: toastId });
     } catch (err) {
       console.error("Batch QR Download Error:", err);
-      toast.error("Failed to generate QR ZIP file.", { id: toastId });
+      toast.error(err.message || "Failed to generate QR ZIP file.", { id: toastId });
     } finally {
       setIsDownloadingBatch(false);
     }
@@ -656,8 +684,9 @@ export default function KarayakarList({ defaultRegion = "" }) {
     try {
       const zip = new JSZip();
       const photosFolder = zip.folder("Profile_Photos");
+      let successCount = 0;
 
-      const downloadPromises = listWithPhotos.map(async (k) => {
+      await processInBatches(listWithPhotos, 5, async (k) => {
         try {
           const blob = await urlToBlob(k.photo_url);
 
@@ -671,47 +700,30 @@ export default function KarayakarList({ defaultRegion = "" }) {
 
           const fileName = getFormattedFileName(k, ext);
           photosFolder.file(fileName, blob);
+          successCount++;
         } catch (error) {
           console.error(`Failed to download profile photo for ${k.full_name}`, error);
         }
       });
 
-      await Promise.all(downloadPromises);
+      if (successCount === 0) {
+        throw new Error("Could not download any profile photos.");
+      }
 
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, `Profile_Photos_${region}_${Date.now()}.zip`);
 
-      toast.success("Profile photos downloaded successfully!", { id: toastId });
+      toast.success(`Downloaded ${successCount} photo(s) successfully!`, { id: toastId });
     } catch (err) {
       console.error("Batch Photo Download Error:", err);
-      toast.error("Failed to generate Photos ZIP file.", { id: toastId });
+      toast.error(err.message || "Failed to generate Photos ZIP file.", { id: toastId });
     } finally {
       setIsDownloadingPhotos(false);
     }
   };
 
-const handleExportCSV = () => {
+  const handleExportCSV = () => {
     if (filteredList.length === 0) return;
-
-    // Mapping size codes to chest measurement ranges
-    const SIZE_MEASUREMENTS = {
-      XXXS: "57 - 62cm",
-      XXS: "62 - 67cm",
-      XS: "67 - 72cm",
-      S: "72 - 75cm",
-      M: "77 - 82cm",
-      L: "82 - 88cm",
-      XL: "88 - 93cm",
-      XXL: "93 - 98cm",
-      XXXL: "98 - 103cm",
-    };
-
-    const getFormattedSize = (sizeCode) => {
-      if (!sizeCode) return "N/A";
-      const cleanSize = sizeCode.trim().toUpperCase();
-      const measurement = SIZE_MEASUREMENTS[cleanSize];
-      return measurement ? `${cleanSize} (${measurement})` : sizeCode;
-    };
 
     const headers = [
       "No.",
@@ -721,14 +733,12 @@ const handleExportCSV = () => {
       "Region",
       "Center",
       "Seva Designations",
-      "T-Shirt Size (Chest Measurement)",
+      "T-Shirt Size",
       "Payment Status",
       ...(region.toLowerCase() === "kenya" ? ["Accommodation"] : []),
     ];
 
     const rows = filteredList.map((k, idx) => {
-      const formattedSize = getFormattedSize(k.tshirt_size);
-
       const rowData = [
         idx + 1,
         `"${k.member_id || ""}"`,
@@ -737,7 +747,7 @@ const handleExportCSV = () => {
         `"${k.region || ""}"`,
         `"${k.center || ""}"`,
         `"${k.seva_designation || "None"}"`,
-        `"${formattedSize}"`,
+        `"${k.tshirt_size || "N/A"}"`,
         Number(k.is_paid) === 1 ? "Paid" : "Unpaid",
       ];
       if (region.toLowerCase() === "kenya") {
@@ -759,6 +769,7 @@ const handleExportCSV = () => {
     link.download = `Karyakar_Report.csv`;
     link.click();
   };
+
   const selectedSevaCount = editForm.sevaDesignation.length;
 
   const showRegionColumn = region === "All";
@@ -865,56 +876,54 @@ const handleExportCSV = () => {
               />
             </div>
 
-           <div className={styles.actionButtonGroup}>
-  <button
-    onClick={handleExportCSV}
-    className={styles.exportExcelButton}
-    disabled={filteredList.length === 0}
-  >
-    <FaFileExport /> Export to Excel
-  </button>
+            <button
+              onClick={handleExportCSV}
+              className={styles.exportExcelButton}
+              disabled={filteredList.length === 0}
+            >
+              <FaFileExport /> Export to Excel
+            </button>
 
-  <button
-    onClick={handleBatchDownloadPhotos}
-    className={`${styles.exportExcelButton} ${styles.secondaryActionButton}`}
-    disabled={isDownloadingPhotos || filteredList.length === 0}
-  >
-    {isDownloadingPhotos ? (
-      <FaSpinner className={styles.spin} />
-    ) : (
-      <FaImage />
-    )}
-    {isDownloadingPhotos ? " Archiving..." : " Download Photos"}
-  </button>
+            <button
+              onClick={handleBatchDownloadPhotos}
+              className={styles.exportExcelButton}
+              disabled={isDownloadingPhotos || filteredList.length === 0}
+            >
+              {isDownloadingPhotos ? (
+                <FaSpinner className={styles.spin} />
+              ) : (
+                <FaImage />
+              )}
+              {isDownloadingPhotos ? " Archiving..." : " Download Photos"}
+            </button>
 
-  <button
-    onClick={handleBatchDownloadQr}
-    className={`${styles.exportExcelButton} ${styles.secondaryActionButton}`}
-    disabled={isDownloadingBatch || filteredList.length === 0}
-  >
-    {isDownloadingBatch ? (
-      <FaSpinner className={styles.spin} />
-    ) : (
-      <FaDownload />
-    )}
-    {isDownloadingBatch ? " Archiving..." : " Download QR Codes"}
-  </button>
+            <button
+              onClick={handleBatchDownloadQr}
+              className={styles.exportExcelButton}
+              disabled={isDownloadingBatch || filteredList.length === 0}
+            >
+              {isDownloadingBatch ? (
+                <FaSpinner className={styles.spin} />
+              ) : (
+                <FaDownload />
+              )}
+              {isDownloadingBatch ? " Archiving..." : " Download QR Codes"}
+            </button>
 
-  {canGenerateQr && (
-    <button
-      onClick={handleGenerateAllQr}
-      className={styles.exportExcelButton}
-      disabled={isGeneratingQr}
-    >
-      {isGeneratingQr ? (
-        <FaSpinner className={styles.spin} />
-      ) : (
-        <FaQrcode />
-      )}
-      {isGeneratingQr ? " Generating..." : " Generate QR Codes"}
-    </button>
-  )}
-</div>
+            {canGenerateQr && (
+              <button
+                onClick={handleGenerateAllQr}
+                className={styles.exportExcelButton}
+                disabled={isGeneratingQr}
+              >
+                {isGeneratingQr ? (
+                  <FaSpinner className={styles.spin} />
+                ) : (
+                  <FaQrcode />
+                )}
+                {isGeneratingQr ? " Generating..." : " Generate QR Codes"}
+              </button>
+            )}
           </div>
         </div>
 
