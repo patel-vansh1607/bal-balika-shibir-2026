@@ -319,9 +319,19 @@ export default function ManualScanner({ regionScope = "All", prefixScope = "" })
                         <span className={styles.fieldLabel}>Center : </span>
                         <span className={styles.fieldValueMedium}>{scanResult.attendee.center}</span>
                       </div>
+                      <div>
+                        <span className={styles.fieldLabel}>Tshirt : </span>
+                        <span className={styles.fieldValueMedium}>{scanResult.attendee.tshirt_size}</span>
+                      </div>
+                     <div>
+                      <span className={styles.fieldLabel}>Accommodation:</span>
+                      <span className={styles.fieldValueMedium}><br/>
+                        {scanResult?.attendee?.accommodation || scanResult?.attendee?.accomodation || "Not Assigned"}
+                      </span>
+                    </div>
                     </div>
                     <div className={styles.dataFieldGroupTopLine}>
-                      <span className={styles.fieldLabel}>Shibir ID Number</span>
+                      <span className={styles.fieldLabel}>Shibir ID Number : </span>
                       <code className={styles.monospaceCodeBadge}>
                         {scanResult.attendee.member_id || `MTRC-${scanResult.attendee.id}`}
                       </code>
@@ -410,7 +420,7 @@ export default function ManualScanner({ regionScope = "All", prefixScope = "" })
 
         <div className={styles.auditLogPanelCard}>
           <div className={styles.auditHeader}>
-            <FaHistory style={{ color: "#8a151b" }} />
+            <FaHistory style={{ color: "#e78524" }} />
             <h3>Gate Session Logs</h3>
           </div>
           <div className={styles.logStreamTrackFeed}>

@@ -1462,12 +1462,12 @@ const executeExport = (includeContact) => {
 {regionScope === "Kenya" && (
   <td>
     {(attendee.accommodation || attendee.accomodation) ? (
-      <span className={styles.badgeGenderTag} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+      <span className={styles.currentRoomTag}>
         <FaBed style={{ fontSize: "12px" }} />
         {attendee.accommodation || attendee.accomodation}
       </span>
     ) : (
-      <span style={{ color: "var(--text-muted)", fontSize: "12px", fontStyle: "italic" }}>
+      <span className={styles.noRoomTag}>
         Not Assigned
       </span>
     )}

@@ -518,6 +518,9 @@
   .mainContainer {
     margin-left: 260px;
   }
+    .manualRefreshBtn span{
+    display: none;
+  }
 }
 
 /* --- 2. TABLET & MOBILE VIEWPORTS --- */
@@ -601,6 +604,9 @@
   .viewWrapper {
     padding: 24px;
   }
+    .manualRefreshBtn span{
+    display: none;
+  }
 }
 
 /* --- 3. SMALL SMARTPHONES COMPACT SYSTEM --- */
@@ -627,6 +633,9 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+  .manualRefreshBtn span{
+    display: none;
   }
 }
 

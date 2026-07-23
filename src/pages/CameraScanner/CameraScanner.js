@@ -9,7 +9,9 @@ import {
   FaArrowRight
 } from "react-icons/fa";
 import { attendees as attendeesApi, sessionLogs, gateLogs, getStoredUser } from "../../apiClient";
+
 import styles from "./CameraScanner.module.css";
+import styless from "../ManualScanner/ManualScanner.module.css"
 
 // Formats DB UTC timestamps into correct 12-hour local time (+3 EAT)
 const getFormattedTime = (dateInput = new Date()) => {
@@ -344,16 +346,38 @@ export default function CameraScanner({
                 </div>
               </div>
               {scanResult.attendee && (
-                <div className={styles.attendeeDataCard}>
-                  <div className={styles.dataFieldGroup}>
-                    <span className={styles.fieldLabel}>Full Name</span>
-                    <span className={styles.fieldValueBold}>{scanResult.attendee.name}</span>
+                  <div className={styless.attendeeDataCard}>
+                    <div className={styless.dataFieldGroup}>
+                      <span className={styless.fieldLabel}>Full Name</span>
+                      <span className={styless.fieldValueBold}>{scanResult.attendee.name}</span>
+                    </div>
+                    <div className={styless.dataGridSplit}>
+                      <div>
+                        <span className={styless.fieldLabel}>Age : </span>
+                        <span className={styless.fieldValueMedium}>{scanResult.attendee.age}</span>
+                      </div>
+                      <div>
+                        <span className={styless.fieldLabel}>Center : </span>
+                        <span className={styless.fieldValueMedium}>{scanResult.attendee.center}</span>
+                      </div>
+                      <div>
+                        <span className={styless.fieldLabel}>Tshirt : </span>
+                        <span className={styless.fieldValueMedium}>{scanResult.attendee.tshirt_size}</span>
+                      </div>
+                     <div>
+                      <span className={styless.fieldLabel}>Accommodation:</span>
+                      <span className={styless.fieldValueMedium}><br/>
+                        {scanResult?.attendee?.accommodation || scanResult?.attendee?.accomodation || "Not Assigned"}
+                      </span>
+                    </div>
+                    </div>
+                    <div className={styless.dataFieldGroupTopLine}>
+                      <span className={styless.fieldLabel}>Shibir ID Number : </span>
+                      <code className={styless.monospaceCodeBadge}>
+                        {scanResult.attendee.member_id || `MTRC-${scanResult.attendee.id}`}
+                      </code>
+                    </div>
                   </div>
-                  <div className={styles.dataGridSplit}>
-                    <div><span className={styles.fieldLabel}>Age : </span><span className={styles.fieldValueMedium}>{scanResult.attendee.age}</span></div>
-                    <div><span className={styles.fieldLabel}>Center : </span><span className={styles.fieldValueMedium}>{scanResult.attendee.center}</span></div>
-                  </div>
-                </div>
               )}
             </div>
 

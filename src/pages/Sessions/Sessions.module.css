@@ -25,7 +25,7 @@
 .spin {
   animation: spin 1s linear infinite;
   font-size: 20px;
-  color: var(--accent-primary, #8a151b);
+  color: var(--accent-primary, #e78524);
 }
 
 /* --- VIEW HEADER SECTION STYLES --- */
@@ -78,7 +78,7 @@
 
 .circleBackBtn:hover {
   background-color: var(--accent-soft, #fff5f5);
-  color: var(--accent-primary, #8a151b);
+  color: var(--accent-primary, #e78524);
   border-color: var(--border-light, #e4e4e7);
   transform: translateX(-2px);
 }
@@ -95,7 +95,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background-color: var(--accent-primary, #8a151b);
+  background-color: var(--accent-primary, #e78524);
   color: #ffffff;
   border: none;
   padding: 12px 22px;
@@ -227,7 +227,7 @@
 
 .gateSelectionCard:hover .launchGateBtn {
   background-color: var(--accent-soft, #fff5f5);
-  color: var(--accent-primary, #8a151b);
+  color: var(--accent-primary, #e78524);
 }
 
 /* ==========================================================================
@@ -354,7 +354,7 @@
   padding: 3px 6px;
   border-radius: 4px;
   font-family: monospace;
-  color: var(--accent-primary, #8a151b);
+  color: var(--accent-primary, #e78524);
   font-size: 12px;
   font-weight: 600;
 }

@@ -40,7 +40,7 @@ import {
   FaEnvelope,
   FaHotel,
   FaExclamationTriangle,
-  FaRedoAlt
+  // FaRedoAlt
 } from "react-icons/fa";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import { TfiStatsUp } from "react-icons/tfi";
@@ -233,18 +233,18 @@ export default function Dashboard() {
   };
 
   // Hard Refresh Handler to clear cache and reload app completely
-  const handleHardRefresh = async () => {
-    try {
-      if ("caches" in window) {
-        const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map((name) => caches.delete(name)));
-      }
-    } catch (err) {
-      console.error("Error clearing browser caches:", err);
-    } finally {
-      window.location.reload(true);
-    }
-  };
+  // const handleHardRefresh = async () => {
+  //   try {
+  //     if ("caches" in window) {
+  //       const cacheNames = await caches.keys();
+  //       await Promise.all(cacheNames.map((name) => caches.delete(name)));
+  //     }
+  //   } catch (err) {
+  //     console.error("Error clearing browser caches:", err);
+  //   } finally {
+  //     window.location.reload(true);
+  //   }
+  // };
 
   const handleUpdateSelectionStatus = async (attendee, newStatusValue) => {
     try {
@@ -291,6 +291,8 @@ export default function Dashboard() {
     if (path.startsWith("/dashboard/session/master")) return "Session Master";
     if (path.startsWith("/dashboard/session/add-session")) return "Add Session";
     if (path.startsWith("/dashboard/duplicates")) return "Duplicate Profiles";
+if (path.startsWith("/dashboard/manual-scanner/")) return "Manual Attendance";
+if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
     if (path.startsWith("/dashboard/accommodation/metrics")) return "Accommodation Metrics";
     if (path.startsWith("/dashboard/accommodation")) return "Accommodation";
 
@@ -685,7 +687,7 @@ export default function Dashboard() {
               <span>Refresh</span>
             </button>
 
-            <button
+            {/* <button
               className={styles.manualRefreshBtn}
               onClick={handleHardRefresh}
               aria-label="Hard refresh application to fetch latest code changes"
@@ -693,7 +695,7 @@ export default function Dashboard() {
             >
               <FaRedoAlt className={styles.refreshIcon} />
               <span>Hard Refresh</span>
-            </button>
+            </button> */}
 
             <span className={styles.systemStatusText}>
               {dataFetching ? (

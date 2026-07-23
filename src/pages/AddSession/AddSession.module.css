@@ -59,7 +59,7 @@
 }
 
 .inputGroup input:focus {
-  border-color: #8a151b;
+  border-color: #e78524;
 }
 
 /* Grayed out layout for the auto-assigned slot */

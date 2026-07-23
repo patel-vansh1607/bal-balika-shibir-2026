@@ -213,7 +213,7 @@ export default function SessionDataDetails() {
         </div>
       </div>
 
-      <div className={styles.sidebarCard} style={{ marginTop:"32px",padding:"24px",borderTop:"4px solid #8a151b" }}>
+      <div className={styles.sidebarCard} style={{ marginTop:"32px",padding:"24px",borderTop:"4px solid #e78524" }}>
         <h3 className={styles.sectionTitle} style={{ marginBottom:"20px",display:"flex",alignItems:"center",gap:"10px",color:"#8a151b" }}><FaTimesCircle style={{ color:"#8a151b" }} />Absent/Pending</h3>
         <div className={styles.tableResponsiveWrapper}>
           <table className={styles.matrixTable}>
