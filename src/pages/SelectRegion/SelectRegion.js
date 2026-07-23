@@ -56,7 +56,7 @@ export default function SelectRegion() {
     setIsLoggingOut(true);
     await new Promise((resolve) => setTimeout(resolve, 600));
     logout();
-    navigate("/admin");
+    navigate("/_v1_node_106_health_10548");
   };
 
   if (loading) return (

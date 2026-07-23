@@ -38,7 +38,8 @@ export default function App() {
       />
       <Routes>
         <Route path='/' element={<HomeRoute />}/>
-        <Route path="/admin" element={<Login />} />
+        <Route path="/_v1_node_106_health_10548" element={<Login />} />
+        <Route path="/admin" element={<NotFound />} />
         <Route 
           path="/dashboard/*" 
           element={

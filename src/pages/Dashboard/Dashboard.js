@@ -99,7 +99,7 @@ export default function Dashboard() {
     } finally {
       setIsLoggingOut(false);
       setShowSessionExpiredModal(false);
-      navigate("/admin", { replace: true });
+      navigate("/_v1_node_106_health_10548", { replace: true });
     }
   }, [logout, navigate]);
 
