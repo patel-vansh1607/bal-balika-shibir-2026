@@ -10,9 +10,7 @@ import {
   FaArrowLeft,
   FaChevronDown,
   FaChevronUp,
-  FaUserCircle,
   FaDownload,
-  FaUserTie,
   FaLock,
   FaExclamationCircle
 } from "react-icons/fa";
@@ -31,6 +29,67 @@ import {
 } from "recharts";
 import { userRoles, karayakars as karayakarsApi } from "../../apiClient"; 
 import styles from "../Dashboard/Dashboard.module.css";
+
+// Inlined Style Constants to Prevent ESLint 'no-undef' Warnings
+const statCardStyle = {
+  background: "#ffffff",
+  border: "1px solid #dadce0",
+  borderRadius: "12px",
+  padding: "20px",
+  display: "flex",
+  alignItems: "center",
+  gap: "16px",
+  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+};
+
+const circleIconStyle = {
+  width: "48px",
+  height: "48px",
+  borderRadius: "50%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "20px",
+  flexShrink: 0,
+};
+
+const statNumberStyle = {
+  fontSize: "28px",
+  fontWeight: "700",
+  color: "#202124",
+  lineHeight: "1.2",
+};
+
+const statLabelStyle = {
+  fontSize: "13px",
+  fontWeight: "600",
+  color: "#5f6368",
+  marginTop: "4px",
+};
+
+const chartCardStyle = {
+  background: "#ffffff",
+  border: "1px solid #dadce0",
+  borderRadius: "12px",
+  padding: "20px",
+  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+  width: "100%",
+  boxSizing: "border-box",
+};
+
+const chartTitleStyle = {
+  fontSize: "16px",
+  fontWeight: "600",
+  color: "#202124",
+};
+
+const loaderWrapperStyle = {
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  height: "220px",
+  width: "100%",
+};
 
 // Standard order of all available sizes
 const ALL_STANDARD_SIZES = [
@@ -110,7 +169,6 @@ const getTshirtSize = (person) => {
 
   if (rawSize) return String(rawSize);
 
-  // Fallback: If size is concatenated inside center/location string (e.g. "Eldoret_3XL")
   const rawCenter = person.center || person.mandal || person.location || "";
   const match = String(rawCenter).match(/_(3XL|XXXL|2XL|XXL|XL|L|M|S|XS|XXS|XXXS)/i);
   if (match) {
@@ -144,7 +202,7 @@ const cleanCenter = (rawCenter) => {
   return sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
 };
 
-// Helper function to sanitize T-shirt sizes (normalizes XXXS, XXS, XS, S, M, L, XL, 2XL, 3XL)
+// Helper function to sanitize T-shirt sizes
 const cleanTshirtSize = (rawSize) => {
   if (!rawSize || typeof rawSize !== "string") return "";
 
@@ -319,8 +377,9 @@ export default function OverviewMetrics({
         }
       }
 
-      const paymentStatus = (person.payment_status || person.paymentStatus || person.payment || "").toLowerCase();
-      if (paymentStatus === "paid" || paymentStatus === "completed" || paymentStatus === "success" || person.isPaid) {
+      const isPaidFlag = person.is_paid === 1 || person.is_paid === true || person.isPaid === true;
+      const paymentStatus = String(person.payment_status || person.paymentStatus || person.payment || "").toLowerCase();
+      if (isPaidFlag || paymentStatus === "paid" || paymentStatus === "completed" || paymentStatus === "success") {
         paidCount++;
       } else {
         unpaidCount++;
@@ -375,12 +434,11 @@ export default function OverviewMetrics({
     };
   }, [regionFilteredPeople, selectedRegion, selectedCenter]);
 
-  // Compute T-Shirt stats with 0-counts guaranteed for ALL standard sizes
+  // Compute T-Shirt stats
   const { tshirtStats, unassignedCount } = useMemo(() => {
     const map = {};
     let missingTotal = 0;
 
-    // 1. Pre-initialize ALL standard sizes with 0 values
     ALL_STANDARD_SIZES.forEach((size) => {
       map[size] = {
         size,
@@ -393,7 +451,6 @@ export default function OverviewMetrics({
       };
     });
 
-    // 2. Pre-initialize NOT ADDED group
     map["NOT ADDED"] = {
       size: "NOT ADDED",
       isMissingGroup: true,
@@ -404,7 +461,6 @@ export default function OverviewMetrics({
       members: []
     };
 
-    // 3. Process filtered list
     regionFilteredPeople.forEach((person) => {
       const rawSize = getTshirtSize(person);
       const sanitizedSize = cleanTshirtSize(rawSize);
@@ -429,7 +485,6 @@ export default function OverviewMetrics({
       if (tshirtCategory === "missing" && !isMissing) return;
       if (tshirtCategory !== "all" && tshirtCategory !== "missing" && tshirtCategory !== category) return;
 
-      // If a non-standard size appears, initialize dynamically
       if (!map[size]) {
         map[size] = {
           size,
@@ -463,14 +518,12 @@ export default function OverviewMetrics({
       });
     });
 
-    // 4. If filtering by specific category (Balak/Balika/Karyakar), recalculate top count for filtered category
     let list = Object.values(map);
     
     if (tshirtCategory === "missing") {
       list = list.filter(item => item.isMissingGroup);
     }
 
-    // Sort according to ALL_STANDARD_SIZES array order, placing NOT ADDED at the bottom
     list.sort((a, b) => {
       if (a.isMissingGroup) return 1;
       if (b.isMissingGroup) return -1;
@@ -489,10 +542,9 @@ export default function OverviewMetrics({
   }, [regionFilteredPeople, tshirtCategory]);
 
   // Export T-Shirt Summary & Members List to CSV
-const handleExportTshirts = () => {
+  const handleExportTshirts = () => {
     if (tshirtStats.length === 0) return;
 
-    // Mapping size codes (both numeric and standard) to chest measurement ranges
     const SIZE_MEASUREMENTS = {
       XXXS: "57 - 62cm",
       "3XS": "57 - 62cm",
@@ -536,11 +588,6 @@ const handleExportTshirts = () => {
     let grandKaryakars = 0;
 
     tshirtStats.forEach((item) => {
-      const displayCount = 
-        tshirtCategory === "balak" ? item.balakCount :
-        tshirtCategory === "balika" ? item.balikaCount :
-        tshirtCategory === "karyakar" ? item.karyakarCount : item.count;
-
       grandTotal += item.count;
       grandBalaks += item.balakCount;
       grandBalikas += item.balikaCount;
@@ -559,7 +606,6 @@ const handleExportTshirts = () => {
       } else {
         csvContent += `"${formattedSize}",${item.count},${item.balakCount},${item.balikaCount},${item.karyakarCount}\n`;
       }
-      console.log(displayCount);
     });
 
     if (tshirtCategory === "balak") {
@@ -594,6 +640,7 @@ const handleExportTshirts = () => {
     link.click();
     document.body.removeChild(link);
   };
+
   const handleBarClick = (data) => {
     if (selectedRegion !== "all" && data && data.name) {
       setSelectedCenter(data.name);
@@ -652,7 +699,7 @@ const handleExportTshirts = () => {
             </select>
           </div>
         ) : (
-          <div style={{ display: "none", alignItems: "center", gap: "8px", background: "#f1f3f4", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f1f3f4", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
             <FaLock style={{ color: "#5f6368", fontSize: "13px" }} />
             <span style={{ fontSize: "14px", fontWeight: "600", color: "#3c4043" }}>
               Region Locked: <span style={{ color: "#1a73e8" }}>{selectedRegion}</span>
@@ -954,233 +1001,105 @@ const handleExportTshirts = () => {
                 >
                   Karyakars
                 </button>
-                <button
-                  onClick={() => setTshirtCategory("missing")}
-                  style={{
-                    padding: "6px 12px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    background: tshirtCategory === "missing" ? "#d97706" : "transparent",
-                    color: tshirtCategory === "missing" ? "#fff" : "#78350f",
-                    boxShadow: tshirtCategory === "missing" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  Missing T-Shirt ({unassignedCount})
-                </button>
               </div>
             </div>
           </div>
 
-          {tshirtStats.length === 0 ? (
-            <p style={{ color: "#5f6368", fontSize: "14px", fontStyle: "italic", margin: 0 }}>No T-shirt size records found for the selected filter.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {tshirtStats.map((item) => {
-                const isExpanded = expandedSize === item.size;
-                const isMissingGroup = item.isMissingGroup;
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {tshirtStats.map((item) => {
+              const isExpanded = expandedSize === item.size;
+              const displayCount = 
+                tshirtCategory === "balak" ? item.balakCount :
+                tshirtCategory === "balika" ? item.balikaCount :
+                tshirtCategory === "karyakar" ? item.karyakarCount : item.count;
 
-                // Determine display count based on selected category tab
-                const displayCount = 
-                  tshirtCategory === "balak" ? item.balakCount :
-                  tshirtCategory === "balika" ? item.balikaCount :
-                  tshirtCategory === "karyakar" ? item.karyakarCount : item.count;
-
-                return (
+              return (
+                <div 
+                  key={item.size}
+                  style={{
+                    border: "1px solid #dadce0",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    background: item.isMissingGroup ? "#fffbeb" : "#fff"
+                  }}
+                >
                   <div
-                    key={item.size}
+                    onClick={() => toggleSizeExpand(item.size)}
                     style={{
-                      border: isMissingGroup ? "1px solid #fde68a" : "1px solid #dadce0",
-                      borderRadius: "8px",
-                      background: isMissingGroup ? "#fffbeb" : "#f8f9fa",
-                      opacity: displayCount === 0 && !isMissingGroup ? 0.65 : 1,
-                      overflow: "hidden"
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "12px 16px",
+                      cursor: "pointer",
+                      userSelect: "none"
                     }}
                   >
-                    <div
-                      onClick={() => displayCount > 0 && toggleSizeExpand(item.size)}
-                      style={{
-                        padding: "12px 16px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        cursor: displayCount > 0 ? "pointer" : "default",
-                        userSelect: "none"
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                        <span style={{ 
-                          fontWeight: "700", 
-                          color: isMissingGroup ? "#b45309" : "#202124", 
-                          fontSize: "15px", 
-                          minWidth: "90px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px"
-                        }}>
-                          {isMissingGroup && <FaExclamationCircle style={{ color: "#d97706" }} />}
-                          {isMissingGroup ? "NOT ADDED" : `Size ${item.size}`}
-                        </span>
-                        
-                        <span style={{ 
-                          background: isMissingGroup ? "#fef3c7" : displayCount === 0 ? "#e0e0e0" : "#e8f0fe", 
-                          color: isMissingGroup ? "#92400e" : displayCount === 0 ? "#5f6368" : "#1a73e8", 
-                          fontWeight: "700", 
-                          padding: "2px 10px", 
-                          borderRadius: "12px", 
-                          fontSize: "13px" 
-                        }}>
-                          Total: {displayCount}
-                        </span>
-
-                        {tshirtCategory === "all" && (
-                          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                            <span style={{ background: "#dbeafe", color: "#1e40af", fontWeight: "600", padding: "2px 8px", borderRadius: "10px", fontSize: "11px" }}>
-                              Balaks: {item.balakCount}
-                            </span>
-                            <span style={{ background: "#fce7f3", color: "#9d174d", fontWeight: "600", padding: "2px 8px", borderRadius: "10px", fontSize: "11px" }}>
-                              Balikas: {item.balikaCount}
-                            </span>
-                            <span style={{ background: "#d1fae5", color: "#065f46", fontWeight: "600", padding: "2px 8px", borderRadius: "10px", fontSize: "11px" }}>
-                              Karyakars: {item.karyakarCount}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {displayCount > 0 ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#5f6368", fontSize: "13px" }}>
-                          <span>{isExpanded ? "Hide Members" : "View Members"}</span>
-                          {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ fontWeight: "700", fontSize: "15px", color: item.isMissingGroup ? "#b45309" : "#202124" }}>
+                        {item.size}
+                      </span>
+                      {tshirtCategory === "all" && (
+                        <div style={{ display: "flex", gap: "6px", fontSize: "11px", fontWeight: "600" }}>
+                          <span style={{ background: "#eff6ff", color: "#1d4ed8", padding: "2px 6px", borderRadius: "4px" }}>
+                            {item.balakCount} Balaks
+                          </span>
+                          <span style={{ background: "#fdf2f8", color: "#be185d", padding: "2px 6px", borderRadius: "4px" }}>
+                            {item.balikaCount} Balikas
+                          </span>
+                          <span style={{ background: "#ecfdf5", color: "#047857", padding: "2px 6px", borderRadius: "4px" }}>
+                            {item.karyakarCount} Karyakars
+                          </span>
                         </div>
-                      ) : (
-                        <span style={{ fontSize: "12px", color: "#9aa0a6", fontStyle: "italic" }}>No entries</span>
                       )}
                     </div>
 
-                    {isExpanded && displayCount > 0 && (
-                      <div style={{ borderTop: isMissingGroup ? "1px solid #fde68a" : "1px solid #dadce0", background: "#fff", padding: "12px 16px" }}>
-                        <div style={{ maxHeight: "240px", overflowY: "auto" }}>
-                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                            <thead>
-                              <tr style={{ borderBottom: "1px solid #e8eaed", textAlign: "left", color: "#5f6368" }}>
-                                <th style={{ padding: "8px 4px" }}>Member ID</th>
-                                <th style={{ padding: "8px 4px" }}>Full Name</th>
-                                <th style={{ padding: "8px 4px" }}>Category</th>
-                                <th style={{ padding: "8px 4px" }}>Center</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {item.members.map((member, index) => (
-                                <tr key={`${member.member_id}-${index}`} style={{ borderBottom: "1px solid #f1f3f4" }}>
-                                  <td style={{ padding: "8px 4px", fontWeight: "600", color: "#1a73e8" }}>{member.member_id}</td>
-                                  <td style={{ padding: "8px 4px", color: "#202124", fontWeight: "500" }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                      {member.category === "Karyakar" ? (
-                                        <FaUserTie style={{ color: "#10b981" }} />
-                                      ) : (
-                                        <FaUserCircle style={{ color: "#9aa0a6" }} />
-                                      )}
-                                      {member.name}
-                                    </div>
-                                  </td>
-                                  <td style={{ padding: "8px 4px" }}>
-                                    <span style={{
-                                      padding: "2px 8px",
-                                      borderRadius: "10px",
-                                      fontSize: "11px",
-                                      fontWeight: "600",
-                                      background: member.category === "Karyakar" ? "#d1fae5" : member.category === "Balika" ? "#fce7f3" : "#dbeafe",
-                                      color: member.category === "Karyakar" ? "#065f46" : member.category === "Balika" ? "#9d174d" : "#1e40af"
-                                    }}>
-                                      {member.category}
-                                    </span>
-                                  </td>
-                                  <td style={{ padding: "8px 4px", color: "#5f6368" }}>{member.center}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <span style={{ fontWeight: "700", fontSize: "16px", color: "#1a73e8" }}>
+                        {displayCount}
+                      </span>
+                      {isExpanded ? <FaChevronUp style={{ color: "#5f6368" }} /> : <FaChevronDown style={{ color: "#5f6368" }} />}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+
+                  {isExpanded && (
+                    <div style={{ padding: "0 16px 16px 16px", borderTop: "1px solid #f1f3f4" }}>
+                      <div style={{ overflowX: "auto", marginTop: "12px" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                          <thead>
+                            <tr style={{ background: "#f8f9fa", textAlign: "left", color: "#5f6368" }}>
+                              <th style={{ padding: "8px 12px" }}>Member ID</th>
+                              <th style={{ padding: "8px 12px" }}>Name</th>
+                              <th style={{ padding: "8px 12px" }}>Category</th>
+                              <th style={{ padding: "8px 12px" }}>Center</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {item.members.map((m, idx) => (
+                              <tr key={idx} style={{ borderBottom: "1px solid #f1f3f4" }}>
+                                <td style={{ padding: "8px 12px", fontFamily: "monospace" }}>{m.member_id}</td>
+                                <td style={{ padding: "8px 12px", fontWeight: "500" }}>{m.name}</td>
+                                <td style={{ padding: "8px 12px" }}>{m.category}</td>
+                                <td style={{ padding: "8px 12px" }}>{m.center}</td>
+                              </tr>
+                            ))}
+                            {item.members.length === 0 && (
+                              <tr>
+                                <td colSpan="4" style={{ padding: "12px", textAlign: "center", color: "#9aa0a6" }}>
+                                  No members registered under this filter category.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </section>
       )}
-
-      <style>{`
-        .${styles.spinAnimation} {
-          animation: overviewSpin 1s linear infinite;
-        }
-        @keyframes overviewSpin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }
-
-/* Inline Card Layout Styles */
-const statCardStyle = {
-  background: "#fff",
-  border: "1px solid #dadce0",
-  borderRadius: "12px",
-  padding: "16px 20px",
-  display: "flex",
-  alignItems: "center",
-  gap: "16px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
-};
-
-const circleIconStyle = {
-  width: "48px",
-  height: "48px",
-  borderRadius: "50%",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: "20px",
-  flexShrink: 0
-};
-
-const statNumberStyle = {
-  fontSize: "22px",
-  fontWeight: "700",
-  color: "#202124",
-  lineHeight: 1.2
-};
-
-const statLabelStyle = {
-  fontSize: "13px",
-  color: "#5f6368",
-  fontWeight: "500"
-};
-
-const chartCardStyle = {
-  background: "#fff",
-  border: "1px solid #dadce0",
-  borderRadius: "12px",
-  padding: "20px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
-};
-
-const chartTitleStyle = {
-  fontSize: "16px",
-  fontWeight: "600",
-  color: "#202124",
-  marginBottom: "16px"
-};
-
-const loaderWrapperStyle = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  height: "200px"
-};
