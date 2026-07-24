@@ -222,6 +222,33 @@ const cleanTshirtSize = (rawSize) => {
   return cleaned;
 };
 
+// Helper function to evaluate payment status safely for both tables
+const checkIsPaid = (person) => {
+  if (!person) return false;
+
+  const rawIsPaid = 
+    person.is_paid ?? 
+    person.isPaid ?? 
+    person.karyakar_is_paid ?? 
+    person.karyakarIsPaid;
+
+  const isPaidFlag = rawIsPaid === 1 || rawIsPaid === true || rawIsPaid === "1" || rawIsPaid === "true";
+  
+  const paymentStatus = String(
+    person.payment_status || 
+    person.paymentStatus || 
+    person.payment || 
+    ""
+  ).toLowerCase();
+
+  const isPaidStatus = 
+    paymentStatus === "paid" || 
+    paymentStatus === "completed" || 
+    paymentStatus === "success";
+
+  return isPaidFlag || isPaidStatus;
+};
+
 export default function OverviewMetrics({ 
   attendees = [], 
   dataFetching = false, 
@@ -354,8 +381,12 @@ export default function OverviewMetrics({
   const stats = useMemo(() => {
     const total = regionFilteredPeople.length;
 
-    let paidCount = 0;
-    let unpaidCount = 0;
+    let attendeeTotalCount = 0;
+    let attendeePaidCount = 0;
+    let attendeeUnpaidCount = 0;
+    let karyakarTotalCount = 0;
+    let karyakarPaidCount = 0;
+    let karyakarUnpaidCount = 0;
 
     const breakdownCounts = {};
     let balakBalikaBreakdown = [
@@ -377,12 +408,22 @@ export default function OverviewMetrics({
         }
       }
 
-      const isPaidFlag = person.is_paid === 1 || person.is_paid === true || person.isPaid === true;
-      const paymentStatus = String(person.payment_status || person.paymentStatus || person.payment || "").toLowerCase();
-      if (isPaidFlag || paymentStatus === "paid" || paymentStatus === "completed" || paymentStatus === "success") {
-        paidCount++;
+      const isPaid = checkIsPaid(person);
+
+      if (person.isKaryakar) {
+        karyakarTotalCount++;
+        if (isPaid) {
+          karyakarPaidCount++;
+        } else {
+          karyakarUnpaidCount++;
+        }
       } else {
-        unpaidCount++;
+        attendeeTotalCount++;
+        if (isPaid) {
+          attendeePaidCount++;
+        } else {
+          attendeeUnpaidCount++;
+        }
       }
     });
 
@@ -420,14 +461,20 @@ export default function OverviewMetrics({
     }));
 
     const paymentPieData = [
-      { name: "Paid", value: paidCount, color: "#34a853" },
-      { name: "Pending/Unpaid", value: unpaidCount, color: "#ea4335" },
+      { name: "Attendee Paid", value: attendeePaidCount, color: "#34a853" },
+      { name: "Attendee Unpaid", value: attendeeUnpaidCount, color: "#ea4335" },
+      { name: "Karyakar Paid", value: karyakarPaidCount, color: "#0d9488" },
+      { name: "Karyakar Unpaid", value: karyakarUnpaidCount, color: "#f97316" },
     ];
 
     return {
       total,
-      paidCount,
-      unpaidCount,
+      attendeeTotalCount,
+      attendeePaidCount,
+      attendeeUnpaidCount,
+      karyakarTotalCount,
+      karyakarPaidCount,
+      karyakarUnpaidCount,
       barChartData,
       paymentPieData,
       balakBalikaBreakdown,
@@ -447,6 +494,8 @@ export default function OverviewMetrics({
         balakCount: 0,
         balikaCount: 0,
         karyakarCount: 0,
+        karyakarPaidCount: 0,
+        karyakarUnpaidCount: 0,
         members: []
       };
     });
@@ -458,6 +507,8 @@ export default function OverviewMetrics({
       balakCount: 0,
       balikaCount: 0,
       karyakarCount: 0,
+      karyakarPaidCount: 0,
+      karyakarUnpaidCount: 0,
       members: []
     };
 
@@ -474,6 +525,7 @@ export default function OverviewMetrics({
 
       const gender = (person.gender || person.category || person.type || "").toLowerCase();
       const isBalika = gender.includes("balika") || gender === "f" || gender === "female";
+      const isPaid = checkIsPaid(person);
       
       let category = "balak";
       if (person.isKaryakar) {
@@ -493,6 +545,8 @@ export default function OverviewMetrics({
           balakCount: 0,
           balikaCount: 0,
           karyakarCount: 0,
+          karyakarPaidCount: 0,
+          karyakarUnpaidCount: 0,
           members: []
         };
       }
@@ -500,6 +554,11 @@ export default function OverviewMetrics({
       map[size].count += 1;
       if (person.isKaryakar) {
         map[size].karyakarCount += 1;
+        if (isPaid) {
+          map[size].karyakarPaidCount += 1;
+        } else {
+          map[size].karyakarUnpaidCount += 1;
+        }
       } else if (isBalika) {
         map[size].balikaCount += 1;
       } else {
@@ -514,7 +573,8 @@ export default function OverviewMetrics({
         member_id: memberId,
         name: fullName,
         category: person.isKaryakar ? "Karyakar" : isBalika ? "Balika" : "Balak",
-        center: cleanCenterVal || "N/A"
+        center: cleanCenterVal || "N/A",
+        isPaid: isPaid
       });
     });
 
@@ -575,23 +635,27 @@ export default function OverviewMetrics({
     } else if (tshirtCategory === "balika") {
       csvContent += "Size (Chest Measurement),Total Balikas Count\n";
     } else if (tshirtCategory === "karyakar") {
-      csvContent += "Size (Chest Measurement),Total Karyakars Count\n";
+      csvContent += "Size (Chest Measurement),Total Karyakars Count,Karyakar Paid Count,Karyakar Unpaid Count\n";
     } else if (tshirtCategory === "missing") {
       csvContent += "Size (Chest Measurement),Total Missing T-Shirts Count\n";
     } else {
-      csvContent += "Size (Chest Measurement),Total Count,Balaks Count,Balikas Count,Karyakars Count\n";
+      csvContent += "Size (Chest Measurement),Total Count,Balaks Count,Balikas Count,Karyakars Count (Paid/Unpaid)\n";
     }
 
     let grandTotal = 0;
     let grandBalaks = 0;
     let grandBalikas = 0;
     let grandKaryakars = 0;
+    let grandKaryakarPaid = 0;
+    let grandKaryakarUnpaid = 0;
 
     tshirtStats.forEach((item) => {
       grandTotal += item.count;
       grandBalaks += item.balakCount;
       grandBalikas += item.balikaCount;
       grandKaryakars += item.karyakarCount;
+      grandKaryakarPaid += item.karyakarPaidCount;
+      grandKaryakarUnpaid += item.karyakarUnpaidCount;
 
       const formattedSize = getFormattedSize(item.size);
 
@@ -600,11 +664,11 @@ export default function OverviewMetrics({
       } else if (tshirtCategory === "balika") {
         csvContent += `"${formattedSize}",${item.balikaCount}\n`;
       } else if (tshirtCategory === "karyakar") {
-        csvContent += `"${formattedSize}",${item.karyakarCount}\n`;
+        csvContent += `"${formattedSize}",${item.karyakarCount},${item.karyakarPaidCount},${item.karyakarUnpaidCount}\n`;
       } else if (tshirtCategory === "missing") {
         csvContent += `"${formattedSize}",${item.count}\n`;
       } else {
-        csvContent += `"${formattedSize}",${item.count},${item.balakCount},${item.balikaCount},${item.karyakarCount}\n`;
+        csvContent += `"${formattedSize}",${item.count},${item.balakCount},${item.balikaCount},"${item.karyakarCount} (${item.karyakarPaidCount} Paid / ${item.karyakarUnpaidCount} Unpaid)"\n`;
       }
     });
 
@@ -613,20 +677,21 @@ export default function OverviewMetrics({
     } else if (tshirtCategory === "balika") {
       csvContent += `"TOTAL SUMMARY",${grandBalikas}\n\n`;
     } else if (tshirtCategory === "karyakar") {
-      csvContent += `"TOTAL SUMMARY",${grandKaryakars}\n\n`;
+      csvContent += `"TOTAL SUMMARY",${grandKaryakars},${grandKaryakarPaid},${grandKaryakarUnpaid}\n\n`;
     } else {
-      csvContent += `"TOTAL SUMMARY",${grandTotal},${grandBalaks},${grandBalikas},${grandKaryakars}\n\n`;
+      csvContent += `"TOTAL SUMMARY",${grandTotal},${grandBalaks},${grandBalikas},"${grandKaryakars} (${grandKaryakarPaid} Paid / ${grandKaryakarUnpaid} Unpaid)"\n\n`;
     }
 
     csvContent += "--- MEMBER BREAKDOWN LIST ---\n";
-    csvContent += "Member ID,Full Name,Category,Center,T-Shirt Size (Chest Measurement)\n";
+    csvContent += "Member ID,Full Name,Category,Center,Payment Status,T-Shirt Size (Chest Measurement)\n";
 
     tshirtStats.forEach((item) => {
       const formattedSize = getFormattedSize(item.size);
       item.members.forEach((member) => {
         const cleanName = `"${member.name.replace(/"/g, '""')}"`;
         const cleanCenterStr = `"${member.center.replace(/"/g, '""')}"`;
-        csvContent += `"${member.member_id}",${cleanName},"${member.category}",${cleanCenterStr},"${formattedSize}"\n`;
+        const paymentLabel = member.isPaid ? "Paid" : "Unpaid";
+        csvContent += `"${member.member_id}",${cleanName},"${member.category}",${cleanCenterStr},"${paymentLabel}","${formattedSize}"\n`;
       });
     });
 
@@ -741,9 +806,9 @@ export default function OverviewMetrics({
             <FaUsers />
           </div>
           <div>
-            <div style={statNumberStyle}>{isDataLoading ? "-" : stats.total}</div>
+            <div style={statNumberStyle}>{isDataLoading ? "-" : stats.attendeeTotalCount}</div>
             <div style={statLabelStyle}>
-              {selectedRegion !== "all" ? `${selectedRegion} Attendees & Karyakars` : "Total Registrations"}
+              {selectedRegion !== "all" ? `${selectedRegion} Attendees` : "Attendee Count"}
             </div>
           </div>
         </div>
@@ -753,8 +818,18 @@ export default function OverviewMetrics({
             <FaCreditCard />
           </div>
           <div>
-            <div style={statNumberStyle}>{isDataLoading ? "-" : stats.paidCount}</div>
-            <div style={statLabelStyle}>Payments Cleared</div>
+            <div style={statNumberStyle}>{isDataLoading ? "-" : `${stats.attendeePaidCount} / ${stats.attendeeTotalCount}`}</div>
+            <div style={statLabelStyle}>Attendees Payments Cleared</div>
+          </div>
+        </div>
+
+        <div style={statCardStyle}>
+          <div style={{ ...circleIconStyle, backgroundColor: "#ccfbf1", color: "#0d9488" }}>
+            <FaUsers />
+          </div>
+          <div>
+            <div style={statNumberStyle}>{isDataLoading ? "-" : `${stats.karyakarPaidCount} / ${stats.karyakarTotalCount}`}</div>
+            <div style={statLabelStyle}>Karayakars Paid (Total: {stats.karyakarTotalCount})</div>
           </div>
         </div>
 
@@ -853,7 +928,7 @@ export default function OverviewMetrics({
       {/* Payment Status Chart */}
       <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
         <div style={chartCardStyle}>
-          <h3 style={chartTitleStyle}>Payment Status</h3>
+          <h3 style={chartTitleStyle}>Payment Status Breakdown</h3>
           {isDataLoading ? (
             <div style={loaderWrapperStyle}><FaSpinner className={styles.spinAnimation} style={{ fontSize: "24px", color: "#4285f4" }} /></div>
           ) : (
@@ -911,6 +986,90 @@ export default function OverviewMetrics({
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              {/* Category Filter Pills */}
+              <div style={{ display: "flex", background: "#f1f3f4", padding: "3px", borderRadius: "8px", gap: "2px" }}>
+                <button
+                  onClick={() => setTshirtCategory("all")}
+                  style={{
+                    background: tshirtCategory === "all" ? "#fff" : "transparent",
+                    color: tshirtCategory === "all" ? "#1a73e8" : "#5f6368",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "5px 10px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    boxShadow: tshirtCategory === "all" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
+                  }}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setTshirtCategory("balak")}
+                  style={{
+                    background: tshirtCategory === "balak" ? "#fff" : "transparent",
+                    color: tshirtCategory === "balak" ? "#1a73e8" : "#5f6368",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "5px 10px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    boxShadow: tshirtCategory === "balak" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
+                  }}
+                >
+                  Balaks
+                </button>
+                <button
+                  onClick={() => setTshirtCategory("balika")}
+                  style={{
+                    background: tshirtCategory === "balika" ? "#fff" : "transparent",
+                    color: tshirtCategory === "balika" ? "#ec4899" : "#5f6368",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "5px 10px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    boxShadow: tshirtCategory === "balika" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
+                  }}
+                >
+                  Balikas
+                </button>
+                <button
+                  onClick={() => setTshirtCategory("karyakar")}
+                  style={{
+                    background: tshirtCategory === "karyakar" ? "#fff" : "transparent",
+                    color: tshirtCategory === "karyakar" ? "#0d9488" : "#5f6368",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "5px 10px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    boxShadow: tshirtCategory === "karyakar" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
+                  }}
+                >
+                  Karayakars
+                </button>
+                <button
+                  onClick={() => setTshirtCategory("missing")}
+                  style={{
+                    background: tshirtCategory === "missing" ? "#fff" : "transparent",
+                    color: tshirtCategory === "missing" ? "#d97706" : "#5f6368",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "5px 10px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    boxShadow: tshirtCategory === "missing" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
+                  }}
+                >
+                  Missing
+                </button>
+              </div>
+
               <button
                 onClick={handleExportTshirts}
                 disabled={tshirtStats.length === 0}
@@ -926,177 +1085,141 @@ export default function OverviewMetrics({
                   fontSize: "13px",
                   fontWeight: "600",
                   cursor: tshirtStats.length === 0 ? "not-allowed" : "pointer",
-                  transition: "background 0.2s"
                 }}
               >
-                <FaDownload /> Export T-Shirts CSV
+                <FaDownload /> Export T-Shirt Summary CSV
               </button>
-
-              <div style={{ display: "flex", background: "#f1f3f4", padding: "3px", borderRadius: "8px", border: "1px solid #dadce0", flexWrap: "wrap", gap: "2px" }}>
-                <button
-                  onClick={() => setTshirtCategory("all")}
-                  style={{
-                    padding: "6px 12px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    background: tshirtCategory === "all" ? "#fff" : "transparent",
-                    color: tshirtCategory === "all" ? "#1a73e8" : "#5f6368",
-                    boxShadow: tshirtCategory === "all" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setTshirtCategory("balak")}
-                  style={{
-                    padding: "6px 12px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    background: tshirtCategory === "balak" ? "#3b82f6" : "transparent",
-                    color: tshirtCategory === "balak" ? "#fff" : "#5f6368",
-                    boxShadow: tshirtCategory === "balak" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  Balaks
-                </button>
-                <button
-                  onClick={() => setTshirtCategory("balika")}
-                  style={{
-                    padding: "6px 12px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    background: tshirtCategory === "balika" ? "#ec4899" : "transparent",
-                    color: tshirtCategory === "balika" ? "#fff" : "#5f6368",
-                    boxShadow: tshirtCategory === "balika" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  Balikas
-                </button>
-                <button
-                  onClick={() => setTshirtCategory("karyakar")}
-                  style={{
-                    padding: "6px 12px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    background: tshirtCategory === "karyakar" ? "#10b981" : "transparent",
-                    color: tshirtCategory === "karyakar" ? "#fff" : "#5f6368",
-                    boxShadow: tshirtCategory === "karyakar" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  Karyakars
-                </button>
-              </div>
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {tshirtStats.map((item) => {
-              const isExpanded = expandedSize === item.size;
-              const displayCount = 
-                tshirtCategory === "balak" ? item.balakCount :
-                tshirtCategory === "balika" ? item.balikaCount :
-                tshirtCategory === "karyakar" ? item.karyakarCount : item.count;
+          {/* T-Shirt Size Accordion List */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {tshirtStats.length === 0 ? (
+              <div style={{ padding: "20px", textAlign: "center", color: "#5f6368", fontSize: "14px" }}>
+                No T-shirt size records match the current filter.
+              </div>
+            ) : (
+              tshirtStats.map((item) => {
+                const isExpanded = expandedSize === item.size;
 
-              return (
-                <div 
-                  key={item.size}
-                  style={{
-                    border: "1px solid #dadce0",
-                    borderRadius: "8px",
-                    overflow: "hidden",
-                    background: item.isMissingGroup ? "#fffbeb" : "#fff"
-                  }}
-                >
-                  <div
-                    onClick={() => toggleSizeExpand(item.size)}
+                return (
+                  <div 
+                    key={item.size}
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "12px 16px",
-                      cursor: "pointer",
-                      userSelect: "none"
+                      border: "1px solid #dadce0",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      background: "#fff"
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span style={{ fontWeight: "700", fontSize: "15px", color: item.isMissingGroup ? "#b45309" : "#202124" }}>
-                        {item.size}
-                      </span>
-                      {tshirtCategory === "all" && (
-                        <div style={{ display: "flex", gap: "6px", fontSize: "11px", fontWeight: "600" }}>
-                          <span style={{ background: "#eff6ff", color: "#1d4ed8", padding: "2px 6px", borderRadius: "4px" }}>
-                            {item.balakCount} Balaks
-                          </span>
-                          <span style={{ background: "#fdf2f8", color: "#be185d", padding: "2px 6px", borderRadius: "4px" }}>
-                            {item.balikaCount} Balikas
-                          </span>
-                          <span style={{ background: "#ecfdf5", color: "#047857", padding: "2px 6px", borderRadius: "4px" }}>
-                            {item.karyakarCount} Karyakars
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                    <div
+                      onClick={() => toggleSizeExpand(item.size)}
+                      style={{
+                        padding: "12px 16px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        background: isExpanded ? "#f8f9fa" : "#fff",
+                        cursor: "pointer",
+                        transition: "background 0.2s"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <span style={{ 
+                          fontWeight: "700", 
+                          fontSize: "15px", 
+                          color: item.isMissingGroup ? "#d97706" : "#202124",
+                          minWidth: "90px" 
+                        }}>
+                          {item.size}
+                        </span>
+                        <span style={{ fontSize: "13px", color: "#5f6368" }}>
+                          {tshirtCategory === "all" && (
+                            `Balaks: ${item.balakCount} | Balikas: ${item.balikaCount} | Karayakars: ${item.karyakarCount}`
+                          )}
+                          {tshirtCategory === "balak" && `Balaks Count: ${item.balakCount}`}
+                          {tshirtCategory === "balika" && `Balikas Count: ${item.balikaCount}`}
+                          {tshirtCategory === "karyakar" && `Karayakars Count: ${item.karyakarCount}`}
+                          {tshirtCategory === "missing" && `Unassigned Count: ${item.count}`}
+                        </span>
+                      </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <span style={{ fontWeight: "700", fontSize: "16px", color: "#1a73e8" }}>
-                        {displayCount}
-                      </span>
-                      {isExpanded ? <FaChevronUp style={{ color: "#5f6368" }} /> : <FaChevronDown style={{ color: "#5f6368" }} />}
-                    </div>
-                  </div>
-
-                  {isExpanded && (
-                    <div style={{ padding: "0 16px 16px 16px", borderTop: "1px solid #f1f3f4" }}>
-                      <div style={{ overflowX: "auto", marginTop: "12px" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                          <thead>
-                            <tr style={{ background: "#f8f9fa", textAlign: "left", color: "#5f6368" }}>
-                              <th style={{ padding: "8px 12px" }}>Member ID</th>
-                              <th style={{ padding: "8px 12px" }}>Name</th>
-                              <th style={{ padding: "8px 12px" }}>Category</th>
-                              <th style={{ padding: "8px 12px" }}>Center</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {item.members.map((m, idx) => (
-                              <tr key={idx} style={{ borderBottom: "1px solid #f1f3f4" }}>
-                                <td style={{ padding: "8px 12px", fontFamily: "monospace" }}>{m.member_id}</td>
-                                <td style={{ padding: "8px 12px", fontWeight: "500" }}>{m.name}</td>
-                                <td style={{ padding: "8px 12px" }}>{m.category}</td>
-                                <td style={{ padding: "8px 12px" }}>{m.center}</td>
-                              </tr>
-                            ))}
-                            {item.members.length === 0 && (
-                              <tr>
-                                <td colSpan="4" style={{ padding: "12px", textAlign: "center", color: "#9aa0a6" }}>
-                                  No members registered under this filter category.
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <span style={{
+                          background: item.isMissingGroup ? "#fef3c7" : "#e8f0fe",
+                          color: item.isMissingGroup ? "#b45309" : "#1a73e8",
+                          padding: "4px 10px",
+                          borderRadius: "12px",
+                          fontSize: "13px",
+                          fontWeight: "700"
+                        }}>
+                          {item.count} Total
+                        </span>
+                        {isExpanded ? <FaChevronUp style={{ color: "#5f6368" }} /> : <FaChevronDown style={{ color: "#5f6368" }} />}
                       </div>
                     </div>
-                  )}
-                </div>
-              );
-            })}
+
+                    {/* Expanded Members Table */}
+                    {isExpanded && (
+                      <div style={{ borderTop: "1px solid #dadce0", padding: "12px 16px", background: "#fdfdfd" }}>
+                        {item.members.length === 0 ? (
+                          <div style={{ fontSize: "13px", color: "#5f6368", padding: "8px 0" }}>
+                            No members assigned to this size.
+                          </div>
+                        ) : (
+                          <div style={{ overflowX: "auto" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                              <thead>
+                                <tr style={{ borderBottom: "1px solid #dadce0", textAlign: "left", color: "#5f6368" }}>
+                                  <th style={{ padding: "8px" }}>Member ID</th>
+                                  <th style={{ padding: "8px" }}>Full Name</th>
+                                  <th style={{ padding: "8px" }}>Category</th>
+                                  <th style={{ padding: "8px" }}>Center</th>
+                                  <th style={{ padding: "8px" }}>Payment Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {item.members.map((member, idx) => (
+                                  <tr key={`${member.member_id}-${idx}`} style={{ borderBottom: "1px solid #f1f3f4" }}>
+                                    <td style={{ padding: "8px", fontWeight: "600", color: "#1a73e8" }}>{member.member_id}</td>
+                                    <td style={{ padding: "8px", color: "#202124" }}>{member.name}</td>
+                                    <td style={{ padding: "8px" }}>
+                                      <span style={{
+                                        background: member.category === "Karyakar" ? "#ccfbf1" : member.category === "Balika" ? "#fce7f3" : "#e8f0fe",
+                                        color: member.category === "Karyakar" ? "#0d9488" : member.category === "Balika" ? "#db2777" : "#1a73e8",
+                                        padding: "2px 8px",
+                                        borderRadius: "10px",
+                                        fontSize: "11px",
+                                        fontWeight: "600"
+                                      }}>
+                                        {member.category}
+                                      </span>
+                                    </td>
+                                    <td style={{ padding: "8px", color: "#5f6368" }}>{member.center}</td>
+                                    <td style={{ padding: "8px" }}>
+                                      <span style={{
+                                        background: member.isPaid ? "#e6f4ea" : "#fce8e6",
+                                        color: member.isPaid ? "#137333" : "#c5221f",
+                                        padding: "2px 8px",
+                                        borderRadius: "10px",
+                                        fontSize: "11px",
+                                        fontWeight: "600"
+                                      }}>
+                                        {member.isPaid ? "Paid" : "Unpaid"}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </section>
       )}
