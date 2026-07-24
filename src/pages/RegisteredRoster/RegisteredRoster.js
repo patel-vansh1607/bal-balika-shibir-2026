@@ -1929,7 +1929,7 @@ const executeExport = (includeContact) => {
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Member Identification Token </label>
+                  <label>Member ID </label>
                   <input
                     type="text"
                     value={editingAttendee.member_id}
