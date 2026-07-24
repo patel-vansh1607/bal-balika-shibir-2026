@@ -226,12 +226,12 @@
 }
 /* Grid Matrix Centered Table Layout */
 .tableContainer {
-  overflow-x: auto;
-  border-radius: 8px;
-  background: #ffffff;
-  /* Added dynamic structural padding so absolute items drop down inside without getting clipped */
-  padding-bottom: 110px;
-  margin-bottom: -110px;
+  width: 100%;
+  /* CRITICAL: Remove 'overflow: hidden' or 'auto' if possible, 
+     or ensure dropdowns have a higher z-index than the table */
+  overflow-x: visible; 
+  overflow-y: visible;
+  position: relative;
 }
 
 .dataTable {
