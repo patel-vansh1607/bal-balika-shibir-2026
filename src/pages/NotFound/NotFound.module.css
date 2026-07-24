@@ -1,33 +1,51 @@
+/* Replace your NotFound.module.css styles with this */
+
 .regionWrapper {
   display: flex;
-  justify-content: center;
   align-items: center;
-  min-height: 80vh; /* Keeps it centered vertically in the viewport */
-  padding: 20px;
+  justify-content: center;
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 24px;
+  background-color: var(--bg-main, #ffffff);
+  box-sizing: border-box;
 }
 
-.card {
-  background: var(--white);
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--border-color);
+.contentContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   width: 100%;
+  max-width: 800px;
+  padding: 40px 20px;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+
+.brandLogo {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
 }
 
 .primaryBtn {
-  background-color: var(--accent-primary);
-  color: white;
-  padding: 12px 24px;
+  background-color: var(--accent-primary, #0070f3);
+  color: #ffffff;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
+  padding: 14px 32px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease;
-  font-family: var(--font-main);
+  transition: opacity 0.2s ease;
+  max-width: 240px;
+  width: 100%;
 }
 
 .primaryBtn:hover {
-  background-color: var(--accent-hover);
+  opacity: 0.9;
 }
