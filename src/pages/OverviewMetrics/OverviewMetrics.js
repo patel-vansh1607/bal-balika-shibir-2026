@@ -806,9 +806,13 @@ export default function OverviewMetrics({
             <FaUsers />
           </div>
           <div>
-            <div style={statNumberStyle}>{isDataLoading ? "-" : stats.attendeeTotalCount}</div>
+            <div style={statNumberStyle}>
+              {isDataLoading
+                ? "-"
+                : Number(stats.attendeeTotalCount || 0) + Number(stats.karyakarTotalCount || 0)}
+            </div>
             <div style={statLabelStyle}>
-              {selectedRegion !== "all" ? `${selectedRegion} Attendees` : "Attendee Count"}
+              {selectedRegion !== "all" ? `${selectedRegion} Total` : "Attendee Count"}
             </div>
           </div>
         </div>
@@ -819,7 +823,7 @@ export default function OverviewMetrics({
           </div>
           <div>
             <div style={statNumberStyle}>{isDataLoading ? "-" : `${stats.attendeePaidCount} / ${stats.attendeeTotalCount}`}</div>
-            <div style={statLabelStyle}>Attendees Payments Cleared</div>
+            <div style={statLabelStyle}>Balak/Balikas Payment</div>
           </div>
         </div>
 
@@ -829,7 +833,7 @@ export default function OverviewMetrics({
           </div>
           <div>
             <div style={statNumberStyle}>{isDataLoading ? "-" : `${stats.karyakarPaidCount} / ${stats.karyakarTotalCount}`}</div>
-            <div style={statLabelStyle}>Karayakars Paid (Total: {stats.karyakarTotalCount})</div>
+            <div style={statLabelStyle}>Karayakars Payement</div>
           </div>
         </div>
 
