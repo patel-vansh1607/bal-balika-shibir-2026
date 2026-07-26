@@ -230,6 +230,7 @@ export default function PublicRegister() {
         "Rustenburg",
         "Tzaneen",
         "Northriding",
+        "Durban",
       ],
     },
   };

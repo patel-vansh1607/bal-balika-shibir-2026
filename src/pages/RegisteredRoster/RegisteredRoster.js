@@ -283,33 +283,63 @@ export default function RegisteredRoster({
     }
     setIsPdfModalOpen(true);
   };
-  const handleTogglePayment = async (attendee, nextStatus) => {
-    try {
-      // 1. Fire off the patch request to your API client layer
-      await attendeesApi.update(attendee.id, { is_paid: Number(nextStatus) });
+const handleTogglePayment = async (attendee, nextStatus) => {
+  // Ensure nextStatus is clean integer 1 or 0
+  const normalizedStatus = Number(nextStatus);
 
-      // 2. React runtime local state sync
+  // Preserve previous status in case we need to roll back
+  const previousStatus = attendee.is_paid;
+
+  // 1. Optimistic Local State Sync (using normalized integer)
+  setAttendees((prev) =>
+    prev.map((item) =>
+      item.id === attendee.id ? { ...item, is_paid: normalizedStatus } : item
+    )
+  );
+
+  try {
+    // 2. Patch request to backend API
+    const response = await attendeesApi.update(attendee.id, { 
+      is_paid: normalizedStatus 
+    });
+
+    // Verify if API actually returned updated record (optional safety guard)
+    if (response?.data && response.data.is_paid !== undefined) {
+      const serverStatus = Number(response.data.is_paid);
       setAttendees((prev) =>
         prev.map((item) =>
-          item.id === attendee.id ? { ...item, is_paid: nextStatus } : item,
-        ),
-      );
-
-      // 3. Mount confirmation feedback toast toast notification
-      setToast({
-        show: true,
-        type: "success",
-        message: `${attendee.name} has been marked as ${nextStatus === 1 ? "Paid" : "Not Paid"}.`,
-      });
-
-      setTimeout(() => setToast({ show: false, type: "", message: "" }), 3000);
-    } catch (err) {
-      console.error("Error patching payment status field attribute:", err);
-      alert(
-        "Failed to update payment status on server. Remember to whitelist 'is_paid' on your backend first!",
+          item.id === attendee.id ? { ...item, is_paid: serverStatus } : item
+        )
       );
     }
-  };
+
+    // 3. Confirmation Feedback Toast
+    setToast({
+      show: true,
+      type: "success",
+      message: `${attendee.name || "Attendee"} marked as ${
+        normalizedStatus === 1 ? "Paid" : "Not Paid"
+      }.`,
+    });
+
+    setTimeout(() => setToast({ show: false, type: "", message: "" }), 3000);
+  } catch (err) {
+    console.error("Error updating payment status attribute:", err);
+
+    // Rollback local state on error
+    setAttendees((prev) =>
+      prev.map((item) =>
+        item.id === attendee.id ? { ...item, is_paid: previousStatus } : item
+      )
+    );
+
+    setToast({
+      show: true,
+      type: "error",
+      message: "Failed to update payment on database. Please check backend whitelist.",
+    });
+  }
+};
 const handleExportPDF = (
     includeContact = true,
     currentCountry = "All",
@@ -1428,35 +1458,33 @@ const executeExport = (includeContact) => {
                       )}
 
                       {/* --- Kenya Specific Column --- */}
-                      {(regionScope === "Kenya" || regionScope === "South Africa")&& (
-                          <td>
-                            {attendee.is_paid === 1 ? (
-                              <span
-                                className={styles.badgeGenderTag}
-                                style={{
-                                  backgroundColor:
-                                    "var(--success-light, #dcfce7)",
-                                  color: "var(--success-dark, #16a34a)",
-                                  fontWeight: "600",
-                                }}
-                              >
-                                Paid
-                              </span>
-                            ) : (
-                              <span
-                                className={styles.badgeGenderTag}
-                                style={{
-                                  backgroundColor:
-                                    "var(--danger-light, #fee2e2)",
-                                  color: "var(--danger-dark, #dc2626)",
-                                  fontWeight: "600",
-                                }}
-                              >
-                                Not Paid
-                              </span>
-                            )}
-                          </td>
-                        )}
+{(regionScope === "Kenya" || regionScope === "South Africa") && (
+  <td>
+    {attendee.is_paid === 1 || attendee.is_paid === true || attendee.is_paid === "1" ? (
+      <span
+        className={styles.badgeGenderTag}
+        style={{
+          backgroundColor: "var(--success-light, #dcfce7)",
+          color: "var(--success-dark, #16a34a)",
+          fontWeight: "600",
+        }}
+      >
+        Paid
+      </span>
+    ) : (
+      <span
+        className={styles.badgeGenderTag}
+        style={{
+          backgroundColor: "var(--danger-light, #fee2e2)",
+          color: "var(--danger-dark, #dc2626)",
+          fontWeight: "600",
+        }}
+      >
+        Not Paid
+      </span>
+    )}
+  </td>
+)}
 
   {/* Check both spellings so that whichever key the backend provides is successfully displayed */}
 {regionScope === "Kenya" && (
@@ -1527,51 +1555,55 @@ const executeExport = (includeContact) => {
                               onClick={(e) => e.stopPropagation()}
                             >
                               {/* --- Kenya Payment Actions --- */}
-                              {(regionScope === "Kenya" || regionScope === "South Africa")&&
-                                  (userRole === "master_admin" ||
-                                    userRole === "super_admin") && (
-                                    <button
-                                      onClick={() => {
-                                        setActiveDropdown(null);
-                                        const nextPaymentStatus =
-                                          attendee.is_paid === 1 ? 0 : 1;
-                                        handleTogglePayment(
-                                          attendee,
-                                          nextPaymentStatus,
-                                        );
-                                      }}
-                                      className={styles.dropdownItem}
-                                      style={{
-                                        color:
-                                          attendee.is_paid === 1
-                                            ? "#dc2626"
-                                            : "#16a34a",
-                                      }}
-                                    >
-                                      {attendee.is_paid === 1 ? (
-                                        <>
-                                          <FaCreditCard
-                                            style={{
-                                              fontSize: "12px",
-                                              marginRight: "6px",
-                                            }}
-                                          />{" "}
-                                          Mark Not Paid
-                                        </>
-                                      ) : (
-                                        <>
-                                          <FaMoneyBillWave
-                                            style={{
-                                              fontSize: "12px",
-                                              marginRight: "6px",
-                                            }}
-                                          />{" "}
-                                          Mark Paid
-                                        </>
-                                      )}
-                                    </button>
-                                  )}
+                             {(regionScope === "Kenya" || regionScope === "South Africa") &&
+  (userRole === "master_admin" || userRole === "super_admin") && (
+    <button
+      onClick={() => {
+        setActiveDropdown(null);
+        // Clean check for truthy paid status across all formats
+        const isCurrentlyPaid =
+          attendee.is_paid === 1 ||
+          attendee.is_paid === true ||
+          attendee.is_paid === "1";
 
+        const nextPaymentStatus = isCurrentlyPaid ? 0 : 1;
+        handleTogglePayment(attendee, nextPaymentStatus);
+      }}
+      className={styles.dropdownItem}
+      style={{
+        color:
+          attendee.is_paid === 1 ||
+          attendee.is_paid === true ||
+          attendee.is_paid === "1"
+            ? "#dc2626"
+            : "#16a34a",
+      }}
+    >
+      {attendee.is_paid === 1 ||
+      attendee.is_paid === true ||
+      attendee.is_paid === "1" ? (
+        <>
+          <FaCreditCard
+            style={{
+              fontSize: "12px",
+              marginRight: "6px",
+            }}
+          />{" "}
+          Mark Not Paid
+        </>
+      ) : (
+        <>
+          <FaMoneyBillWave
+            style={{
+              fontSize: "12px",
+              marginRight: "6px",
+            }}
+          />{" "}
+          Mark Paid
+        </>
+      )}
+    </button>
+  )}
                               {/* Only Admin can Edit Profile */}
                               {(userRole === "master_admin" ||
                                 userRole === "super_admin") && (

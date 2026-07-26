@@ -230,6 +230,7 @@ export default function AdminRegister() {
         "Rustenburg",
         "Tzaneen",
         "Northriding",
+        "Durban",
       ],
     },
   };
