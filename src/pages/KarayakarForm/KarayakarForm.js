@@ -181,6 +181,8 @@ const regionDataset = {
       "Rustenburg",
       "Tzaneen",
       "Northriding",
+          "Durban"
+
     ],
   },
 };

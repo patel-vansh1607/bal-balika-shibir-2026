@@ -185,6 +185,7 @@ const REGION_CENTERS = {
     "Rustenburg",
     "Tzaneen",
     "Northriding",
+    "Durban"
   ],
 };
 
