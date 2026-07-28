@@ -25,7 +25,8 @@ import {
   // FaUserCheck,
   FaCreditCard,
   FaMoneyBillWave,
-  FaBed
+  FaBed,
+  FaFileSignature
 } from "react-icons/fa";
 import styles from "./RegisteredRoster.module.css";
 import ArchiveConfirmModal from "../ArchiveConfirmModal/ArchiveConfirmModal";
@@ -39,6 +40,7 @@ export default function RegisteredRoster({
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const showArchived = false;
+  const [indemnityFilter, setIndemnityFilter] = useState("All");
   const [selectedCenter, setSelectedCenter] = useState("All");
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState("All");
@@ -92,13 +94,13 @@ export default function RegisteredRoster({
 
   // B. First Memo calculates the base dataset filters
   // B. First Memo calculates the base dataset filters including your Payment Filter
-  const filteredAttendees = useMemo(() => {
+const filteredAttendees = useMemo(() => {
     return attendees.filter((attendee) => {
       const nameSafe = attendee.name?.toLowerCase() || "";
       const contactSafe = String(attendee.parent_contact || "");
       const idSafe = String(attendee.member_id || "").toLowerCase();
 
-      // Check standard base filters (including your new region selection)
+      // Check standard base filters
       const matchesBaseFilters =
         attendee.is_archived === showArchived &&
         (nameSafe.includes(searchTerm.toLowerCase()) ||
@@ -110,27 +112,37 @@ export default function RegisteredRoster({
         (selectedCenter === "All" || attendee.center === selectedCenter) &&
         (selectedGender === "All" || attendee.gender === selectedGender);
 
-      if ((regionScope === "Kenya" || regionScope === "South Africa" )&& paymentFilter !== "All") {
-        // If it's missing or null, treat it as 0 (not paid)
+      if (!matchesBaseFilters) return false;
+
+      // Payment status filter (Kenya & South Africa)
+      if ((regionScope === "Kenya" || regionScope === "South Africa") && paymentFilter !== "All") {
         const currentPaymentStatus = attendee.is_paid === 1 ? 1 : 0;
-        return (
-          matchesBaseFilters && String(currentPaymentStatus) === paymentFilter
-        );
+        if (String(currentPaymentStatus) !== paymentFilter) {
+          return false;
+        }
       }
 
-      return matchesBaseFilters;
+      // Indemnity form status filter (South Africa only)
+      if (regionScope === "South Africa" && indemnityFilter !== "All") {
+        const currentIndemnityStatus = Number(attendee.indemnity_form ?? 0);
+        if (String(currentIndemnityStatus) !== indemnityFilter) {
+          return false;
+        }
+      }
+
+      return true;
     });
   }, [
     attendees,
     searchTerm,
-    selectedRegion, // Added to trigger re-computation when region changes
+    selectedRegion,
     selectedCenter,
     selectedGender,
     showArchived,
     regionScope,
     paymentFilter,
+    indemnityFilter,
   ]);
-
   // C. Reset the active page layout index when filters change
   // C. Reset the active page layout index when filters change
   useEffect(() => {
@@ -363,10 +375,14 @@ const handleExportPDF = (
       "Uganda",
     ].includes(regionScope);
 
-    // Strictly check if the active scope or selected country is Kenya
+    // Strictly check active scope or selected country
     const isKenya = 
       String(regionScope).toLowerCase() === "kenya" || 
       String(currentCountry).toLowerCase() === "kenya";
+
+    const isSouthAfrica = 
+      String(regionScope).toLowerCase() === "south africa" || 
+      String(currentCountry).toLowerCase() === "south africa";
 
     // Map short codes to full descriptions with measurements for Kenya & Uganda
     const SIZE_TO_CM_MAP = {
@@ -381,7 +397,15 @@ const handleExportPDF = (
       XXXL: "XXXL (98-103cm)",
     };
 
-    // 2. Build Dynamic Headers (Conditionally appending Room Allocation ONLY for Kenya)
+    // Indemnity Form Status mapping helper
+    const INDEMNITY_MAP = {
+      0: "Pending",
+      1: "Not Signed",
+      2: "Signed",
+      3: "Sent",
+    };
+
+    // 2. Build Dynamic Headers
     const headersRow = [
       "Sr No.",
       "Member ID",
@@ -393,7 +417,10 @@ const handleExportPDF = (
     ];
     
     if (isKenya) {
-      headersRow.push("Room Allocation"); // Only visible on Kenya reports
+      headersRow.push("Room Allocation"); // Visible on Kenya reports
+    }
+    if (isSouthAfrica) {
+      headersRow.push("Indemnity Form"); // Visible on South Africa reports
     }
     if (includeContact) {
       headersRow.push("Parent Contact");
@@ -416,7 +443,7 @@ const handleExportPDF = (
           SIZE_TO_CM_MAP[displayTshirtSize] || displayTshirtSize;
       }
 
-      // Base fields prior to the conditional blocks
+      // Base fields prior to conditional blocks
       const baseRow = [
         String(index + 1),
         a.member_id || `MTRC-${a.id}`,
@@ -431,6 +458,11 @@ const handleExportPDF = (
       if (isKenya) {
         baseRow.push(a.accomodation || a.accommodation || "Unassigned");
       }
+      // Insert Indemnity Form Status if South Africa
+      if (isSouthAfrica) {
+        const indemnityVal = Number(a.indemnity_form ?? 0);
+        baseRow.push(INDEMNITY_MAP[indemnityVal] || "Pending");
+      }
       if (includeContact) {
         baseRow.push(a.parent_contact || "");
       }
@@ -444,7 +476,6 @@ const handleExportPDF = (
     let columnWidthStyles = {};
 
     if (isKenya) {
-      // Kenya Layouts (Always includes Room column)
       if (includeContact) {
         columnWidthStyles = {
           0: { cellWidth: 12, halign: "center" },
@@ -454,7 +485,7 @@ const handleExportPDF = (
           4: { cellWidth: 12, halign: "center" },
           5: { cellWidth: 25 },
           6: { cellWidth: 30 },
-          7: { cellWidth: 32 }, // Room Allocation column
+          7: { cellWidth: 32 }, // Room Allocation
           8: { cellWidth: 30 }, // Parent Contact
           9: { cellWidth: 28, halign: "center" }, // T-Shirt
         };
@@ -467,12 +498,39 @@ const handleExportPDF = (
           4: { cellWidth: 14, halign: "center" },
           5: { cellWidth: 30 },
           6: { cellWidth: 35 },
-          7: { cellWidth: 35 }, // Room Allocation column
+          7: { cellWidth: 35 }, // Room Allocation
+          8: { cellWidth: 32, halign: "center" }, // T-Shirt
+        };
+      }
+    } else if (isSouthAfrica) {
+      if (includeContact) {
+        columnWidthStyles = {
+          0: { cellWidth: 12, halign: "center" },
+          1: { cellWidth: 26, fontStyle: "bold" },
+          2: { cellWidth: "auto" },
+          3: { cellWidth: 16, halign: "center" },
+          4: { cellWidth: 12, halign: "center" },
+          5: { cellWidth: 25 },
+          6: { cellWidth: 30 },
+          7: { cellWidth: 28, halign: "center" }, // Indemnity Form
+          8: { cellWidth: 30 }, // Parent Contact
+          9: { cellWidth: 28, halign: "center" }, // T-Shirt
+        };
+      } else {
+        columnWidthStyles = {
+          0: { cellWidth: 12, halign: "center" },
+          1: { cellWidth: 30, fontStyle: "bold" },
+          2: { cellWidth: "auto" },
+          3: { cellWidth: 18, halign: "center" },
+          4: { cellWidth: 14, halign: "center" },
+          5: { cellWidth: 30 },
+          6: { cellWidth: 35 },
+          7: { cellWidth: 30, halign: "center" }, // Indemnity Form
           8: { cellWidth: 32, halign: "center" }, // T-Shirt
         };
       }
     } else {
-      // Non-Kenya Layouts (Completely drops Room column to distribute space cleanly)
+      // Non-Kenya / Non-South Africa Layouts
       if (isSpecialRegion && includeContact) {
         columnWidthStyles = {
           0: { cellWidth: 15, halign: "center" },
@@ -508,7 +566,6 @@ const handleExportPDF = (
           7: { cellWidth: 40 }, // Parent Contact
         };
       } else {
-        // !isSpecialRegion && !includeContact
         columnWidthStyles = {
           0: { cellWidth: 15, halign: "center" },
           1: { cellWidth: 40, fontStyle: "bold" },
@@ -568,6 +625,7 @@ const handleExportPDF = (
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         doc.setTextColor(214, 162, 101);
+        
         const paymentLabel =
           paymentFilter === "1"
             ? "Paid Only"
@@ -575,11 +633,24 @@ const handleExportPDF = (
               ? "Not Paid Only"
               : "All";
 
-        doc.text(
-          `Attendee Roster  |  Filtered Country: ${currentCountry}  |  Center: ${currentCenter}  |  Mandal: ${currentMandal}  |  Payment Status: ${paymentLabel}`,
-          12,
-          18,
-        );
+        let filterSubtitle = `Attendee Roster  |  Filtered Country: ${currentCountry}  |  Center: ${currentCenter}  |  Mandal: ${currentMandal}  |  Payment Status: ${paymentLabel}`;
+
+        // Append indemnity status to subtitle header if South Africa
+        if (isSouthAfrica) {
+          const indemnityLabel =
+            indemnityFilter === "3"
+              ? "Sent"
+              : indemnityFilter === "2"
+                ? "Signed"
+                : indemnityFilter === "1"
+                  ? "Not Signed"
+                  : indemnityFilter === "0"
+                    ? "Pending"
+                    : "All";
+          filterSubtitle += `  |  Indemnity: ${indemnityLabel}`;
+        }
+
+        doc.text(filterSubtitle, 12, 18);
       },
     });
 
@@ -608,9 +679,8 @@ const handleExportPDF = (
       /\s+/g,
       "_",
     );
-    const contactToken = includeContact ? "" : "";
-    doc.save(`${contactToken}Registered_${safeFileNameToken}.pdf`);
-  };  /* --- Core PDF Export Execution Logic --- */
+    doc.save(`Registered_${safeFileNameToken}.pdf`);
+  }; /* --- Core PDF Export Execution Logic --- */
   const downloadBatchQR = async () => {
     if (filteredAttendees.length === 0) return;
     setIsDownloadingQR(true);
@@ -672,6 +742,14 @@ const executeExport = (includeContact) => {
       XXXL: "XXXL (98-103cm)",
     };
 
+    // Indemnity Form status text mapping
+    const INDEMNITY_MAP = {
+      0: "Pending",
+      1: "Not Signed",
+      2: "Signed",
+      3: "Sent",
+    };
+
     try {
       const isSpecialRegion = [
         "Botswana",
@@ -682,8 +760,9 @@ const executeExport = (includeContact) => {
         "Uganda",
       ].includes(regionScope);
 
-      // Determine if we should include Room Allocation (strictly for Kenya)
+      // Determine regional rules
       const isKenya = String(regionScope).toLowerCase() === "kenya";
+      const isSouthAfrica = String(regionScope).toLowerCase() === "south africa";
 
       // Set dynamic headers based on contact inclusion rules and region
       const headers = [
@@ -697,7 +776,10 @@ const executeExport = (includeContact) => {
       ];
       
       if (isKenya) {
-        headers.push("Room Allocation"); // Only appended for Kenya
+        headers.push("Room Allocation"); // Appended for Kenya
+      }
+      if (isSouthAfrica) {
+        headers.push("Indemnity Form"); // Appended for South Africa
       }
       if (includeContact) {
         headers.push("Parent Contact");
@@ -720,9 +802,9 @@ const executeExport = (includeContact) => {
             `"${finalId}"`,
             `"${(row.name || "").replace(/"/g, '""')}"`,
             `"${row.gender || "Balak"}"`,
-            `"${row.age}"`,
+            `"${row.age || ""}"`,
             `"${attendeeCountry}"`,
-            `"${row.center}"`,
+            `"${row.center || ""}"`,
           ];
 
           // Conditionally add Room Allocation value ONLY if the report is for Kenya
@@ -731,7 +813,14 @@ const executeExport = (includeContact) => {
             baseFields.push(`"${accommodationRoom.replace(/"/g, '""')}"`);
           }
 
-          // Conditional column payload injection
+          // Conditionally add Indemnity Form status ONLY if the report is for South Africa
+          if (isSouthAfrica) {
+            const indemnityVal = Number(row.indemnity_form ?? 0);
+            const indemnityLabel = INDEMNITY_MAP[indemnityVal] || "Pending";
+            baseFields.push(`"${indemnityLabel}"`);
+          }
+
+          // Conditional contact column payload
           if (includeContact) {
             const rawContact = row.parent_contact || "";
             const finalContact = rawContact ? `\t${rawContact}` : "";
@@ -760,10 +849,9 @@ const executeExport = (includeContact) => {
 
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      const filenamePrefix = includeContact ? "" : "";
       link.setAttribute(
         "download",
-        `${filenamePrefix}Registered_${(regionScope || "All").replace(/\s+/g, "_")}_${selectedGender || "Export"}.csv`,
+        `Registered_${(regionScope || "All").replace(/\s+/g, "_")}_${selectedGender || "Export"}.csv`,
       );
       document.body.appendChild(link);
       link.click();
@@ -774,7 +862,7 @@ const executeExport = (includeContact) => {
     } finally {
       setIsExporting(false);
     }
-  };   const downloadQRImg = async (memberId, userName, storedQrUrl) => {
+  };  const downloadQRImg = async (memberId, userName, storedQrUrl) => {
     // Set the specific member ID as the active loader
     setDownloadingId(memberId);
     try {
@@ -899,7 +987,7 @@ const executeExport = (includeContact) => {
   };
   /* -
   -- Save Changes to Database --- */
-  const handleSaveProfile = async (e) => {
+const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (!editingAttendee) return;
 
@@ -927,6 +1015,7 @@ const executeExport = (includeContact) => {
         parent_contact: editingAttendee.parent_contact,
         country: editingAttendee.country,
         tshirt_size: editingAttendee.tshirt_size || null,
+        indemnity_form: Number(editingAttendee.indemnity_form ?? 0),
       };
 
       await attendeesApi.update(editingAttendee.id, updatePayload);
@@ -1066,7 +1155,23 @@ const executeExport = (includeContact) => {
                   </select>
                 </div>
               )}
-
+{(regionScope === "South Africa" ||
+  localStorage.getItem("selected_shibir_region") === "South Africa") && (
+  <div className={styles.filterSelectContainer}>
+    <FaFileSignature style={{ color: "var(--accent-primary)" }} />
+    <select
+      value={indemnityFilter}
+      onChange={(e) => setIndemnityFilter(e.target.value)}
+      className={styles.selectDropdown}
+    >
+      <option value="All">All Indemnity Statuses</option>
+      <option value="0">Pending</option>
+      <option value="1">Not Signed</option>
+      <option value="2">Signed</option>
+      <option value="3">Sent</option>
+    </select>
+  </div>
+)}
             {/* Primary Action Button */}
             <button
               onClick={handleOpenExportChoice}
@@ -1339,7 +1444,7 @@ const executeExport = (includeContact) => {
                   {regionScope === "Tanzania" && <th>Selection Status</th>}
                   {(regionScope === "Kenya" || regionScope === "South Africa")&& <th>Payment Status</th>}
                   {regionScope === "Kenya" &&<th>Accomodation</th>}
-                  <th>Indemnity Form</th>
+                  {regionScope === "South Africa" && <th>Indemnity Form</th>}
                   <th style={{ textAlign: "center" }}>QR</th>
                   {(userRole === "master_admin" ||
                     userRole === "super_admin") && <th>Actions</th>}
@@ -1503,22 +1608,24 @@ const executeExport = (includeContact) => {
   </td>
 )}
 
-                      <td>
-                        {(() => {
-                          const v = attendee.indemnity_form ?? 0;
-                          const cfg = {
-                            3: { label: 'Sent',       bg: '#dbeafe', color: '#1d4ed8' },
-                            2: { label: 'Signed',     bg: '#dcfce7', color: '#15803d' },
-                            1: { label: 'Not Signed', bg: '#fee2e2', color: '#b91c1c' },
-                            0: { label: 'Pending',    bg: '#f1f5f9', color: '#64748b' },
-                          }[v] || { label: 'Pending', bg: '#f1f5f9', color: '#64748b' };
-                          return (
-                            <span className={styles.badgeGenderTag} style={{ backgroundColor: cfg.bg, color: cfg.color, fontWeight: 600 }}>
-                              {cfg.label}
-                            </span>
-                          );
-                        })()}
-                      </td>
+                      {regionScope === "South Africa" && (
+  <td>
+    {(() => {
+      const v = attendee.indemnity_form ?? 0;
+      const cfg = {
+        3: { label: 'Sent',       bg: '#dbeafe', color: '#1d4ed8' },
+        2: { label: 'Signed',     bg: '#dcfce7', color: '#15803d' },
+        1: { label: 'Not Signed', bg: '#fee2e2', color: '#b91c1c' },
+        0: { label: 'Pending',    bg: '#f1f5f9', color: '#64748b' },
+      }[v] || { label: 'Pending', bg: '#f1f5f9', color: '#64748b' };
+      return (
+        <span className={styles.badgeGenderTag} style={{ backgroundColor: cfg.bg, color: cfg.color, fontWeight: 600 }}>
+          {cfg.label}
+        </span>
+      );
+    })()}
+  </td>
+)}
                       <td style={{ textAlign: "center" }}>
                         <button
                           onClick={() => handleOpenQrModal(attendee)}
@@ -1641,33 +1748,7 @@ const executeExport = (includeContact) => {
                                 </button>
                               )}
 
-                              {/* Indemnity Form Status */}
-                              {(userRole === "master_admin" || userRole === "super_admin") && (
-                                <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 4, paddingTop: 4 }}>
-                                  {[
-                                    { value: 3, label: 'Mark: Sent',       color: '#1d4ed8' },
-                                    { value: 2, label: 'Mark: Signed',     color: '#15803d' },
-                                    { value: 1, label: 'Mark: Not Signed', color: '#b91c1c' },
-                                    { value: 0, label: 'Mark: Pending',    color: '#64748b' },
-                                  ].filter(opt => opt.value !== (attendee.indemnity_form ?? 0)).map(opt => (
-                                    <button
-                                      key={opt.value}
-                                      onClick={async () => {
-                                        setActiveDropdown(null);
-                                        try {
-                                          await attendeesApi.update(attendee._raw_id || attendee.id, { indemnity_form: opt.value });
-                                          setAttendees(prev => prev.map(a => a.id === attendee.id ? { ...a, indemnity_form: opt.value } : a));
-                                        } catch (err) { console.error('Indemnity update failed:', err); }
-                                      }}
-                                      className={styles.dropdownItem}
-                                      style={{ color: opt.color }}
-                                    >
-                                      {opt.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-
+                        
                               {/* Archive Action */}
                               {(userRole === "master_admin" ||
                                 userRole === "super_admin") &&
@@ -2110,6 +2191,40 @@ const executeExport = (includeContact) => {
                   )}
                 </div>
               </div>
+
+              {/* Indemnity Form Control - South Africa Only */}
+              {(regionScope === "South Africa" ||
+                editingAttendee?.region === "South Africa" ||
+                localStorage.getItem("selected_shibir_region") === "South Africa") &&
+                (userRole === "master_admin" || userRole === "super_admin") && (
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup} style={{ flex: 1 }}>
+                      <label>Indemnity Form Status</label>
+                      <select
+                        value={editingAttendee?.indemnity_form ?? 0}
+                        onChange={(e) =>
+                          handleEditFieldChange("indemnity_form", Number(e.target.value))
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "8px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #ccc",
+                          backgroundColor: "#fff",
+                          height: "38px",
+                          fontSize: "14px",
+                          color: "#333",
+                          display: "block",
+                        }}
+                      >
+                        <option value={0}>Pending</option>
+                        <option value={1}>Not Signed</option>
+                        <option value={2}>Signed</option>
+                        <option value={3}>Sent</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
 
               {/* Dynamic Restricted Metadata Sections — Unlocked ONLY for Master Admin */}
               <hr
