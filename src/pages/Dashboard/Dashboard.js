@@ -739,7 +739,7 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
             <Route
               path="admin-control"
               element={
-                userRole === "master_admin" ? <AdminControl /> : <NotFound />
+                userRole === "master_admin" || userRole === "super_admin"  ? <AdminControl /> : <NotFound />
               }
             />
             <Route

@@ -229,16 +229,26 @@ export default function AdminControl() {
               <input type="text" className={styles.input} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required placeholder="Min 8 characters" />
             </label>
             
-            {!isSuperAdmin && (
-              <label className={styles.label}>
-                Role
-                <select className={styles.input} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+            <label className={styles.label}>
+              Role
+              <select 
+                className={styles.input} 
+                value={isSuperAdmin ? 'operator' : form.role} 
+                disabled={isSuperAdmin}
+                style={{ background: isSuperAdmin ? '#edf2f7' : '#fff', cursor: isSuperAdmin ? 'not-allowed' : 'pointer' }}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+              >
+                {isSuperAdmin ? (
                   <option value="operator">Gate Operator</option>
-                  <option value="admin">Admin</option>
-                  <option value="super_admin">Super Admin</option>
-                </select>
-              </label>
-            )}
+                ) : (
+                  <>
+                    <option value="operator">Gate Operator</option>
+                    <option value="admin">Admin</option>
+                    <option value="super_admin">Super Admin</option>
+                  </>
+                )}
+              </select>
+            </label>
 
             <label className={styles.label}>
               Primary Region
