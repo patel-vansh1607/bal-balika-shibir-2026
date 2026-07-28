@@ -1339,6 +1339,7 @@ const executeExport = (includeContact) => {
                   {regionScope === "Tanzania" && <th>Selection Status</th>}
                   {(regionScope === "Kenya" || regionScope === "South Africa")&& <th>Payment Status</th>}
                   {regionScope === "Kenya" &&<th>Accomodation</th>}
+                  <th>Indemnity Form</th>
                   <th style={{ textAlign: "center" }}>QR</th>
                   {(userRole === "master_admin" ||
                     userRole === "super_admin") && <th>Actions</th>}
@@ -1502,6 +1503,22 @@ const executeExport = (includeContact) => {
   </td>
 )}
 
+                      <td>
+                        {(() => {
+                          const v = attendee.indemnity_form ?? 0;
+                          const cfg = {
+                            3: { label: 'Sent',       bg: '#dbeafe', color: '#1d4ed8' },
+                            2: { label: 'Signed',     bg: '#dcfce7', color: '#15803d' },
+                            1: { label: 'Not Signed', bg: '#fee2e2', color: '#b91c1c' },
+                            0: { label: 'Pending',    bg: '#f1f5f9', color: '#64748b' },
+                          }[v] || { label: 'Pending', bg: '#f1f5f9', color: '#64748b' };
+                          return (
+                            <span className={styles.badgeGenderTag} style={{ backgroundColor: cfg.bg, color: cfg.color, fontWeight: 600 }}>
+                              {cfg.label}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       <td style={{ textAlign: "center" }}>
                         <button
                           onClick={() => handleOpenQrModal(attendee)}
@@ -1622,6 +1639,33 @@ const executeExport = (includeContact) => {
                                   />{" "}
                                   Edit Profile
                                 </button>
+                              )}
+
+                              {/* Indemnity Form Status */}
+                              {(userRole === "master_admin" || userRole === "super_admin") && (
+                                <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 4, paddingTop: 4 }}>
+                                  {[
+                                    { value: 3, label: 'Mark: Sent',       color: '#1d4ed8' },
+                                    { value: 2, label: 'Mark: Signed',     color: '#15803d' },
+                                    { value: 1, label: 'Mark: Not Signed', color: '#b91c1c' },
+                                    { value: 0, label: 'Mark: Pending',    color: '#64748b' },
+                                  ].filter(opt => opt.value !== (attendee.indemnity_form ?? 0)).map(opt => (
+                                    <button
+                                      key={opt.value}
+                                      onClick={async () => {
+                                        setActiveDropdown(null);
+                                        try {
+                                          await attendeesApi.update(attendee._raw_id || attendee.id, { indemnity_form: opt.value });
+                                          setAttendees(prev => prev.map(a => a.id === attendee.id ? { ...a, indemnity_form: opt.value } : a));
+                                        } catch (err) { console.error('Indemnity update failed:', err); }
+                                      }}
+                                      className={styles.dropdownItem}
+                                      style={{ color: opt.color }}
+                                    >
+                                      {opt.label}
+                                    </button>
+                                  ))}
+                                </div>
                               )}
 
                               {/* Archive Action */}
