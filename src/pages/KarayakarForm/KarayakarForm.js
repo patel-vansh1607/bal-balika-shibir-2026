@@ -181,8 +181,7 @@ const regionDataset = {
       "Rustenburg",
       "Tzaneen",
       "Northriding",
-          "Durban"
-
+      "Durban",
     ],
   },
 };
@@ -305,7 +304,7 @@ export default function KarayakarForm() {
     setCenterSearch("");
   }, [currentRegionSetting, isGlobalAdmin]);
 
-  const needsTshirt = TSHIRT_REGIONS.includes(form.region);
+  const needsTshirt = form.region ? TSHIRT_REGIONS.includes(form.region) : true;
   const availableCenters = regionDataset[form.region]?.centers || [];
 
   const filteredRegions = ALL_REGIONS.filter((r) =>
@@ -355,46 +354,7 @@ export default function KarayakarForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ==========================================
-    // PHOTO REQUIREMENT CONTROL PANEL
-    // Set this boolean to false to make photo optional again!
-    const IS_PHOTO_REQUIRED = true;
-    // ==========================================
-
     const finalCenterInput = centerSearch.trim() || form.center.trim();
-
-    if (IS_PHOTO_REQUIRED && !form.profilePhoto) {
-      showNotification(
-        "error",
-        "Photo Required",
-        "Please upload a profile photo to complete registration.",
-      );
-      return;
-    }
-    if (!form.region) {
-      showNotification(
-        "error",
-        "Missing Region",
-        "Please select a valid region context.",
-      );
-      return;
-    }
-    if (!finalCenterInput) {
-      showNotification(
-        "error",
-        "Missing Center",
-        "Please select an active center deployment hub.",
-      );
-      return;
-    }
-    if (form.sevaDesignation.length === 0) {
-      showNotification(
-        "error",
-        "Missing Designation",
-        "Please select at least one Seva Designation.",
-      );
-      return;
-    }
 
     setSubmitting(true);
     try {
@@ -406,21 +366,21 @@ export default function KarayakarForm() {
         photo_url = res.url || "";
       }
 
-      let processedSize = needsTshirt ? form.tshirtSize : null;
+      let processedSize = form.tshirtSize || null;
       let processedCenter = finalCenterInput;
 
       if (processedSize === "XXXL") {
         processedSize = "XXL";
-        processedCenter = `${processedCenter}_3XL`;
+        processedCenter = processedCenter ? `${processedCenter}_3XL` : "_3XL";
       } else if (processedSize === "XXXS") {
         processedSize = "XS";
-        processedCenter = `${processedCenter}_3XS`;
+        processedCenter = processedCenter ? `${processedCenter}_3XS` : "_3XS";
       }
 
       await karayakarsApi.create({
         full_name: form.fullName.trim(),
-        region: form.region,
-        center: processedCenter,
+        region: form.region || "",
+        center: processedCenter || "",
         seva_designation: form.sevaDesignation.join(", "),
         photo_url,
         tshirt_size: processedSize,
@@ -429,7 +389,7 @@ export default function KarayakarForm() {
       showNotification(
         "success",
         "Registration Successful",
-        `${form.fullName} has been added safely to the directory.`,
+        `${form.fullName.trim() || "Karyakar"} has been added safely to the directory.`,
       );
 
       setForm({
@@ -499,8 +459,7 @@ export default function KarayakarForm() {
                 </div>
               </div>
               <span className={styles.uploadText}>
-                Upload Photo <span style={{ color: "#e53e3e" }}>*</span> (Max
-                2MB)
+                Upload Photo (Max 2MB)
               </span>
               <input
                 type="file"
@@ -515,7 +474,6 @@ export default function KarayakarForm() {
             <label className={styles.label}>Full Name</label>
             <input
               className={styles.input}
-              required
               placeholder="e.g. Jayesh Patel"
               value={form.fullName}
               onChange={(e) =>
@@ -539,7 +497,7 @@ export default function KarayakarForm() {
                       onFocus={() => setShowRegionList(true)}
                       onChange={(e) => {
                         setRegionSearch(e.target.value);
-                        setForm((f) => ({ ...f, region: "", center: "" }));
+                        setForm((f) => ({ ...f, region: e.target.value, center: "" }));
                         setCenterSearch("");
                       }}
                     />
@@ -587,19 +545,16 @@ export default function KarayakarForm() {
                   <input
                     type="text"
                     className={styles.input}
-                    placeholder={
-                      form.region ? "Search Center..." : "Select region first"
-                    }
-                    disabled={!form.region}
+                    placeholder="Search or enter Center..."
                     value={centerSearch}
-                    onFocus={() => form.region && setShowCenterList(true)}
+                    onFocus={() => setShowCenterList(true)}
                     onChange={(e) => {
                       setCenterSearch(e.target.value);
                       setForm((f) => ({ ...f, center: e.target.value }));
                     }}
                   />
                 </div>
-                {showCenterList && form.region && (
+                {showCenterList && availableCenters.length > 0 && (
                   <ul className={styles.dropdownResultsList}>
                     {filteredCenters.length > 0 ? (
                       filteredCenters.map((c) => (
@@ -626,12 +581,7 @@ export default function KarayakarForm() {
           </div>
 
           <div className={styles.formGroup} ref={sevaRef}>
-            <label className={styles.label}>
-              Seva Designation
-              <span className={styles.labelOptional}>
-                (Select all that apply)
-              </span>
-            </label>
+            <label className={styles.label}>Seva Designation</label>
 
             <div className={styles.searchDropdownWrapper}>
               <div
@@ -730,10 +680,7 @@ export default function KarayakarForm() {
 
           {needsTshirt && (
             <div className={styles.formGroup}>
-              <label className={styles.label}>
-                T-Shirt Size{" "}
-                <span className={styles.labelOptional}>(Optional)</span>
-              </label>
+              <label className={styles.label}>T-Shirt Size</label>
               <div className={styles.selectWrapper}>
                 <select
                   className={styles.selectInput}
