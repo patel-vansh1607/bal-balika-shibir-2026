@@ -52,6 +52,36 @@ export default function AccommodationManager({
   const [bulkRoomValue, setBulkRoomValue] = useState("");
   const [isBulkSaving, setIsBulkSaving] = useState(false);
 
+  // Custom function to evaluate female gender based on seva designation
+  const getIsFemale = useCallback((karyakar) => {
+    if (!karyakar || !karyakar.seva_designation) return false;
+
+    const designations =
+      typeof karyakar.seva_designation === "string"
+        ? karyakar.seva_designation.split(", ")
+        : Array.isArray(karyakar.seva_designation)
+          ? karyakar.seva_designation
+          : [];
+
+    return designations.some((role) => {
+      const r = String(role).toUpperCase();
+
+      const matchesExisting =
+        r === "I-NC" ||
+        r === "I-NOC" ||
+        r === "I-RC" ||
+        r.includes("SHISHIKA") ||
+        r.includes("BALIKA");
+
+      const isBstFemaleRole =
+        r === "BST SANCHALIKA" ||
+        r === "BST SAH-SANCHALIKA" ||
+        r === "BST BALIKA IC";
+
+      return matchesExisting || isBstFemaleRole;
+    });
+  }, []);
+
   const roomOptions = useMemo(() => {
     const list = [];
     for (let floor = 1; floor <= 7; floor++) {
@@ -282,8 +312,6 @@ export default function AccommodationManager({
       const nameToSearch = p.name || p.full_name || ""; 
       const calculatedId = formatMemberId(p);
       const personCenter = cleanCenterName(p.center || "");
-      
-      const rawGender = String(p.gender || p.sex || p.sanch || p.category || "").trim().toLowerCase();
 
       const matchesSearch = 
         nameToSearch.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -294,16 +322,26 @@ export default function AccommodationManager({
 
       let matchesGender = true;
       if (genderFilter !== "all") {
-        if (genderFilter === "male") {
-          matchesGender = rawGender === "m" || rawGender === "male" || rawGender.startsWith("m") || rawGender.includes("kishore") || rawGender.includes("yuvak");
-        } else if (genderFilter === "female") {
-          matchesGender = rawGender === "f" || rawGender === "female" || rawGender.startsWith("f") || rawGender.includes("kishori") || rawGender.includes("mahila");
+        if (targetGroup === "karyakars") {
+          const isFemale = getIsFemale(p);
+          if (genderFilter === "female") {
+            matchesGender = isFemale;
+          } else if (genderFilter === "male") {
+            matchesGender = !isFemale;
+          }
+        } else {
+          const rawCategory = String(p.gender || p.sex || p.sanch || p.category || "").trim().toLowerCase();
+          if (genderFilter === "bal") {
+            matchesGender = rawCategory.includes("bal") && !rawCategory.includes("balika") || rawCategory === "b" || rawCategory === "m" || rawCategory === "male" || rawCategory.includes("kishore");
+          } else if (genderFilter === "balika") {
+            matchesGender = rawCategory.includes("balika") || rawCategory === "f" || rawCategory === "female" || rawCategory.includes("kishori");
+          }
         }
       }
 
       return matchesSearch && matchesCenter && matchesGender;
     });
-  }, [attendees, searchQuery, centerFilter, genderFilter, formatMemberId]);
+  }, [attendees, searchQuery, centerFilter, genderFilter, formatMemberId, targetGroup, getIsFemale]);
 
   const stats = useMemo(() => {
     const total = filteredAttendees.length;
@@ -391,9 +429,19 @@ export default function AccommodationManager({
               value={genderFilter}
               onChange={(e) => setGenderFilter(e.target.value)}
             >
-              <option value="all">All Genders</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
+              {targetGroup === "karyakars" ? (
+                <>
+                  <option value="all">All Genders</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </>
+              ) : (
+                <>
+                  <option value="all">All Groups</option>
+                  <option value="bal">Bal</option>
+                  <option value="balika">Balika</option>
+                </>
+              )}
             </select>
           </div>
         </div>
@@ -459,7 +507,7 @@ export default function AccommodationManager({
                     <th>ID</th>
                     <th>Full Name</th>
                     <th>Center</th>
-                    <th>Gender</th>
+                    <th>{targetGroup === "karyakars" ? "Gender" : "Category"}</th>
                     <th>Accommodation Space</th>
                     <th>Assign Room</th>
                     <th className={styles.actionHeader}>Action</th>
@@ -484,6 +532,10 @@ export default function AccommodationManager({
 
                       const isPresetRoom = roomOptions.includes(draftRoomValue);
 
+                      const displayedGender = targetGroup === "karyakars" 
+                        ? (getIsFemale(person) ? "Female" : "Male")
+                        : (person.gender || person.sex || person.sanch || person.category || "—");
+
                       return (
                         <tr key={person.id} className={`${isModified ? styles.modifiedRow : ""} ${isChecked ? styles.selectedRow : ""}`}>
                           <td className={styles.checkboxCol}>
@@ -503,7 +555,7 @@ export default function AccommodationManager({
                           </td>
                           <td>
                             <span className={styles.genderTag}>
-                              {person.gender || person.sex || person.sanch || person.category || "—"}
+                              {displayedGender}
                             </span>
                           </td>
                           <td>
