@@ -332,8 +332,7 @@ export default function AccommodationManager({
         } else {
           const rawCategory = String(p.gender || p.sex || p.sanch || p.category || "").trim().toLowerCase();
           if (genderFilter === "bal") {
-            matchesGender = rawCategory.includes("bal") && !rawCategory.includes("balika") || rawCategory === "b" || rawCategory === "m" || rawCategory === "male" || rawCategory.includes("kishore");
-          } else if (genderFilter === "balika") {
+matchesGender = (rawCategory.includes("bal") && !rawCategory.includes("balika")) || rawCategory === "b" || rawCategory === "m" || rawCategory === "male" || rawCategory.includes("kishore");          } else if (genderFilter === "balika") {
             matchesGender = rawCategory.includes("balika") || rawCategory === "f" || rawCategory === "female" || rawCategory.includes("kishori");
           }
         }
