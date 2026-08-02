@@ -52,7 +52,7 @@ export default function AccommodationManager({
   const [bulkRoomValue, setBulkRoomValue] = useState("");
   const [isBulkSaving, setIsBulkSaving] = useState(false);
 
-  // Custom function to evaluate female gender based on seva designation
+  // Evaluate female gender based on seva designation
   const getIsFemale = useCallback((karyakar) => {
     if (!karyakar || !karyakar.seva_designation) return false;
 
@@ -82,16 +82,27 @@ export default function AccommodationManager({
     });
   }, []);
 
+  // Preset List Generation based on room layout rules
   const roomOptions = useMemo(() => {
     const list = [];
+    
+    // Floors 1 to 7: 4 rooms each (101-104, 201-204... 701-704)
     for (let floor = 1; floor <= 7; floor++) {
       for (let roomNum = 1; roomNum <= 4; roomNum++) {
         list.push(`PS-${floor}0${roomNum}`);
       }
     }
-    for (let floor = 8; floor <= 11; floor++) {
-      list.push(`PS-${floor}th Floor`);
-    }
+
+    // Floor 8: Only 2 rooms
+    list.push("PS-801");
+    list.push("PS-802");
+
+    // Floor 9: Excluded
+
+    // Floors 10 & 11: Halls
+    list.push("PS-10th Floor Hall");
+    list.push("PS-11th Floor Hall");
+
     return list;
   }, []);
 
@@ -332,7 +343,8 @@ export default function AccommodationManager({
         } else {
           const rawCategory = String(p.gender || p.sex || p.sanch || p.category || "").trim().toLowerCase();
           if (genderFilter === "bal") {
-matchesGender = (rawCategory.includes("bal") && !rawCategory.includes("balika")) || rawCategory === "b" || rawCategory === "m" || rawCategory === "male" || rawCategory.includes("kishore");          } else if (genderFilter === "balika") {
+            matchesGender = (rawCategory.includes("bal") && !rawCategory.includes("balika")) || rawCategory === "b" || rawCategory === "m" || rawCategory === "male" || rawCategory.includes("kishore");
+          } else if (genderFilter === "balika") {
             matchesGender = rawCategory.includes("balika") || rawCategory === "f" || rawCategory === "female" || rawCategory.includes("kishori");
           }
         }
@@ -459,13 +471,18 @@ matchesGender = (rawCategory.includes("bal") && !rawCategory.includes("balika"))
                 className={styles.bulkSelect}
               >
                 <option value="">-- Select Bulk Room --</option>
-                <optgroup label="Floors 1 to 7 (Individual Rooms)">
-                  {roomOptions.filter(r => !r.includes("Floor")).map(room => (
+                <optgroup label="Floors 1 to 7 (Rooms 101 to 704)">
+                  {roomOptions.filter(r => /PS-[1-7]0/.test(r)).map(room => (
                     <option key={room} value={room}>{room}</option>
                   ))}
                 </optgroup>
-                <optgroup label="Floors 8 to 11 (Floor Groups)">
-                  {roomOptions.filter(r => r.includes("Floor")).map(room => (
+                <optgroup label="Floor 8 (2 Rooms)">
+                  {roomOptions.filter(r => r.includes("PS-801") || r.includes("PS-802")).map(room => (
+                    <option key={room} value={room}>{room}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Floors 10 & 11 (Halls)">
+                  {roomOptions.filter(r => r.includes("Hall")).map(room => (
                     <option key={room} value={room}>{room}</option>
                   ))}
                 </optgroup>
@@ -582,13 +599,18 @@ matchesGender = (rawCategory.includes("bal") && !rawCategory.includes("balika"))
                                 disabled={isSaving}
                               >
                                 <option value="">-- Select Room --</option>
-                                <optgroup label="Floors 1 to 7 (101-104 Series)">
-                                  {roomOptions.filter(r => !r.includes("Floor")).map(room => (
+                                <optgroup label="Floors 1 to 7 (Rooms 101 to 704)">
+                                  {roomOptions.filter(r => /PS-[1-7]0/.test(r)).map(room => (
                                     <option key={room} value={room}>{room}</option>
                                   ))}
                                 </optgroup>
-                                <optgroup label="Floors 8 to 11 (Floor Groups)">
-                                  {roomOptions.filter(r => r.includes("Floor")).map(room => (
+                                <optgroup label="Floor 8 (2 Rooms)">
+                                  {roomOptions.filter(r => r.includes("PS-801") || r.includes("PS-802")).map(room => (
+                                    <option key={room} value={room}>{room}</option>
+                                  ))}
+                                </optgroup>
+                                <optgroup label="Floors 10 & 11 (Halls)">
+                                  {roomOptions.filter(r => r.includes("Hall")).map(room => (
                                     <option key={room} value={room}>{room}</option>
                                   ))}
                                 </optgroup>
@@ -598,7 +620,7 @@ matchesGender = (rawCategory.includes("bal") && !rawCategory.includes("balika"))
                               {(!isPresetRoom && draftRoomValue !== "") && (
                                 <input
                                   type="text"
-                                  placeholder="e.g. PS-105"
+                                  placeholder="e.g. PS-101"
                                   className={styles.roomInput}
                                   value={draftRoomValue}
                                   onChange={(e) => handleRoomChange(person.id, e.target.value)}

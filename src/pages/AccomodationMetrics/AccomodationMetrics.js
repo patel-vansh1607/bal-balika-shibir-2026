@@ -32,6 +32,60 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
     return basePart.charAt(0).toUpperCase() + basePart.slice(1).toLowerCase();
   };
 
+  // Karyakar female designation evaluator
+  const getIsFemale = useCallback((karyakar) => {
+    if (!karyakar || !karyakar.seva_designation) return false;
+
+    const designations =
+      typeof karyakar.seva_designation === "string"
+        ? karyakar.seva_designation.split(", ")
+        : Array.isArray(karyakar.seva_designation)
+          ? karyakar.seva_designation
+          : [];
+
+    return designations.some((role) => {
+      const r = String(role).toUpperCase();
+
+      const matchesExisting =
+        r === "I-NC" ||
+        r === "I-NOC" ||
+        r === "I-RC" ||
+        r.includes("SHISHIKA") ||
+        r.includes("BALIKA");
+
+      const isBstFemaleRole =
+        r === "BST SANCHALIKA" ||
+        r === "BST SAH-SANCHALIKA" ||
+        r === "BST BALIKA IC";
+
+      return matchesExisting || isBstFemaleRole;
+    });
+  }, []);
+
+  // Floor extraction helper for patterns like P101, PS-101, 101, Ground, etc.
+  const getFloorFromRoom = (roomStr) => {
+    if (!roomStr) return "Custom/Other";
+    const cleanRoom = roomStr.trim().toUpperCase();
+
+    // Match numbers in patterns like P101, PS-101, PS101, R101, Room 101, or just 101
+    const numberMatch = cleanRoom.match(/(?:PS-?|P-?|ROOM\s*|-)?\s*(\d+)/i);
+
+    if (numberMatch && numberMatch[1]) {
+      const num = parseInt(numberMatch[1], 10);
+      if (num >= 100) {
+        return `Floor ${Math.floor(num / 100)}`;
+      } else if (num > 0) {
+        return `Floor ${num}`;
+      }
+    }
+
+    if (cleanRoom.includes("GROUND") || cleanRoom.includes("GF")) return "Ground Floor";
+    if (cleanRoom.includes("BASEMENT")) return "Basement";
+    if (cleanRoom.includes("FLOOR")) return cleanRoom;
+
+    return "Custom/Other";
+  };
+
   const activeRegion = cleanName(currentRegion || localStorage.getItem("selectedRegion") || "Kenya");
 
   const fetchData = useCallback(() => {
@@ -59,8 +113,11 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
         const aData = aRes?.data || aRes;
         const aList = Array.isArray(aData) ? aData : aData.attendees || [];
 
-        setKarayakars(kList);
-        setAttendees(aList);
+        const taggedKarayakars = kList.map(item => ({ ...item, _isKaryakar: true }));
+        const taggedAttendees = aList.map(item => ({ ...item, _isKaryakar: false }));
+
+        setKarayakars(taggedKarayakars);
+        setAttendees(taggedAttendees);
         setLoading(false);
       })
       .catch((err) => {
@@ -90,11 +147,32 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
 
     const filteredPool = centerPool.filter(p => {
       if (genderFilter === "all") return true;
-      const rawGender = String(p.gender || p.sex || p.sanch || p.category || "").trim().toLowerCase();
+
+      if (p._isKaryakar) {
+        const isFemale = getIsFemale(p);
+        if (genderFilter === "female") return isFemale;
+        if (genderFilter === "male") return !isFemale;
+        return true;
+      }
+
+      const rawCategory = String(p.gender || p.sex || p.sanch || p.category || "").trim().toLowerCase();
       if (genderFilter === "male") {
-        return rawGender === "m" || rawGender === "male" || rawGender.startsWith("m") || rawGender.includes("kishore") || rawGender.includes("yuvak");
+        return (
+          (rawCategory.includes("bal") && !rawCategory.includes("balika")) ||
+          rawCategory === "b" ||
+          rawCategory === "m" ||
+          rawCategory === "male" ||
+          rawCategory.includes("kishore") ||
+          rawCategory.includes("yuvak")
+        );
       } else if (genderFilter === "female") {
-        return rawGender === "f" || rawGender === "female" || rawGender.startsWith("f") || rawGender.includes("kishori") || rawGender.includes("mahila");
+        return (
+          rawCategory.includes("balika") ||
+          rawCategory === "f" ||
+          rawCategory === "female" ||
+          rawCategory.includes("kishori") ||
+          rawCategory.includes("mahila")
+        );
       }
       return true;
     });
@@ -104,7 +182,7 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
     let totalUnassigned = 0;
 
     const floorCounts = {};
-    const floorRooms = {}; // Maps floorLabel -> Sorted Array of [roomName, members]
+    const floorRooms = {}; 
     const centerStats = {};
 
     filteredPool.forEach(person => {
@@ -117,22 +195,11 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
       }
       centerStats[center].total += 1;
 
-      if (room && room !== "null" && room !== "undefined" && room !== "PS-") {
+      if (room && room !== "null" && room !== "undefined" && room !== "PS-" && room !== "P") {
         totalAssigned += 1;
         centerStats[center].assigned += 1;
 
-        let floorLabel = "Custom/Other";
-        const match = room.match(/PS-(\d+)/i);
-        if (match && match[1]) {
-          const num = parseInt(match[1], 10);
-          if (num >= 100) {
-            floorLabel = `Floor ${Math.floor(num / 100)}`;
-          } else {
-            floorLabel = `Floor ${num}`;
-          }
-        } else if (room.toLowerCase().includes("floor")) {
-          floorLabel = room.toUpperCase();
-        }
+        const floorLabel = getFloorFromRoom(room);
 
         floorCounts[floorLabel] = (floorCounts[floorLabel] || 0) + 1;
 
@@ -149,11 +216,17 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
       }
     });
 
-    // Sort rooms numerically/alphabetically for each floor (e.g., 101, 102, 103...)
     const sortedFloorRooms = {};
-    Object.keys(floorRooms).forEach((floor) => {
+    const sortedFloorKeys = Object.keys(floorRooms).sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, ""), 10);
+      const numB = parseInt(b.replace(/\D/g, ""), 10);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.localeCompare(b);
+    });
+
+    sortedFloorKeys.forEach((floor) => {
       const roomsObj = floorRooms[floor];
-      const sortedKeys = Object.keys(roomsObj).sort((a, b) => {
+      const sortedRoomKeys = Object.keys(roomsObj).sort((a, b) => {
         const numA = parseInt(a.replace(/\D/g, ""), 10);
         const numB = parseInt(b.replace(/\D/g, ""), 10);
         if (!isNaN(numA) && !isNaN(numB)) {
@@ -162,7 +235,7 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
         return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
       });
 
-      sortedFloorRooms[floor] = sortedKeys.map(key => [key, roomsObj[key]]);
+      sortedFloorRooms[floor] = sortedRoomKeys.map(key => [key, roomsObj[key]]);
     });
 
     const occupancyRate = totalMembers > 0 
@@ -179,14 +252,14 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
       centerStats,
       filteredPool
     };
-  }, [karayakars, attendees, selectedCenter, genderFilter]);
+  }, [karayakars, attendees, selectedCenter, genderFilter, getIsFemale]);
 
   // CSV Export Handler
   const handleExportCSV = () => {
     setIsExporting(true);
     try {
       const rows = [
-        ["Member ID", "Name", "Center", "Gender/Category", "Room / Accommodation", "Floor"]
+        ["Floor", "Room / Accommodation", "Member ID", "Name", "Center", "Role", "Gender/Category"]
       ];
 
       Object.entries(metrics.floorRooms).forEach(([floorLabel, roomEntries]) => {
@@ -195,27 +268,34 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
             const memberId = person.member_id || person.id || "";
             const name = person.name || person.full_name || "Unknown";
             const center = cleanName(person.center || "Unknown");
-            const gender = person.gender || person.sex || person.sanch || person.category || "";
+            const pType = person._isKaryakar ? "Karyakar" : "Attendee";
+            const gender = person._isKaryakar 
+              ? (getIsFemale(person) ? "Female" : "Male")
+              : (person.gender || person.sex || person.sanch || person.category || "");
+
             rows.push([
+              `"${floorLabel}"`,
+              `"${roomName}"`,
               `"${memberId}"`,
               `"${name.replace(/"/g, '""')}"`,
               `"${center}"`,
-              `"${gender}"`,
-              `"${roomName}"`,
-              `"${floorLabel}"`
+              `"${pType}"`,
+              `"${gender}"`
             ]);
           });
         });
       });
 
-      const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-      const encodedUri = encodeURI(csvContent);
+      const csvString = rows.map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
+      link.href = url;
       link.setAttribute("download", `Accommodation_Report_${activeRegion}_${selectedCenter}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Error exporting CSV:", err);
     } finally {
@@ -223,68 +303,166 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
     }
   };
 
-  // Text/Summary Report Print/Export Handler
+  // Styled PDF / Print Handler via Blob
   const handleExportReport = () => {
     setIsExporting(true);
     try {
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        alert("Please allow popups to download/print the report.");
-        setIsExporting(false);
-        return;
-      }
-
-      let html = `
+      let htmlContent = `
+        <!DOCTYPE html>
         <html>
           <head>
+            <meta charset="utf-8" />
             <title>Accommodation Report - ${activeRegion}</title>
             <style>
-              body { font-family: Arial, sans-serif; padding: 20px; color: #2d2926; }
-              h1 { font-size: 22px; margin-bottom: 4px; }
-              .subtitle { color: #6c635c; font-size: 14px; margin-bottom: 20px; }
-              .summary-box { display: flex; gap: 15px; margin-bottom: 20px; }
-              .card { border: 1px solid #ddd; padding: 12px 16px; border-radius: 8px; background: #fbfced; min-width: 120px; }
-              .card h3 { margin: 0; font-size: 12px; color: #6c635c; text-transform: uppercase; }
-              .card p { margin: 6px 0 0 0; font-size: 20px; font-weight: bold; }
-              h2 { font-size: 18px; border-bottom: 2px solid #e78524; padding-bottom: 4px; margin-top: 30px; }
-              table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-              th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; }
-              th { background-color: #f4ece6; color: #2d2926; }
+              @page { size: A4; margin: 12mm 15mm; }
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+                padding: 0; 
+                margin: 0;
+                color: #0f172a; 
+                background: #ffffff;
+                -webkit-print-color-adjust: exact;
+              }
+              .report-header { 
+                border-bottom: 2px solid #0284c7; 
+                padding-bottom: 12px; 
+                margin-bottom: 20px; 
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-end;
+              }
+              .title-group h1 { font-size: 20px; margin: 0 0 4px 0; color: #0f172a; font-weight: 700; }
+              .title-group p { font-size: 12px; color: #64748b; margin: 0; }
+              
+              .summary-cards { 
+                display: grid; 
+                grid-template-columns: repeat(4, 1fr); 
+                gap: 10px; 
+                margin-bottom: 20px; 
+              }
+              .card { 
+                border: 1px solid #e2e8f0; 
+                padding: 10px 12px; 
+                border-radius: 6px; 
+                background: #f8fafc; 
+              }
+              .card h3 { margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+              .card p { margin: 4px 0 0 0; font-size: 16px; font-weight: 700; color: #0284c7; }
+
+              .floor-section { 
+                margin-bottom: 22px; 
+                page-break-inside: avoid;
+              }
+              .floor-header { 
+                background: #0284c7; 
+                color: #ffffff;
+                padding: 6px 12px; 
+                font-size: 14px; 
+                font-weight: 700; 
+                border-radius: 4px;
+                margin-bottom: 10px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              }
+
+              .room-block { 
+                margin-bottom: 12px; 
+                page-break-inside: avoid;
+              }
+              .room-title { 
+                font-size: 12px; 
+                font-weight: 700; 
+                color: #334155; 
+                margin-bottom: 4px;
+                background: #f1f5f9;
+                padding: 4px 8px;
+                border-left: 3px solid #0284c7;
+              }
+
+              table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 8px; }
+              th, td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; }
+              th { background-color: #f8fafc; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 9px; }
+              tr:nth-child(even) { background-color: #f8fafc; }
+              
+              .type-tag { font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1; }
             </style>
           </head>
           <body>
-            <h1>Accommodation Summary Report</h1>
-            <div class="subtitle">Region: ${activeRegion} | Center: ${selectedCenter} | Gender: ${genderFilter}</div>
+            <div class="report-header">
+              <div class="title-group">
+                <h1>Accommodation Allocation Report</h1>
+                <p>Region: <strong>${activeRegion}</strong> | Center Filter: <strong>${selectedCenter}</strong> | Gender Filter: <strong>${genderFilter}</strong></p>
+              </div>
+            </div>
             
-            <div class="summary-box">
-              <div class="card"><h3>Total Members</h3><p>${metrics.totalMembers}</p></div>
-              <div class="card"><h3>Assigned Beds</h3><p>${metrics.totalAssigned}</p></div>
-              <div class="card"><h3>Pending Beds</h3><p>${metrics.totalUnassigned}</p></div>
+            <div class="summary-cards">
+              <div class="card"><h3>Total Directory</h3><p>${metrics.totalMembers}</p></div>
+              <div class="card"><h3>Allocated Beds</h3><p>${metrics.totalAssigned}</p></div>
+              <div class="card"><h3>Unassigned Beds</h3><p>${metrics.totalUnassigned}</p></div>
               <div class="card"><h3>Occupancy Rate</h3><p>${metrics.occupancyRate}%</p></div>
             </div>
       `;
 
       Object.entries(metrics.floorRooms).forEach(([floorLabel, roomEntries]) => {
-        html += `<h2>${floorLabel}</h2>`;
+        htmlContent += `<div class="floor-section"><div class="floor-header">${floorLabel}</div>`;
         roomEntries.forEach(([roomName, members]) => {
-          html += `<h3>Room: ${roomName} (${members.length} Guests)</h3>`;
-          html += `<table><thead><tr><th>ID</th><th>Name</th><th>Center</th><th>Gender</th></tr></thead><tbody>`;
+          htmlContent += `
+            <div class="room-block">
+              <div class="room-title">Room ${roomName} &mdash; ${members.length} Guest${members.length === 1 ? '' : 's'}</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 15%;">ID</th>
+                    <th style="width: 35%;">Full Name</th>
+                    <th style="width: 20%;">Center</th>
+                    <th style="width: 15%;">Directory</th>
+                    <th style="width: 15%;">Gender</th>
+                  </tr>
+                </thead>
+                <tbody>
+          `;
           members.forEach(p => {
-            html += `<tr><td>${p.member_id || p.id || "—"}</td><td>${p.name || p.full_name || "—"}</td><td>${cleanName(p.center)}</td><td>${p.gender || p.sex || "—"}</td></tr>`;
+            const isFem = p._isKaryakar ? getIsFemale(p) : false;
+            const genderText = p._isKaryakar 
+              ? (isFem ? "Female" : "Male")
+              : (p.gender || p.sex || p.category || "—");
+
+            htmlContent += `
+              <tr>
+                <td><strong>${p.member_id || p.id || "—"}</strong></td>
+                <td>${p.name || p.full_name || "—"}</td>
+                <td>${cleanName(p.center)}</td>
+                <td><span class="type-tag">${p._isKaryakar ? "Karyakar" : "Attendee"}</span></td>
+                <td>${genderText}</td>
+              </tr>
+            `;
           });
-          html += `</tbody></table>`;
+          htmlContent += `</tbody></table></div>`;
         });
+        htmlContent += `</div>`;
       });
 
-      html += `</body></html>`;
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-      }, 500);
+      htmlContent += `
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 300);
+              };
+            </script>
+          </body>
+        </html>
+      `;
+
+      const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+      const blobUrl = URL.createObjectURL(blob);
+      const printWin = window.open(blobUrl, "_blank");
+      
+      if (!printWin) {
+        alert("Please allow popups to view or print the report.");
+      }
     } catch (err) {
-      console.error("Error generating report:", err);
+      console.error("Error generating printable report:", err);
     } finally {
       setIsExporting(false);
     }
@@ -311,7 +489,7 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
             className={styles.exportBtn} 
             onClick={handleExportCSV} 
             disabled={isExporting}
-            title="Download room allocations as CSV spreadsheet"
+            title="Download floor & room allocations as CSV"
           >
             <FaFileCsv /> Export CSV
           </button>
@@ -319,7 +497,7 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
             className={styles.exportBtnPrimary} 
             onClick={handleExportReport} 
             disabled={isExporting}
-            title="Print or Save Detailed PDF/Printable Report"
+            title="Print or Save Floor & Room PDF Report"
           >
             <FaFilePdf /> Printable Report
           </button>
@@ -354,7 +532,9 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
                       const memberId = person.member_id || person.id || `M-${idx}`;
                       const memberName = person.name || person.full_name || "Unknown Name";
                       const centerName = cleanName(person.center || "—");
-                      const genderVal = person.gender || person.sex || person.sanch || person.category || "—";
+                      const genderVal = person._isKaryakar
+                        ? (getIsFemale(person) ? "Female" : "Male")
+                        : (person.gender || person.sex || person.sanch || person.category || "—");
 
                       return (
                         <div key={person.id || idx} className={styles.occupantRow}>
