@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userRoles } from '../../apiClient';
-import { FaUserShield, FaSpinner, FaPlus, FaTimes, FaCheckCircle, FaPen, FaCheck } from 'react-icons/fa';
+import { FaUserShield, FaSpinner, FaPlus, FaTimes, FaCheckCircle, FaPen, FaCheck, FaGlobe } from 'react-icons/fa';
 import styles from './AdminControl.module.css';
 
 const REGIONS = ['All', 'Kenya', 'Tanzania', 'Uganda', 'Zambia', 'Malawi', 'Botswana', 'South Africa'];
@@ -42,6 +42,9 @@ export default function AdminControl() {
   const [editingUserId, setEditingUserId] = useState(null);
   const [editNameValue, setEditNameValue] = useState('');
 
+  // States for updating authorized regions
+  const [editingRegionsUserId, setEditingRegionsUserId] = useState(null);
+
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 4000);
@@ -59,7 +62,6 @@ export default function AdminControl() {
         setUsersList(fetchedUsers);
         setCurrentUser(me);
 
-        // If the user is a super admin, automatically lock their form region to match theirs
         if (me?.region && me.region !== 'All') {
           setForm((prev) => ({
             ...prev,
@@ -75,7 +77,6 @@ export default function AdminControl() {
   const isSuperAdmin = currentUser?.role === 'super_admin';
   const myRegion = currentUser?.region || 'Kenya';
 
-  // Filter users list based on super admin scope if necessary
   const displayedUsers = isSuperAdmin && myRegion !== 'All'
     ? usersList.filter((u) => u.region === myRegion || (u.authorized_regions && u.authorized_regions.includes(myRegion)))
     : usersList;
@@ -97,7 +98,6 @@ export default function AdminControl() {
     e.preventDefault();
     if (!form.email || !form.password) return;
     
-    // Explicitly set added_by to current logged-in user identification
     const addedBy = currentUser?.name || currentUser?.email || 'System Admin';
 
     const payload = isSuperAdmin ? { 
@@ -162,6 +162,37 @@ export default function AdminControl() {
       setUsersList((prev) => prev.map((u) => (u.id === userId ? { ...u, name: editNameValue.trim() } : u)));
       showToast('Name updated successfully.');
       setEditingUserId(null);
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // Toggle region for existing user and persist to backend
+  const handleToggleUserAuthorizedRegion = async (user, targetRegion) => {
+    if (isSuperAdmin || user.role === 'master_admin') return;
+    
+    const currentRegions = user.authorized_regions || [user.region || 'Kenya'];
+    const hasRegion = currentRegions.includes(targetRegion);
+
+    let updatedRegions = [];
+    if (hasRegion) {
+      if (currentRegions.length === 1) {
+        return showToast('User must have at least one authorized region', 'error');
+      }
+      updatedRegions = currentRegions.filter((r) => r !== targetRegion);
+    } else {
+      updatedRegions = [...currentRegions, targetRegion];
+    }
+
+    setUpdatingId(user.id);
+    try {
+      await userRoles.update(user.id, { authorized_regions: updatedRegions });
+      setUsersList((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, authorized_regions: updatedRegions } : u))
+      );
+      showToast('Authorized regions updated.');
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
@@ -308,85 +339,148 @@ export default function AdminControl() {
         {displayedUsers.length === 0 && (
           <div style={{ textAlign: 'center', padding: 40, color: '#a0aec0', fontSize: 14 }}>No users found.</div>
         )}
-        {displayedUsers.map((u) => (
-          <div key={u.id} className={styles.userItem}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              {editingUserId === u.id ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                  <input
-                    type="text"
-                    value={editNameValue}
-                    onChange={(e) => setEditNameValue(e.target.value)}
-                    className={styles.input}
-                    style={{ padding: '4px 8px', fontSize: 14 }}
-                    autoFocus
-                  />
-                  <button 
-                    onClick={() => handleSaveName(u.id)}
-                    disabled={updatingId === u.id}
-                    style={{ background: '#166534', border: 'none', color: '#fff', borderRadius: 4, padding: '6px 10px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                  >
-                    <FaCheck style={{ fontSize: 12 }} />
-                  </button>
-                  <button 
-                    onClick={() => setEditingUserId(null)}
-                    disabled={updatingId === u.id}
-                    style={{ background: '#cbd5e0', border: 'none', color: '#4a5568', borderRadius: 4, padding: '6px 10px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                  >
-                    <FaTimes style={{ fontSize: 12 }} />
-                  </button>
+        {displayedUsers.map((u) => {
+          const userAuthRegions = u.authorized_regions || [u.region || 'Kenya'];
+          const isEditingRegions = editingRegionsUserId === u.id;
+
+          return (
+            <div key={u.id} className={styles.userItem} style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  {editingUserId === u.id ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <input
+                        type="text"
+                        value={editNameValue}
+                        onChange={(e) => setEditNameValue(e.target.value)}
+                        className={styles.input}
+                        style={{ padding: '4px 8px', fontSize: 14 }}
+                        autoFocus
+                      />
+                      <button 
+                        onClick={() => handleSaveName(u.id)}
+                        disabled={updatingId === u.id}
+                        style={{ background: '#166534', border: 'none', color: '#fff', borderRadius: 4, padding: '6px 10px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                      >
+                        <FaCheck style={{ fontSize: 12 }} />
+                      </button>
+                      <button 
+                        onClick={() => setEditingUserId(null)}
+                        disabled={updatingId === u.id}
+                        style={{ background: '#cbd5e0', border: 'none', color: '#4a5568', borderRadius: 4, padding: '6px 10px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                      >
+                        <FaTimes style={{ fontSize: 12 }} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: '#2d2926', wordBreak: 'break-word' }}>{u.name || '—'}</div>
+                      {u.role !== 'master_admin' && (
+                        <button 
+                          onClick={() => startEditingName(u)}
+                          style={{ background: 'none', border: 'none', color: '#a0aec0', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = '#e78524'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = '#a0aec0'}
+                          title="Edit Name"
+                        >
+                          <FaPen style={{ fontSize: 11 }} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 13, color: '#718096', wordBreak: 'break-all' }}>{u.email}</div>
+                  
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 4, fontSize: 12, color: '#a0aec0' }}>
+                    <span>Primary Region: <strong style={{ color: '#4a5568', fontWeight: 500 }}>{u.region}</strong></span>
+                    <span>•</span>
+                    <span>Added by: <strong style={{ color: '#4a5568', fontWeight: 500 }}>{u.added_by || 'System'}</strong></span>
+                  </div>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: '#2d2926', wordBreak: 'break-word' }}>{u.name || '—'}</div>
-                  {u.role !== 'master_admin' && (
-                    <button 
-                      onClick={() => startEditingName(u)}
-                      style={{ background: 'none', border: 'none', color: '#a0aec0', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = '#e78524'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = '#a0aec0'}
-                      title="Edit Name"
+
+                <div className={styles.userActions}>
+                  <span style={{ ...ROLE_COLORS[u.role], padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, display: 'inline-block', whiteSpace: 'nowrap' }}>
+                    {ROLE_LABELS[u.role] || u.role}
+                  </span>
+
+                  {u.role === 'master_admin' || isSuperAdmin ? (
+                    <span style={{ fontSize: 12, color: '#a0aec0', fontStyle: 'italic', whiteSpace: 'nowrap' }}>Role locked</span>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <select
+                        value={u.role}
+                        disabled={updatingId === u.id}
+                        onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                        className={styles.input}
+                        style={{ padding: '5px 10px', fontSize: 13, width: 'auto' }}
+                      >
+                        <option value="operator">Gate Operator</option>
+                        <option value="admin">Admin</option>
+                        <option value="super_admin">Super Admin</option>
+                      </select>
+                      {updatingId === u.id && <FaSpinner style={{ animation: 'spin 1s linear infinite', color: '#e78524' }} />}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Authorized Regions Controls */}
+              <div style={{ borderTop: '1px solid #edf2f7', paddingTop: 8, marginTop: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isEditingRegions ? 8 : 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#4a5568', flexWrap: 'wrap' }}>
+                    <FaGlobe style={{ color: '#e78524' }} />
+                    <span style={{ fontWeight: 600 }}>Authorized Regions:</span>
+                    {!isEditingRegions && userAuthRegions.map((reg) => (
+                      <span key={reg} style={{ background: '#f1f5f9', color: '#334155', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 500 }}>
+                        {reg}
+                      </span>
+                    ))}
+                  </div>
+
+                  {!isSuperAdmin && u.role !== 'master_admin' && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingRegionsUserId(isEditingRegions ? null : u.id)}
+                      style={{ background: 'none', border: 'none', color: '#e78524', fontSize: 12, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                     >
-                      <FaPen style={{ fontSize: 11 }} />
+                      {isEditingRegions ? <><FaTimes /> Close</> : <><FaPen style={{ fontSize: 10 }} /> Manage Regions</>}
                     </button>
                   )}
                 </div>
-              )}
-              <div style={{ fontSize: 13, color: '#718096', wordBreak: 'break-all' }}>{u.email}</div>
-              
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 4, fontSize: 12, color: '#a0aec0' }}>
-                <span>Region: <strong style={{ color: '#4a5568', fontWeight: 500 }}>{u.region}</strong></span>
-                <span>•</span>
-                <span>Added by: <strong style={{ color: '#4a5568', fontWeight: 500 }}>{u.added_by || 'System'}</strong></span>
+
+                {/* Inline Region Pills Toggle */}
+                {isEditingRegions && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6, background: '#f8fafc', padding: 10, borderRadius: 8 }}>
+                    {REGIONS.map((r) => {
+                      const active = userAuthRegions.includes(r);
+                      return (
+                        <button
+                          key={r}
+                          type="button"
+                          disabled={updatingId === u.id}
+                          onClick={() => handleToggleUserAuthorizedRegion(u, r)}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: 16,
+                            border: `1px solid ${active ? '#e78524' : '#cbd5e0'}`,
+                            background: active ? '#e78524' : '#fff',
+                            color: active ? '#fff' : '#4a5568',
+                            fontSize: 12,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            opacity: updatingId === u.id ? 0.6 : 1,
+                            transition: 'all 0.15s'
+                          }}
+                        >
+                          {r} {active && '✓'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
-            
-            <div className={styles.userActions}>
-              <span style={{ ...ROLE_COLORS[u.role], padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, display: 'inline-block', whiteSpace: 'nowrap' }}>
-                {ROLE_LABELS[u.role] || u.role}
-              </span>
-
-              {u.role === 'master_admin' || isSuperAdmin ? (
-                <span style={{ fontSize: 12, color: '#a0aec0', fontStyle: 'italic', whiteSpace: 'nowrap' }}>Role locked</span>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <select
-                    value={u.role}
-                    disabled={updatingId === u.id}
-                    onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                    className={styles.input}
-                    style={{ padding: '5px 10px', fontSize: 13, width: 'auto' }}
-                  >
-                    <option value="operator">Gate Operator</option>
-                    <option value="admin">Admin</option>
-                    <option value="super_admin">Super Admin</option>
-                  </select>
-                  {updatingId === u.id && <FaSpinner style={{ animation: 'spin 1s linear infinite', color: '#e78524' }} />}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
