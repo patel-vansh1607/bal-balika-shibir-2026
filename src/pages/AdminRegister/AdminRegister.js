@@ -125,6 +125,7 @@ export default function AdminRegister() {
         "Kampala",
         "Entebbe",
         "Jinja",
+        "Rwanda",
         "Mbarara",
         "Gulu",
         "Mbale",

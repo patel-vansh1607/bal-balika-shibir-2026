@@ -92,6 +92,7 @@ const REGION_CENTERS = {
     "Kampala",
     "Entebbe",
     "Jinja",
+    "Rwanda",
     "Mbarara",
     "Gulu",
     "Mbale",

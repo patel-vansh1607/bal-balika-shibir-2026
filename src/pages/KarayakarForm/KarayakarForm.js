@@ -76,6 +76,7 @@ const regionDataset = {
       "Kampala",
       "Entebbe",
       "Jinja",
+      "Rwanda",
       "Mbarara",
       "Gulu",
       "Mbale",

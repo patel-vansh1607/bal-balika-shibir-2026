@@ -12,10 +12,68 @@ import {
   FaMapMarkerAlt,
   FaFileCsv,
   FaFilePdf,
-  FaDownload
+  FaDownload,
+  FaBan,
+  FaExclamationTriangle
 } from "react-icons/fa";
 import { attendees as attendeesApi, karayakars as karayakarsApi } from "../../apiClient";
 import styles from "./AccommodationMetrics.module.css";
+
+// Easily editable Room Capacity Config
+const ROOM_CAPACITIES = {
+  // Floor 1
+  "101": { capacity: 0, blocked: true, label: "Office (Not Allowed)" },
+  "102": { capacity: 10 },
+  "103": { capacity: 12 },
+  "104": { capacity: 14 },
+
+  // Floor 2
+  "201": { capacity: 0, blocked: true, label: "Dressing (Not Allowed)" },
+  "202": { capacity: 12 },
+  "203": { capacity: 10 },
+  "204": { capacity: 13 },
+
+  // Floor 3
+  "301": { capacity: 23, label: "301 A/B" },
+  "301 A/B": { capacity: 23 },
+  "302": { capacity: 10 },
+  "303": { capacity: 14 },
+
+  // Floor 4
+  "401": { capacity: 40, label: "401 A/B/C" },
+  "401 A/B/C": { capacity: 40 },
+  "402": { capacity: 15 },
+
+  // Floor 5
+  "501": { capacity: 23, label: "501 A/B" },
+  "501 A/B": { capacity: 23 },
+  "502": { capacity: 10 },
+  "503": { capacity: 14 },
+
+  // Floor 6
+  "601": { capacity: 10 },
+  "602": { capacity: 12 },
+  "603": { capacity: 10 },
+  "604": { capacity: 13 },
+
+  // Floor 7
+  "701": { capacity: 33, label: "701 A/B/C" },
+  "701 A/B/C": { capacity: 33 },
+  "702": { capacity: 15 },
+
+  // Floor 8
+  "801": { capacity: 35, label: "801 A/B/C" },
+  "801 A/B/C": { capacity: 35 },
+  "802": { capacity: 15 },
+
+  // Floor 9
+  "9TH FLOOR HALL": { capacity: 0, blocked: true, label: "Sports Complex" },
+  "SPORTS COMPLEX": { capacity: 0, blocked: true, label: "Sports Complex" },
+
+  // Floor 10 & 11
+  "10TH FLOOR HALL": { capacity: 50 },
+  "11TH FLOOR HALL": { capacity: 50 }
+};
 
 export default function AccommodationMetrics({ currentRegion, selectedCenter = "all", genderFilter = "all" }) {
   const [karayakars, setKarayakars] = useState([]);
@@ -32,7 +90,6 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
     return basePart.charAt(0).toUpperCase() + basePart.slice(1).toLowerCase();
   };
 
-  // Karyakar female designation evaluator
   const getIsFemale = useCallback((karyakar) => {
     if (!karyakar || !karyakar.seva_designation) return false;
 
@@ -62,12 +119,10 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
     });
   }, []);
 
-  // Floor extraction helper for patterns like P101, PS-101, 101, Ground, etc.
   const getFloorFromRoom = (roomStr) => {
     if (!roomStr) return "Custom/Other";
     const cleanRoom = roomStr.trim().toUpperCase();
 
-    // Match numbers in patterns like P101, PS-101, PS101, R101, Room 101, or just 101
     const numberMatch = cleanRoom.match(/(?:PS-?|P-?|ROOM\s*|-)?\s*(\d+)/i);
 
     if (numberMatch && numberMatch[1]) {
@@ -84,6 +139,23 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
     if (cleanRoom.includes("FLOOR")) return cleanRoom;
 
     return "Custom/Other";
+  };
+
+  const getRoomCapacityInfo = (rawRoomName) => {
+    if (!rawRoomName) return { capacity: null, blocked: false, label: "" };
+
+    const clean = rawRoomName.trim().toUpperCase().replace(/^PS-/, "").trim();
+
+    if (ROOM_CAPACITIES[clean]) {
+      return ROOM_CAPACITIES[clean];
+    }
+
+    const baseNum = clean.replace(/\D/g, "");
+    if (baseNum && ROOM_CAPACITIES[baseNum]) {
+      return ROOM_CAPACITIES[baseNum];
+    }
+
+    return { capacity: null, blocked: false, label: "" };
   };
 
   const activeRegion = cleanName(currentRegion || localStorage.getItem("selectedRegion") || "Kenya");
@@ -182,6 +254,7 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
     let totalUnassigned = 0;
 
     const floorCounts = {};
+    const floorCapacityMap = {};
     const floorRooms = {}; 
     const centerStats = {};
 
@@ -216,6 +289,23 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
       }
     });
 
+    // Calculate total capacity per floor
+    Object.entries(floorRooms).forEach(([floorLabel, roomsObj]) => {
+      let floorTotalCap = 0;
+      Object.keys(roomsObj).forEach(roomName => {
+        const info = getRoomCapacityInfo(roomName);
+        if (info.capacity) {
+          floorTotalCap += info.capacity;
+        }
+      });
+      floorCapacityMap[floorLabel] = floorTotalCap;
+    });
+
+    let globalTotalCapacity = 0;
+    Object.values(ROOM_CAPACITIES).forEach(val => {
+      if (val.capacity) globalTotalCapacity += val.capacity;
+    });
+
     const sortedFloorRooms = {};
     const sortedFloorKeys = Object.keys(floorRooms).sort((a, b) => {
       const numA = parseInt(a.replace(/\D/g, ""), 10);
@@ -247,23 +337,28 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
       totalAssigned,
       totalUnassigned,
       occupancyRate,
+      globalTotalCapacity,
       floorCounts,
+      floorCapacityMap,
       floorRooms: sortedFloorRooms,
       centerStats,
       filteredPool
     };
   }, [karayakars, attendees, selectedCenter, genderFilter, getIsFemale]);
 
-  // CSV Export Handler
   const handleExportCSV = () => {
     setIsExporting(true);
     try {
       const rows = [
-        ["Floor", "Room / Accommodation", "Member ID", "Name", "Center", "Role", "Gender/Category"]
+        ["Floor", "Room / Accommodation", "Capacity", "Occupancy Status", "Member ID", "Name", "Center", "Role", "Gender/Category"]
       ];
 
       Object.entries(metrics.floorRooms).forEach(([floorLabel, roomEntries]) => {
         roomEntries.forEach(([roomName, members]) => {
+          const info = getRoomCapacityInfo(roomName);
+          const capText = info.blocked ? "Blocked" : (info.capacity ? `${info.capacity}` : "N/A");
+          const statusText = info.blocked ? "Not Allowed" : (info.capacity ? `${members.length}/${info.capacity}` : `${members.length} guests`);
+
           members.forEach(person => {
             const memberId = person.member_id || person.id || "";
             const name = person.name || person.full_name || "Unknown";
@@ -276,6 +371,8 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
             rows.push([
               `"${floorLabel}"`,
               `"${roomName}"`,
+              `"${capText}"`,
+              `"${statusText}"`,
               `"${memberId}"`,
               `"${name.replace(/"/g, '""')}"`,
               `"${center}"`,
@@ -303,7 +400,6 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
     }
   };
 
-  // Styled PDF / Print Handler via Blob
   const handleExportReport = () => {
     setIsExporting(true);
     try {
@@ -406,9 +502,12 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
       Object.entries(metrics.floorRooms).forEach(([floorLabel, roomEntries]) => {
         htmlContent += `<div class="floor-section"><div class="floor-header">${floorLabel}</div>`;
         roomEntries.forEach(([roomName, members]) => {
+          const capInfo = getRoomCapacityInfo(roomName);
+          const capText = capInfo.blocked ? "(Blocked - Not Allowed)" : capInfo.capacity ? `(Capacity: ${capInfo.capacity})` : "";
+          
           htmlContent += `
             <div class="room-block">
-              <div class="room-title">Room ${roomName} &mdash; ${members.length} Guest${members.length === 1 ? '' : 's'}</div>
+              <div class="room-title">Room ${roomName} ${capText} &mdash; ${members.length} Guest${members.length === 1 ? '' : 's'}</div>
               <table>
                 <thead>
                   <tr>
@@ -519,39 +618,79 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
             <div className={styles.emptyText}>No room allocations found for {selectedFloor}.</div>
           ) : (
             <div className={styles.roomsGrid}>
-              {metrics.floorRooms[selectedFloor].map(([roomName, members]) => (
-                <div key={roomName} className={styles.roomCard}>
-                  <div className={styles.roomCardHeader}>
-                    <div className={styles.roomNameBadge}>
-                      <FaBed /> {roomName}
-                    </div>
-                    <span className={styles.occupantCountTag}>{members.length} {members.length === 1 ? 'Guest' : 'Guests'}</span>
-                  </div>
-                  <div className={styles.occupantsList}>
-                    {members.map((person, idx) => {
-                      const memberId = person.member_id || person.id || `M-${idx}`;
-                      const memberName = person.name || person.full_name || "Unknown Name";
-                      const centerName = cleanName(person.center || "—");
-                      const genderVal = person._isKaryakar
-                        ? (getIsFemale(person) ? "Female" : "Male")
-                        : (person.gender || person.sex || person.sanch || person.category || "—");
+              {metrics.floorRooms[selectedFloor].map(([roomName, members]) => {
+                const capInfo = getRoomCapacityInfo(roomName);
+                const count = members.length;
+                const capacity = capInfo.capacity;
+                const isBlocked = capInfo.blocked;
+                const isOverCap = capacity && count > capacity;
+                const isFull = capacity && count === capacity;
 
-                      return (
-                        <div key={person.id || idx} className={styles.occupantRow}>
-                          <div className={styles.occupantInfo}>
-                            <span className={styles.occupantName}>{memberName}</span>
-                            <span className={styles.occupantMetaId}>{memberId}</span>
+                let pct = capacity ? Math.min(100, Math.round((count / capacity) * 100)) : 0;
+
+                return (
+                  <div 
+                    key={roomName} 
+                    className={`${styles.roomCard} ${isBlocked ? styles.blockedCard : isOverCap ? styles.overCapCard : ""}`}
+                  >
+                    <div className={styles.roomCardHeader}>
+                      <div className={styles.roomNameBadge}>
+                        <FaBed /> {roomName}
+                        {capInfo.label && <span className={styles.roomLabelSub}>({capInfo.label})</span>}
+                      </div>
+
+                      {isBlocked ? (
+                        <span className={styles.blockedTag}><FaBan /> Not Allowed</span>
+                      ) : capacity ? (
+                        <span className={`${styles.capacityBadge} ${isOverCap ? styles.overCapBadge : isFull ? styles.fullBadge : ""}`}>
+                          {count} / {capacity} Beds
+                        </span>
+                      ) : (
+                        <span className={styles.occupantCountTag}>{count} {count === 1 ? 'Guest' : 'Guests'}</span>
+                      )}
+                    </div>
+
+                    {capacity > 0 && (
+                      <div className={styles.capacityProgressBarBg}>
+                        <div 
+                          className={`${styles.capacityProgressBarFill} ${isOverCap ? styles.fillOverCap : isFull ? styles.fillFull : ""}`} 
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    )}
+
+                    {isOverCap && (
+                      <div className={styles.capacityAlert}>
+                        <FaExclamationTriangle /> Exceeds capacity by {count - capacity}!
+                      </div>
+                    )}
+
+                    <div className={styles.occupantsList}>
+                      {members.map((person, idx) => {
+                        const memberId = person.member_id || person.id || `M-${idx}`;
+                        const memberName = person.name || person.full_name || "Unknown Name";
+                        const centerName = cleanName(person.center || "—");
+                        const genderVal = person._isKaryakar
+                          ? (getIsFemale(person) ? "Female" : "Male")
+                          : (person.gender || person.sex || person.sanch || person.category || "—");
+
+                        return (
+                          <div key={person.id || idx} className={styles.occupantRow}>
+                            <div className={styles.occupantInfo}>
+                              <span className={styles.occupantName}>{memberName}</span>
+                              <span className={styles.occupantMetaId}>{memberId}</span>
+                            </div>
+                            <div className={styles.occupantTags}>
+                              <span className={styles.miniCenterTag}><FaMapMarkerAlt /> {centerName}</span>
+                              <span className={styles.miniGenderTag}>{genderVal}</span>
+                            </div>
                           </div>
-                          <div className={styles.occupantTags}>
-                            <span className={styles.miniCenterTag}><FaMapMarkerAlt /> {centerName}</span>
-                            <span className={styles.miniGenderTag}>{genderVal}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -561,7 +700,7 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
           <div className={styles.summaryGrid}>
             <div className={styles.metricCard}>
               <div className={styles.cardHeader}>
-                <span className={styles.cardTitle}>TOTAL (ATTENDEES + KARYAKARS)</span>
+                <span className={styles.cardTitle}>TOTAL DIRECTORY</span>
                 <FaUsers className={styles.cardIcon} />
               </div>
               <div className={styles.cardValue}>{metrics.totalMembers}</div>
@@ -569,16 +708,20 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
 
             <div className={`${styles.metricCard} ${styles.successCard}`}>
               <div className={styles.cardHeader}>
-                <span className={styles.cardTitle}>Assigned</span>
+                <span className={styles.cardTitle}>Assigned Beds</span>
                 <FaCheckCircle className={styles.cardIcon} />
               </div>
               <div className={styles.cardValue}>{metrics.totalAssigned}</div>
-              <span className={styles.cardSubtitle}>{metrics.occupancyRate}% Room Allocated</span>
+              <span className={styles.cardSubtitle}>
+                {metrics.globalTotalCapacity > 0 
+                  ? `${metrics.totalAssigned} of ${metrics.globalTotalCapacity} Max Capacity`
+                  : `${metrics.occupancyRate}% Allocated`}
+              </span>
             </div>
 
             <div className={`${styles.metricCard} ${styles.warningCard}`}>
               <div className={styles.cardHeader}>
-                <span className={styles.cardTitle}>Pending</span>
+                <span className={styles.cardTitle}>Pending Unassigned</span>
                 <FaExclamationCircle className={styles.cardIcon} />
               </div>
               <div className={styles.cardValue}>{metrics.totalUnassigned}</div>
@@ -611,31 +754,38 @@ export default function AccommodationMetrics({ currentRegion, selectedCenter = "
                 <div className={styles.emptyText}>No room assignments recorded yet.</div>
               ) : (
                 <div className={styles.floorList}>
-                  {Object.entries(metrics.floorCounts).map(([floor, count]) => (
-                    <div 
-                      key={floor} 
-                      className={styles.floorRowClickable}
-                      onClick={() => setSelectedFloor(floor)}
-                    >
-                      <div className={styles.floorInfo}>
-                        <span className={styles.floorNameWithIcon}>
-                          <FaBed className={styles.floorBedIcon} /> {floor}
-                        </span>
-                        <div className={styles.floorCountRight}>
-                          <span className={styles.floorCount}>{count} Beds</span>
-                          <FaChevronRight className={styles.chevronIcon} />
+                  {Object.entries(metrics.floorCounts).map(([floor, count]) => {
+                    const floorCap = metrics.floorCapacityMap[floor] || 0;
+                    const pct = floorCap > 0 ? Math.min(100, Math.round((count / floorCap) * 100)) : 0;
+
+                    return (
+                      <div 
+                        key={floor} 
+                        className={styles.floorRowClickable}
+                        onClick={() => setSelectedFloor(floor)}
+                      >
+                        <div className={styles.floorInfo}>
+                          <span className={styles.floorNameWithIcon}>
+                            <FaBed className={styles.floorBedIcon} /> {floor}
+                          </span>
+                          <div className={styles.floorCountRight}>
+                            <span className={styles.floorCount}>
+                              {count} {floorCap > 0 ? `/ ${floorCap}` : ""} Beds
+                            </span>
+                            <FaChevronRight className={styles.chevronIcon} />
+                          </div>
+                        </div>
+                        <div className={styles.miniBarBg}>
+                          <div 
+                            className={styles.miniBarFill} 
+                            style={{ 
+                              width: `${floorCap > 0 ? pct : Math.min(100, Math.round((count / (metrics.totalAssigned || 1)) * 100))}%` 
+                            }} 
+                          />
                         </div>
                       </div>
-                      <div className={styles.miniBarBg}>
-                        <div 
-                          className={styles.miniBarFill} 
-                          style={{ 
-                            width: `${Math.min(100, Math.round((count / (metrics.totalAssigned || 1)) * 100))}%` 
-                          }} 
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

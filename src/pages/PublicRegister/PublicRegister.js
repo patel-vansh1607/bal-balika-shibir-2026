@@ -126,6 +126,7 @@ export default function PublicRegister() {
         "Entebbe",
         "Jinja",
         "Mbarara",
+        "Rwanda",
         "Gulu",
         "Mbale",
         "Masaka",

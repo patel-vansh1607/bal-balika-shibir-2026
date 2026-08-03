@@ -34,6 +34,14 @@ export default function AccommodationManager({
     return basePart.charAt(0).toUpperCase() + basePart.slice(1).toLowerCase();
   };
 
+  const cleanCenterName = (val) => {
+    if (!val) return "Unknown";
+    const str = String(val).trim();
+    const basePart = str.split(/[_-\s]+/)[0];
+    if (!basePart) return "Unknown";
+    return basePart.charAt(0).toUpperCase() + basePart.slice(1).toLowerCase();
+  };
+
   const activeRegion = cleanRegion(currentRegion);
 
   const [targetGroup, setTargetGroup] = useState("karyakars");
@@ -97,8 +105,6 @@ export default function AccommodationManager({
     list.push("PS-801");
     list.push("PS-802");
 
-    // Floor 9: Excluded
-
     // Floors 10 & 11: Halls
     list.push("PS-10th Floor Hall");
     list.push("PS-11th Floor Hall");
@@ -117,14 +123,6 @@ export default function AccommodationManager({
     }
     return `${strId}`;
   }, [targetGroup]);
-
-  const cleanCenterName = (val) => {
-    if (!val) return "Unknown";
-    const str = String(val).trim();
-    const basePart = str.split(/[_-\s]+/)[0];
-    if (!basePart) return "Unknown";
-    return basePart.charAt(0).toUpperCase() + basePart.slice(1).toLowerCase();
-  };
 
   const fetchAttendees = useCallback(() => {
     setLoading(true);
@@ -524,7 +522,7 @@ export default function AccommodationManager({
                     <th>Full Name</th>
                     <th>Center</th>
                     <th>{targetGroup === "karyakars" ? "Gender" : "Category"}</th>
-                    <th>Accommodation Space</th>
+                    <th>Room</th>
                     <th>Assign Room</th>
                     <th className={styles.actionHeader}>Action</th>
                   </tr>
@@ -544,7 +542,7 @@ export default function AccommodationManager({
                       const isSaving = savingIds[person.id];
                       const wasSaved = savedNotifications[person.id];
                       const isChecked = selectedIds.includes(person.id);
-                      const formattedCenter = cleanCenterMap(person.center);
+                      const formattedCenter = cleanCenterName(person.center);
 
                       const isPresetRoom = roomOptions.includes(draftRoomValue);
 
@@ -667,12 +665,4 @@ export default function AccommodationManager({
       </div>
     </div>
   );
-}
-
-function cleanCenterMap(val) {
-  if (!val) return "—";
-  const str = String(val).trim();
-  const basePart = str.split(/[_-\s]+/)[0];
-  if (!basePart) return "—";
-  return basePart.charAt(0).toUpperCase() + basePart.slice(1).toLowerCase();
 }
