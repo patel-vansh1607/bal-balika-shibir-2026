@@ -115,7 +115,7 @@ const filteredAttendees = useMemo(() => {
       if (!matchesBaseFilters) return false;
 
       // Payment status filter (Kenya & South Africa)
-      if ((regionScope === "Kenya" || regionScope === "South Africa") && paymentFilter !== "All") {
+      if ((regionScope === "Kenya" || regionScope === "South Africa" || regionScope === "Botswana") && paymentFilter !== "All") {
         const currentPaymentStatus = attendee.is_paid === 1 ? 1 : 0;
         if (String(currentPaymentStatus) !== paymentFilter) {
           return false;
@@ -123,7 +123,7 @@ const filteredAttendees = useMemo(() => {
       }
 
       // Indemnity form status filter (South Africa only)
-      if (regionScope === "South Africa" && indemnityFilter !== "All") {
+      if ((regionScope === "South Africa" || regionScope === "Botswana" ) && indemnityFilter !== "All") {
         const currentIndemnityStatus = Number(attendee.indemnity_form ?? 0);
         if (String(currentIndemnityStatus) !== indemnityFilter) {
           return false;
@@ -1141,7 +1141,7 @@ const handleSaveProfile = async (e) => {
             </div>
 
             {/* --- NEW KENYA-ONLY PAYMENT FILTER DROPDOWN --- */}
-            {(regionScope === "Kenya" || regionScope === "South Africa") && (
+            {(regionScope === "Kenya" || regionScope === "South Africa" || regionScope === "Botswana") && (
                 <div className={styles.filterSelectContainer}>
                   <FaMoneyBillWave style={{ color: "var(--accent-primary)" }} />
                   <select
@@ -1155,8 +1155,10 @@ const handleSaveProfile = async (e) => {
                   </select>
                 </div>
               )}
-{(regionScope === "South Africa" ||
-  localStorage.getItem("selected_shibir_region") === "South Africa") && (
+{(regionScope === "South Africa" || 
+  regionScope === "Botswana" || 
+  localStorage.getItem("selected_shibir_region") === "South Africa" ||
+  localStorage.getItem("selected_shibir_region") === "Botswana") && (
   <div className={styles.filterSelectContainer}>
     <FaFileSignature style={{ color: "var(--accent-primary)" }} />
     <select
@@ -1436,15 +1438,16 @@ const handleSaveProfile = async (e) => {
                   {[
                     "Botswana",
                     "South Africa",
+                    "Botswana",
                     "Malawi",
                     "Zambia",
                     "Kenya",
                     "Uganda",
                   ].includes(regionScope) && <th>T-Shirt</th>}
                   {regionScope === "Tanzania" && <th>Selection Status</th>}
-                  {(regionScope === "Kenya" || regionScope === "South Africa")&& <th>Payment Status</th>}
+                  {(regionScope === "Kenya" || regionScope === "South Africa"  || regionScope === "Botswana")&& <th>Payment Status</th>}
                   {regionScope === "Kenya" &&<th>Accomodation</th>}
-                  {regionScope === "South Africa" && <th>Indemnity Form</th>}
+                  {(regionScope === "South Africa"  || regionScope === "Botswana")&& <th>Indemnity Form</th>}
                   <th style={{ textAlign: "center" }}>QR</th>
                   {(userRole === "master_admin" ||
                     userRole === "super_admin") && <th>Actions</th>}
@@ -1501,6 +1504,7 @@ const handleSaveProfile = async (e) => {
                       {[
                         "Botswana",
                         "South Africa",
+                        "Botswana",
                         "Malawi",
                         "Zambia",
                         "Kenya",
@@ -1564,7 +1568,7 @@ const handleSaveProfile = async (e) => {
                       )}
 
                       {/* --- Kenya Specific Column --- */}
-{(regionScope === "Kenya" || regionScope === "South Africa") && (
+{(regionScope === "Kenya" || regionScope === "South Africa"  || regionScope === "Botswana") && (
   <td>
     {attendee.is_paid === 1 || attendee.is_paid === true || attendee.is_paid === "1" ? (
       <span
@@ -1608,7 +1612,7 @@ const handleSaveProfile = async (e) => {
   </td>
 )}
 
-                      {regionScope === "South Africa" && (
+                      {(regionScope === "South Africa"  || regionScope === "Botswana" )&& (
   <td>
     {(() => {
       const v = attendee.indemnity_form ?? 0;
@@ -1679,7 +1683,7 @@ const handleSaveProfile = async (e) => {
                               onClick={(e) => e.stopPropagation()}
                             >
                               {/* --- Kenya Payment Actions --- */}
-                             {(regionScope === "Kenya" || regionScope === "South Africa") &&
+                             {(regionScope === "Kenya" || regionScope === "South Africa"  || regionScope === "Botswana") &&
   (userRole === "master_admin" || userRole === "super_admin") && (
     <button
       onClick={() => {
@@ -2193,9 +2197,11 @@ const handleSaveProfile = async (e) => {
               </div>
 
               {/* Indemnity Form Control - South Africa Only */}
-              {(regionScope === "South Africa" ||
-                editingAttendee?.region === "South Africa" ||
-                localStorage.getItem("selected_shibir_region") === "South Africa") &&
+              {(regionScope === "South Africa" || regionScope === "Botswana") &&
+                (editingAttendee?.region === "South Africa" ||
+                localStorage.getItem("selected_shibir_region") === "South Africa" ||
+                editingAttendee?.region === "Botswana" ||
+                localStorage.getItem("selected_shibir_region") === "Botswana") &&
                 (userRole === "master_admin" || userRole === "super_admin") && (
                   <div className={styles.formRow}>
                     <div className={styles.formGroup} style={{ flex: 1 }}>

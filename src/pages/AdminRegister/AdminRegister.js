@@ -1033,7 +1033,7 @@ export default function AdminRegister() {
 
                             {/* Sizing Info Helper (Visible only for Uganda) */}
                             {(selectedRegion === "Uganda" ||
-                              selectedRegion === "South Africa") && (
+                              selectedRegion === "South Africa" || selectedRegion === "Botswana") && (
                               <div className={styles.helperTooltipContainer}>
                                 <button
                                   type="button"
