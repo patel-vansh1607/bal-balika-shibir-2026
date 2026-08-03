@@ -582,7 +582,7 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
                   </button>
                 )}
 
-                {(userRole === "master_admin" || userRole === "super_admin") && (
+                {(userRole === "master_admin") && (
                   <button
                     onClick={() => handleNavigation("/dashboard/admin-control")}
                     className={`${styles.navLink} ${location.pathname === "/dashboard/admin-control" ? styles.navLinkActive : ""}`}
@@ -739,7 +739,7 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
             <Route
               path="admin-control"
               element={
-                userRole === "master_admin" || userRole === "super_admin"  ? <AdminControl /> : <NotFound />
+                userRole === "master_admin"  ? <AdminControl /> : <NotFound />
               }
             />
             <Route
