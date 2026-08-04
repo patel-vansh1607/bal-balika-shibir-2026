@@ -16,6 +16,7 @@ export default function Login() {
   const [loading, setLoading]           = useState(false);
   const [errorMsg, setErrorMsg]         = useState("");
   const [isBlocked, setIsBlocked]       = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
   const [cfToken, setCfToken]           = useState("");
   const turnstileRef                    = useRef(null);
   const navigate = useNavigate();
@@ -33,12 +34,24 @@ export default function Login() {
     try {
       const { token, user } = await auth.login(email.trim(), password, cfToken);
       setIsBlocked(false);
+      setFailedAttempts(0);
       login(token, user);
       navigate("/select-region");
     } catch (err) {
-      const blocked = err.status === 423;
-      setIsBlocked(blocked);
-      setErrorMsg(err.message || "Invalid email or password.");
+      if (err.status === 423) {
+        setIsBlocked(true);
+        setErrorMsg("Your account has been locked. Please contact a master admin to restore access.");
+      } else {
+        const next = failedAttempts + 1;
+        setFailedAttempts(next);
+        const left = 3 - next;
+        setIsBlocked(false);
+        setErrorMsg(
+          left > 0
+            ? `Incorrect password — ${left} attempt${left === 1 ? "" : "s"} remaining before lockout.`
+            : "Your account has been locked. Please contact a master admin to restore access."
+        );
+      }
       setCfToken("");
       if (turnstileRef.current) turnstileRef.current.reset();
       setLoading(false);
