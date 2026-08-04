@@ -132,6 +132,7 @@ export default function Sessions({
             id: attendee.id,
             memberId: attendee.member_id || "N/A",
             fullName: attendee.name || "Unknown Attendee",
+            region: attendee.region || "N/A",
             subgroup: attendee.subgroup || "N/A",
             category: attendee.category || "General",
             checkedIn: hasCheckedIn,
@@ -159,6 +160,7 @@ export default function Sessions({
                   id: log.attendee_id,
                   memberId: log.member_id || "N/A",
                   fullName: log.attendee_name || "Verified External Attendee",
+                  region: log.region || "N/A",
                   subgroup: "Cross-Region",
                   category: "General",
                   checkedIn: true,
@@ -222,11 +224,13 @@ export default function Sessions({
           </button>
           <div className={styles.headerInfoText}>
             <h1>Sessions Attendance</h1>
-            <p>
-              Select a Session track to manage attendance for:{" "}
-              <strong>{activeRegion}</strong>
-            </p>
+            <p>Select a Session track to manage attendance</p>
           </div>
+        </div>
+
+        <div className={styles.regionBadgeSection}>
+          <span className={styles.regionBadgeLabel}>Active Region:</span>
+          <span className={styles.regionBadgePill}>{activeRegion}</span>
         </div>
 
         <div className={styles.selectionGridList}>
@@ -340,6 +344,7 @@ export default function Sessions({
               <tr>
                 <th>ID No</th>
                 <th>Full Name</th>
+                <th>Region</th>
                 <th>Subgroup Track</th>
                 <th>Category</th>
                 <th>Status</th>
@@ -350,7 +355,7 @@ export default function Sessions({
               {attendanceLogs.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="6"
+                    colSpan="7"
                     className={styles.emptyTablePlaceholder}
                   >
                     No attendance records logged for this session scope.
@@ -370,6 +375,11 @@ export default function Sessions({
                       <code>{record.memberId}</code>
                     </td>
                     <td className={styles.nameCell}>{record.fullName}</td>
+                    <td>
+                      <span className={styles.subgroupTag}>
+                        {record.region}
+                      </span>
+                    </td>
                     <td>
                       <span className={styles.subgroupTag}>
                         {record.subgroup}
