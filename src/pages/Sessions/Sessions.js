@@ -10,12 +10,18 @@ import {
   FaClock,
   FaKeyboard,
   FaArrowRight,
+  FaTrash,
+  FaGlobe,
+  FaCheck,
+  FaTimes,
 } from "react-icons/fa";
 import {
   sessions as sessionsApi,
   sessionLogs,
   attendees as attendeesApi,
 } from "../../apiClient";
+
+const REGIONS = ['All', 'Kenya', 'Tanzania', 'Uganda', 'Zambia', 'Malawi', 'Botswana', 'South Africa'];
 import styles from "./Sessions.module.css";
 
 export default function Sessions({
@@ -31,11 +37,11 @@ export default function Sessions({
   const [sessionInfo, setSessionInfo] = useState(null);
   const [attendanceLogs, setAttendanceLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [metrics, setMetrics] = useState({
-    totalExpected: 0,
-    present: 0,
-    absent: 0,
-  });
+  const [metrics, setMetrics] = useState({ totalExpected: 0, present: 0, absent: 0 });
+  const [deletingId, setDeletingId] = useState(null);
+  const [assigningId, setAssigningId] = useState(null);
+  const [assignRegionValue, setAssignRegionValue] = useState("");
+  const [actionMsg, setActionMsg] = useState(null);
 
   const isMenuSelectionMode = !sessionId || sessionId === "attendance";
   const activeRegion =
@@ -204,6 +210,38 @@ export default function Sessions({
     isGlobal,
   ]);
 
+  const handleDeleteSession = async (session) => {
+    if (!window.confirm(`Delete "${session.title}"? This cannot be undone.`)) return;
+    setDeletingId(session.id);
+    try {
+      await sessionsApi.delete(session.id);
+      setSessionsList((prev) => prev.filter((s) => s.id !== session.id));
+      setActionMsg({ type: "success", text: `"${session.title}" deleted.` });
+    } catch (err) {
+      setActionMsg({ type: "error", text: err.message });
+    } finally {
+      setDeletingId(null);
+      setTimeout(() => setActionMsg(null), 4000);
+    }
+  };
+
+  const handleAssignRegion = async (session) => {
+    if (!assignRegionValue) return;
+    try {
+      await sessionsApi.update(session.id, { region: assignRegionValue });
+      setSessionsList((prev) =>
+        prev.map((s) => s.id === session.id ? { ...s, region: assignRegionValue } : s)
+      );
+      setActionMsg({ type: "success", text: `Region updated to "${assignRegionValue}".` });
+    } catch (err) {
+      setActionMsg({ type: "error", text: err.message });
+    } finally {
+      setAssigningId(null);
+      setAssignRegionValue("");
+      setTimeout(() => setActionMsg(null), 4000);
+    }
+  };
+
   if (loading || isDataFetching) {
     return (
       <div className={styles.loaderContainer}>
@@ -233,31 +271,62 @@ export default function Sessions({
           <span className={styles.regionBadgePill}>{activeRegion}</span>
         </div>
 
+        {actionMsg && (
+          <div className={`${styles.actionToast} ${actionMsg.type === "error" ? styles.actionToastError : styles.actionToastSuccess}`}>
+            {actionMsg.text}
+          </div>
+        )}
+
         <div className={styles.selectionGridList}>
           {sessionsList.map((session, index) => (
             <div key={session.id} className={styles.gateSelectionCard}>
               <div className={styles.cardInfoPanel}>
-                <div className={styles.sessionIndexBadge}>
-                  Session {index + 1}
+                <div className={styles.cardTopRow}>
+                  <div className={styles.sessionIndexBadge}>Session {index + 1}</div>
+                  <button
+                    className={styles.deleteSessionBtn}
+                    title="Delete session"
+                    disabled={deletingId === session.id}
+                    onClick={() => handleDeleteSession(session)}
+                  >
+                    {deletingId === session.id ? <FaSpinner className={styles.spin} /> : <FaTrash />}
+                  </button>
                 </div>
                 <h3>{session.title}</h3>
                 <span className={styles.timeTagStamp}>
                   <FaClock />{" "}
-                  {session.start_time
-                    ? formatNairobiTime(session.start_time)
-                    : "N/A"}
+                  {session.start_time ? formatNairobiTime(session.start_time) : "N/A"}
                 </span>
-                {session.region && session.region !== "All" && (
-                  <span className={styles.sessionRegionTag}>
-                    {session.region} only
-                  </span>
+                <span className={styles.sessionRegionTag} style={{ background: session.region === "All" ? "#f0fdf4" : "#eff6ff", color: session.region === "All" ? "#166534" : "#1d4ed8", borderColor: session.region === "All" ? "#bbf7d0" : "#bfdbfe" }}>
+                  <FaGlobe style={{ fontSize: 10 }} /> {session.region === "All" ? "All Regions" : session.region}
+                </span>
+
+                {/* Assign region inline */}
+                {assigningId === session.id ? (
+                  <div className={styles.assignRegionRow}>
+                    <select
+                      value={assignRegionValue}
+                      onChange={(e) => setAssignRegionValue(e.target.value)}
+                      className={styles.assignRegionSelect}
+                      autoFocus
+                    >
+                      <option value="">Pick region...</option>
+                      {REGIONS.map((r) => (
+                        <option key={r} value={r}>{r === "All" ? "All Regions (Global)" : r}</option>
+                      ))}
+                    </select>
+                    <button className={styles.assignConfirmBtn} onClick={() => handleAssignRegion(session)} disabled={!assignRegionValue}><FaCheck /></button>
+                    <button className={styles.assignCancelBtn} onClick={() => { setAssigningId(null); setAssignRegionValue(""); }}><FaTimes /></button>
+                  </div>
+                ) : (
+                  <button className={styles.assignRegionTrigger} onClick={() => { setAssigningId(session.id); setAssignRegionValue(session.region || "All"); }}>
+                    <FaGlobe /> Assign Region
+                  </button>
                 )}
               </div>
               <button
                 className={styles.launchGateBtn}
-                onClick={() =>
-                  navigate(`/dashboard/session/attendance/${session.id}`)
-                }
+                onClick={() => navigate(`/dashboard/session/attendance/${session.id}`)}
               >
                 <FaQrcode /> Mark Attendance <FaArrowRight />
               </button>
