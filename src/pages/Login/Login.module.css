@@ -280,3 +280,53 @@
   );
   border: none;
 }
+/* Base Inline Banner */
+.blockedBanner,
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 10px 0;
+  border: 1px solid transparent;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Blocked Variant (Red) */
+.blockedBanner {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+/* Error Variant (Amber/Yellow) */
+.errorBanner {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.icon {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.message {
+  word-break: break-word;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
