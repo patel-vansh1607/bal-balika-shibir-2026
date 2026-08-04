@@ -21,8 +21,9 @@ import {
   attendees as attendeesApi,
 } from "../../apiClient";
 
-const REGIONS = ['All', 'Kenya', 'Tanzania', 'Uganda', 'Zambia', 'Malawi', 'Botswana', 'South Africa'];
 import styles from "./Sessions.module.css";
+
+const REGIONS = ['All', 'Kenya', 'Tanzania', 'Uganda', 'Zambia', 'Malawi', 'Botswana', 'South Africa'];
 
 export default function Sessions({
   regionScope,
