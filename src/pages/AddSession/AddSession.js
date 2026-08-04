@@ -26,11 +26,12 @@ export default function AddSession() {
     const sessionUuid = crypto.randomUUID();
 
     try {
+      const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
       await sessionsApi.create({
         id: sessionUuid,
         title: fullTitle,
-        start_time: new Date(startTime).toISOString(),
-        end_time:   new Date(endTime).toISOString(),
+        start_time: new Date(new Date(startTime).getTime() + THREE_HOURS_MS).toISOString(),
+        end_time:   new Date(new Date(endTime).getTime() + THREE_HOURS_MS).toISOString(),
       });
       setMessage({ success: true, text: `${fullTitle} created successfully!` });
       setSessionName("");
