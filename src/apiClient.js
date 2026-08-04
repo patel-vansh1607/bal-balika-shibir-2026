@@ -83,10 +83,15 @@ export const attendees = {
 
 // ---- Sessions ----
 export const sessions = {
-  list: () => apiFetch('GET', '/sessions'),
+  list: (region) => {
+    const qs = region && region !== 'All' ? `?region=${encodeURIComponent(region)}` : '';
+    return apiFetch('GET', `/sessions${qs}`);
+  },
   count: () => apiFetch('GET', '/sessions/count'),
   get: (id) => apiFetch('GET', `/sessions/${id}`),
   create: (data) => apiFetch('POST', '/sessions', data),
+  update: (id, data) => apiFetch('PATCH', `/sessions/${id}`, data),
+  delete: (id) => apiFetch('DELETE', `/sessions/${id}`),
 };
 
 // ---- Session Logs ----
