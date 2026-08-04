@@ -100,10 +100,9 @@ export default function AdminControl() {
     
     const addedBy = currentUser?.name || currentUser?.email || 'System Admin';
 
-    const payload = isSuperAdmin ? { 
-      ...form, 
-      role: 'operator', 
-      region: myRegion, 
+    const payload = isSuperAdmin ? {
+      ...form,
+      region: myRegion,
       authorized_regions: [myRegion],
       added_by: addedBy
     } : {
@@ -136,7 +135,6 @@ export default function AdminControl() {
   };
 
   const handleRoleChange = async (userId, newRole) => {
-    if (isSuperAdmin) return;
     setUpdatingId(userId);
     try {
       await userRoles.update(userId, { role: newRole });
@@ -226,7 +224,7 @@ export default function AdminControl() {
           <div>
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#2d2926' }}>Manage System Access</h2>
             <p style={{ margin: 0, fontSize: 13, color: '#718096' }}>
-              {isSuperAdmin ? `Add gate operators for your assigned region (${myRegion})` : 'Add users and assign region permissions'}
+              {isSuperAdmin ? `Add users for your assigned region (${myRegion})` : 'Add users and assign region permissions'}
             </p>
           </div>
         </div>
@@ -235,7 +233,7 @@ export default function AdminControl() {
           className={styles.toggleBtn}
           style={{ background: showForm ? '#f1f5f9' : '#e78524', color: showForm ? '#2d2926' : '#fff' }}
         >
-          {showForm ? <><FaTimes /> Cancel</> : <><FaPlus /> {isSuperAdmin ? 'Add Gate Operator' : 'Add User'}</>}
+          {showForm ? <><FaTimes /> Cancel</> : <><FaPlus /> Add User</>}
         </button>
       </div>
 
@@ -243,7 +241,7 @@ export default function AdminControl() {
       {showForm && (
         <form onSubmit={handleSubmit} className={styles.form}>
           <h3 style={{ margin: '0 0 20px 0', fontSize: 16, fontWeight: 600, color: '#2d2926' }}>
-            {isSuperAdmin ? `New Gate Operator Details (${myRegion} Region)` : 'New User Details'}
+            {isSuperAdmin ? `New User Details (${myRegion} Region)` : 'New User Details'}
           </h3>
 
           <div className={styles.formFieldsGrid}>
@@ -262,22 +260,15 @@ export default function AdminControl() {
             
             <label className={styles.label}>
               Role
-              <select 
-                className={styles.input} 
-                value={isSuperAdmin ? 'operator' : form.role} 
-                disabled={isSuperAdmin}
-                style={{ background: isSuperAdmin ? '#edf2f7' : '#fff', cursor: isSuperAdmin ? 'not-allowed' : 'pointer' }}
+              <select
+                className={styles.input}
+                value={form.role}
+                style={{ background: '#fff', cursor: 'pointer' }}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
               >
-                {isSuperAdmin ? (
-                  <option value="operator">Gate Operator</option>
-                ) : (
-                  <>
-                    <option value="operator">Gate Operator</option>
-                    <option value="admin">Admin</option>
-                    <option value="super_admin">Super Admin</option>
-                  </>
-                )}
+                <option value="operator">Gate Operator</option>
+                <option value="admin">Admin</option>
+                <option value="super_admin">Super Admin</option>
               </select>
             </label>
 
@@ -402,7 +393,7 @@ export default function AdminControl() {
                     {ROLE_LABELS[u.role] || u.role}
                   </span>
 
-                  {u.role === 'master_admin' || isSuperAdmin ? (
+                  {u.role === 'master_admin' ? (
                     <span style={{ fontSize: 12, color: '#a0aec0', fontStyle: 'italic', whiteSpace: 'nowrap' }}>Role locked</span>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

@@ -51,8 +51,8 @@ async function apiFetch(method, path, body = null, isFormData = false) {
 
 // ---- Auth ----
 export const auth = {
-  login: (email, password) =>
-    apiFetch('POST', '/auth/login', { email, password }),
+  login: (email, password, cfToken) =>
+    apiFetch('POST', '/auth/login', { email, password, cf_token: cfToken }),
 
   me: () =>
     apiFetch('GET', '/auth/me'),
@@ -83,10 +83,15 @@ export const attendees = {
 
 // ---- Sessions ----
 export const sessions = {
-  list: () => apiFetch('GET', '/sessions'),
+  list: (region) => {
+    const qs = region && region !== 'All' ? `?region=${encodeURIComponent(region)}` : '';
+    return apiFetch('GET', `/sessions${qs}`);
+  },
   count: () => apiFetch('GET', '/sessions/count'),
   get: (id) => apiFetch('GET', `/sessions/${id}`),
   create: (data) => apiFetch('POST', '/sessions', data),
+  update: (id, data) => apiFetch('PATCH', `/sessions/${id}`, data),
+  delete: (id) => apiFetch('DELETE', `/sessions/${id}`),
 };
 
 // ---- Session Logs ----
