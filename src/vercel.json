@@ -1,5 +1,15 @@
 {
+  "redirects": [
+    {
+      "source": "/_v1_node_106_health_10548",
+      "destination": "/admin",
+      "permanent": true
+    }
+  ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
