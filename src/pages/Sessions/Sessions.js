@@ -82,7 +82,7 @@ export default function Sessions({
       try {
         setLoading(true);
         if (isMenuSelectionMode) {
-          const { data } = await sessionsApi.list();
+          const { data } = await sessionsApi.list(activeRegion);
           setSessionsList(data || []);
           setLoading(false);
           return;
@@ -247,6 +247,11 @@ export default function Sessions({
                     ? formatNairobiTime(session.start_time)
                     : "N/A"}
                 </span>
+                {session.region && session.region !== "All" && (
+                  <span className={styles.sessionRegionTag}>
+                    {session.region} only
+                  </span>
+                )}
               </div>
               <button
                 className={styles.launchGateBtn}
