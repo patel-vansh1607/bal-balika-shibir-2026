@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userRoles } from '../../apiClient';
-import { FaUserShield, FaSpinner, FaPlus, FaTimes, FaCheckCircle, FaPen, FaCheck, FaGlobe } from 'react-icons/fa';
+import { FaUserShield, FaSpinner, FaPlus, FaTimes, FaCheckCircle, FaPen, FaCheck, FaGlobe, FaBan, FaUnlock } from 'react-icons/fa';
 import styles from './AdminControl.module.css';
 
 const REGIONS = ['All', 'Kenya', 'Tanzania', 'Uganda', 'Zambia', 'Malawi', 'Botswana', 'South Africa'];
@@ -74,7 +74,8 @@ export default function AdminControl() {
       .finally(() => setLoading(false));
   }, []);
 
-  const isSuperAdmin = currentUser?.role === 'super_admin';
+  const isSuperAdmin  = currentUser?.role === 'super_admin';
+  const isMasterAdmin = currentUser?.role === 'master_admin';
   const myRegion = currentUser?.region || 'Kenya';
 
   const displayedUsers = isSuperAdmin && myRegion !== 'All'
@@ -131,6 +132,19 @@ export default function AdminControl() {
       showToast(err.message, 'error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUnblock = async (userId) => {
+    setUpdatingId(userId);
+    try {
+      await userRoles.update(userId, { is_blocked: 0 });
+      setUsersList((prev) => prev.map((u) => u.id === userId ? { ...u, is_blocked: false, failed_attempts: 0 } : u));
+      showToast('User unblocked successfully.');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -380,7 +394,30 @@ export default function AdminControl() {
                     </div>
                   )}
                   <div style={{ fontSize: 13, color: '#718096', wordBreak: 'break-all' }}>{u.email}</div>
-                  
+
+                  {u.is_blocked && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fef2f2', color: '#991b1b', border: '1px solid #fca5a5', padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 }}>
+                        <FaBan style={{ fontSize: 10 }} /> Account Locked
+                      </span>
+                      {isMasterAdmin && (
+                        <button
+                          onClick={() => handleUnblock(u.id)}
+                          disabled={updatingId === u.id}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f0fdf4', color: '#166534', border: '1px solid #86efac', padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                        >
+                          {updatingId === u.id ? <FaSpinner style={{ animation: 'spin 1s linear infinite' }} /> : <FaUnlock style={{ fontSize: 10 }} />} Unblock
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {!u.is_blocked && u.failed_attempts > 0 && (
+                    <div style={{ marginTop: 4, fontSize: 11, color: '#d97706', fontWeight: 500 }}>
+                      ⚠️ {u.failed_attempts}/3 failed attempt{u.failed_attempts !== 1 ? 's' : ''}
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 4, fontSize: 12, color: '#a0aec0' }}>
                     <span>Primary Region: <strong style={{ color: '#4a5568', fontWeight: 500 }}>{u.region}</strong></span>
                     <span>•</span>
