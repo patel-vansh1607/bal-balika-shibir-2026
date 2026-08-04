@@ -1,6 +1,6 @@
 // src/App.js
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'; // Added Navigate
 import { Toaster } from 'react-hot-toast'; // 1. Import Toaster
 import Maintenance from './pages/MaintenancePage/MaintenancePage';
 import ProtectedRoute from './pages/ProtectedRoute/ProtectedRoute';
@@ -38,8 +38,16 @@ export default function App() {
       />
       <Routes>
         <Route path='/' element={<HomeRoute />}/>
-        <Route path="/_v1_node_106_health_10548" element={<Login />} />
-        <Route path="/admin" element={<NotFound />} />
+        
+        {/* Redirect secretly/legacy URL to /admin */}
+        <Route 
+          path="/_v1_node_106_health_10548" 
+          element={<Navigate to="/admin" replace />} 
+        />
+
+        {/* Change /admin element from NotFound to Login if that is where users should log in */}
+        <Route path="/admin" element={<Login />} />
+
         <Route 
           path="/dashboard/*" 
           element={
