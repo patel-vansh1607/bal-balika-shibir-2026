@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { FaCalendarPlus, FaHeading, FaClock, FaSpinner, FaCheckCircle } from "react-icons/fa";
+import { FaCalendarPlus, FaHeading, FaClock, FaSpinner, FaCheckCircle, FaGlobe } from "react-icons/fa";
 import { sessions as sessionsApi } from "../../apiClient";
 import styles from "./AddSession.module.css";
+
+const REGIONS = ['All', 'Kenya', 'Tanzania', 'Uganda', 'Zambia', 'Malawi', 'Botswana', 'South Africa'];
 
 export default function AddSession() {
   const [sessionNumber, setSessionNumber] = useState(1);
   const [sessionName, setSessionName]     = useState("");
+  const [sessionRegion, setSessionRegion] = useState("All");
   const [startTime, setStartTime]         = useState("");
   const [endTime, setEndTime]             = useState("");
   const [isSubmitting, setIsSubmitting]   = useState(false);
@@ -30,11 +33,13 @@ export default function AddSession() {
       await sessionsApi.create({
         id: sessionUuid,
         title: fullTitle,
+        region: sessionRegion,
         start_time: new Date(new Date(startTime).getTime() + THREE_HOURS_MS).toISOString(),
         end_time:   new Date(new Date(endTime).getTime() + THREE_HOURS_MS).toISOString(),
       });
-      setMessage({ success: true, text: `${fullTitle} created successfully!` });
+      setMessage({ success: true, text: `${fullTitle} created for ${sessionRegion === 'All' ? 'all regions' : sessionRegion}!` });
       setSessionName("");
+      setSessionRegion("All");
       setStartTime("");
       setEndTime("");
       setSessionNumber((prev) => prev + 1);
@@ -67,6 +72,14 @@ export default function AddSession() {
         <div className={styles.inputGroup}>
           <label><FaHeading /> Session Name *</label>
           <input type="text" required value={sessionName} onChange={(e) => setSessionName(e.target.value)} placeholder="e.g., Morning Devotional, Post-Lunch Panel" />
+        </div>
+        <div className={styles.inputGroup}>
+          <label><FaGlobe /> Region *</label>
+          <select value={sessionRegion} onChange={(e) => setSessionRegion(e.target.value)} required>
+            {REGIONS.map((r) => (
+              <option key={r} value={r}>{r === 'All' ? 'All Regions (Global)' : r}</option>
+            ))}
+          </select>
         </div>
         <div className={styles.formRow}>
           <div className={styles.inputGroup}>
