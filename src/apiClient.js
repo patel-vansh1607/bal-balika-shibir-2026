@@ -51,8 +51,8 @@ async function apiFetch(method, path, body = null, isFormData = false) {
 
 // ---- Auth ----
 export const auth = {
-  login: (email, password) =>
-    apiFetch('POST', '/auth/login', { email, password }),
+  login: (email, password, cfToken) =>
+    apiFetch('POST', '/auth/login', { email, password, cf_token: cfToken }),
 
   me: () =>
     apiFetch('GET', '/auth/me'),
