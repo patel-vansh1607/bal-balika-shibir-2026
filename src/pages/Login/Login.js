@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../../apiClient";
 import { useAuth } from "../../context/AuthContext";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import { Turnstile } from "@marsidev/react-turnstile";
 import styles from "./Login.module.css";
 import { ReactComponent as Logo } from '../../assets/images/Making the Right Choices - Logo_ColorScalable.svg'
+
+const TURNSTILE_SITE_KEY = "0x4AAAAAAD_Kt5Hxs95zJ1MJ";
 
 export default function Login() {
   const [email, setEmail]               = useState("");
@@ -12,20 +15,28 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]           = useState(false);
   const [errorMsg, setErrorMsg]         = useState("");
+  const [cfToken, setCfToken]           = useState("");
+  const turnstileRef                    = useRef(null);
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
+    if (!cfToken) {
+      setErrorMsg("Please complete the security check.");
+      return;
+    }
     setErrorMsg("");
     setLoading(true);
 
     try {
-      const { token, user } = await auth.login(email.trim(), password);
+      const { token, user } = await auth.login(email.trim(), password, cfToken);
       login(token, user);
       navigate("/select-region");
     } catch (err) {
       setErrorMsg(err.message || "Invalid email or password.");
+      setCfToken("");
+      if (turnstileRef.current) turnstileRef.current.reset();
       setLoading(false);
     }
   };
@@ -104,7 +115,18 @@ export default function Login() {
             </div>
           </div>
 
-          <button type="submit" className={styles.submitBtn} disabled={loading}>
+          <div className={styles.turnstileWrapper}>
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={TURNSTILE_SITE_KEY}
+              onSuccess={(token) => setCfToken(token)}
+              onExpire={() => setCfToken("")}
+              onError={() => setCfToken("")}
+              options={{ theme: "light", size: "normal" }}
+            />
+          </div>
+
+          <button type="submit" className={styles.submitBtn} disabled={loading || !cfToken}>
             {loading ? (
               <div className={styles.btnLoadingState}>
                 <div className={styles.spinner}></div>
