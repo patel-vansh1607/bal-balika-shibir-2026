@@ -1426,3 +1426,55 @@
   color: #94a3b8;
   cursor: not-allowed;
 }
+/* Base container for current room badge */
+.currentRoomTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #0284c7;
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  white-space: nowrap;
+  transition: all 0.2s ease-in-out;
+}
+
+.currentRoomTag:hover {
+  background: rgba(14, 165, 233, 0.18);
+  border-color: rgba(14, 165, 233, 0.4);
+}
+
+.roomIcon {
+  font-size: 0.85rem;
+  color: #0284c7;
+  flex-shrink: 0;
+}
+
+/* Container for unassigned state */
+.noRoomTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.78125rem;
+  font-weight: 500;
+  color: #64748b;
+  background: rgba(241, 245, 249, 0.6);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  white-space: nowrap;
+}
+
+/* Subtle status indicator dot for 'Not Assigned' */
+.noRoomDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #94a3b8;
+}

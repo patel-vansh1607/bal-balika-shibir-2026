@@ -1596,16 +1596,16 @@ const handleSaveProfile = async (e) => {
   </td>
 )}
 
-  {/* Check both spellings so that whichever key the backend provides is successfully displayed */}
 {regionScope === "Kenya" && (
   <td>
     {(attendee.accommodation || attendee.accomodation) ? (
       <span className={styles.currentRoomTag}>
-        <FaBed style={{ fontSize: "12px" }} />
-        {attendee.accommodation || attendee.accomodation}
+        <FaBed className={styles.roomIcon} />
+        <span>{attendee.accommodation || attendee.accomodation}</span>
       </span>
     ) : (
       <span className={styles.noRoomTag}>
+        <span className={styles.noRoomDot} />
         Not Assigned
       </span>
     )}
