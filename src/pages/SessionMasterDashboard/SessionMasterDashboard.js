@@ -56,7 +56,7 @@ export default function SessionMasterDashboard({ activeRegion }) {
     const fetchMasterAnalytics = async () => {
       try {
         setLoading(true);
-        const { data: baseSessions } = await sessionsApi.list();
+        const { data: baseSessions } = await sessionsApi.list(activeRegion);
         if (!baseSessions?.length) { setSessionsSummary([]); setBreakdownStats([]); setLoading(false); return; }
 
         const activePrefix = isGlobal ? null : REGION_PREFIXES[activeRegion];
