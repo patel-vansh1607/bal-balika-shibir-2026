@@ -15,6 +15,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]           = useState(false);
   const [errorMsg, setErrorMsg]         = useState("");
+  const [isBlocked, setIsBlocked]       = useState(false);
   const [cfToken, setCfToken]           = useState("");
   const turnstileRef                    = useRef(null);
   const navigate = useNavigate();
@@ -31,9 +32,12 @@ export default function Login() {
 
     try {
       const { token, user } = await auth.login(email.trim(), password, cfToken);
+      setIsBlocked(false);
       login(token, user);
       navigate("/select-region");
     } catch (err) {
+      const blocked = err.status === 423;
+      setIsBlocked(blocked);
       setErrorMsg(err.message || "Invalid email or password.");
       setCfToken("");
       if (turnstileRef.current) turnstileRef.current.reset();
@@ -67,8 +71,8 @@ export default function Login() {
         </div>
 
         {errorMsg && (
-          <div className={styles.errorBanner}>
-            <span>⚠️ {errorMsg}</span>
+          <div className={isBlocked ? styles.blockedBanner : styles.errorBanner}>
+            <span>{isBlocked ? "🔒" : "⚠️"} {errorMsg}</span>
           </div>
         )}
 
