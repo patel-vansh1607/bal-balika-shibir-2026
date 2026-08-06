@@ -40,7 +40,7 @@ export default function Login() {
     } catch (err) {
       if (err.status === 423) {
         setIsBlocked(true);
-        setErrorMsg("Your account has been locked. Please contact a master admin to restore access.");
+        setErrorMsg("Your account has been locked. Please contact a technical administrator to restore access.");
       } else {
         const next = failedAttempts + 1;
         setFailedAttempts(next);
@@ -49,7 +49,7 @@ export default function Login() {
         setErrorMsg(
           left > 0
             ? `Incorrect password — ${left} attempt${left === 1 ? "" : "s"} remaining before lockout.`
-            : "Your account has been locked. Please contact a master admin to restore access."
+            : "Your account has been locked. Please contact a technical administrator to restore access."
         );
       }
       setCfToken("");

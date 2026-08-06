@@ -112,7 +112,7 @@ export default function SessionDataDetails() {
       const doc       = new jsPDF();
       const timestamp = new Date().toLocaleDateString("en-KE", { timeZone: "Africa/Nairobi" });
 
-      doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(138, 21, 27);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(231, 133, 36);;
       doc.text("Attendance Report", 14, 22);
       doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(100, 100, 100);
       doc.text(`Region: ${isGlobal ? "Global African Network" : activeRegion}`, 14, 30);
@@ -178,7 +178,7 @@ export default function SessionDataDetails() {
           <p className={styles.detailSubtitle}>Region: <strong>{isGlobal ? "Global African Network" : activeRegion}</strong></p>
         </div>
         <div className={styles.headerRight}>
-          <button onClick={exportToPDF} disabled={isExporting || fullRoster.length === 0} className={styles.pdfExportButton} style={{ backgroundColor: fullRoster.length === 0 ? "#cccccc" : "#8a151b", cursor: fullRoster.length === 0 ? "not-allowed" : "pointer" }}>
+          <button onClick={exportToPDF} disabled={isExporting || fullRoster.length === 0} className={styles.pdfExportButton} style={{ backgroundColor: fullRoster.length === 0 ? "#cccccc" : "#e78524", cursor: fullRoster.length === 0 ? "not-allowed" : "pointer" }}>
             {isExporting ? <FaSpinner className={styles.spin} /> : <FaFileDownload />}
             {isGlobal ? "Export Attendance Report" : "Export Attendance Report"}
           </button>

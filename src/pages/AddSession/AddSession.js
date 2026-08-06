@@ -12,8 +12,7 @@ export default function AddSession() {
   const [sessionNumber, setSessionNumber] = useState(1);
   const [sessionName, setSessionName]     = useState("");
   const [sessionRegion, setSessionRegion] = useState(isRegionLocked ? activeRegion : "All");
-  const [startTime, setStartTime]         = useState("");
-  const [endTime, setEndTime]             = useState("");
+  const [sessionTime, setSessionTime]     = useState("");
   const [isSubmitting, setIsSubmitting]   = useState(false);
   const [message, setMessage]             = useState(null);
 
@@ -32,19 +31,16 @@ export default function AddSession() {
     const sessionUuid = crypto.randomUUID();
 
     try {
-      const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
       await sessionsApi.create({
         id: sessionUuid,
         title: fullTitle,
         region: sessionRegion,
-        start_time: new Date(new Date(startTime).getTime() + THREE_HOURS_MS).toISOString(),
-        end_time:   new Date(new Date(endTime).getTime() + THREE_HOURS_MS).toISOString(),
+        start_time: new Date(sessionTime).toISOString(),
       });
       setMessage({ success: true, text: `${fullTitle} created for ${sessionRegion === 'All' ? 'all regions' : sessionRegion}!` });
       setSessionName("");
-      setSessionRegion("All");
-      setStartTime("");
-      setEndTime("");
+      setSessionRegion(isRegionLocked ? activeRegion : "All");
+      setSessionTime("");
       setSessionNumber((prev) => prev + 1);
     } catch (err) {
       setMessage({ success: false, text: err.message || "Failed to save session." });
@@ -74,7 +70,13 @@ export default function AddSession() {
         </div>
         <div className={styles.inputGroup}>
           <label><FaHeading /> Session Name *</label>
-          <input type="text" required value={sessionName} onChange={(e) => setSessionName(e.target.value)} placeholder="e.g., Morning Devotional, Post-Lunch Panel" />
+          <input 
+            type="text" 
+            required 
+            value={sessionName} 
+            onChange={(e) => setSessionName(e.target.value)} 
+            placeholder="e.g., Morning Devotional, Post-Lunch Panel" 
+          />
         </div>
         <div className={styles.inputGroup}>
           <label><FaGlobe /> Region *</label>
@@ -93,16 +95,17 @@ export default function AddSession() {
             </select>
           )}
         </div>
-        <div className={styles.formRow}>
-          <div className={styles.inputGroup}>
-            <label><FaClock /> Start Time *</label>
-            <input type="datetime-local" required value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-          </div>
-          <div className={styles.inputGroup}>
-            <label><FaClock /> End Time *</label>
-            <input type="datetime-local" required value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-          </div>
+
+        <div className={styles.inputGroup}>
+          <label><FaClock /> Session Time *</label>
+          <input 
+            type="datetime-local" 
+            required 
+            value={sessionTime} 
+            onChange={(e) => setSessionTime(e.target.value)} 
+          />
         </div>
+
         <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
           {isSubmitting ? <><FaSpinner className={styles.spin} /> Saving Slot...</> : "Save Session"}
         </button>
