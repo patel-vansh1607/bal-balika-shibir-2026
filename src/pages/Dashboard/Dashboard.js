@@ -40,6 +40,7 @@ import {
   FaEnvelope,
   FaHotel,
   FaExclamationTriangle,
+  FaBook,
   // FaRedoAlt
 } from "react-icons/fa";
 import { IoIosAddCircleOutline } from "react-icons/io";
@@ -624,7 +625,7 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
                     onClick={() => handleNavigation("/dashboard/gate-logs")}
                     className={`${styles.navLink} ${location.pathname === "/dashboard/gate-logs" ? styles.navLinkActive : ""}`}
                   >
-                    <FaArchive className={styles.iconMargin} /> Gate Logs
+                    <FaBook className={styles.iconMargin} /> Gate Logs
                   </button>
                 )}
           </nav>
