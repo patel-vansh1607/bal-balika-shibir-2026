@@ -50,6 +50,7 @@ import ManualScanner from "../ManualScanner/ManualScanner";
 import AccommodationManager from "../AccomodationManager/AccomodationManager";
 import { FaBed } from "react-icons/fa6";
 import AccommodationMetrics from "../AccomodationMetrics/AccomodationMetrics";
+import GateLogsPage from "../GateLogsPage/GateLogsPage";
 
 // ---------------------------------------------------------------------------
 // PRODUCTION TIMERS
@@ -618,6 +619,14 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
                 <TfiStatsUp className={styles.iconMargin} /> Sessions Attendance
               </button>
             )}
+            {(userRole === "master_admin") && (
+                  <button
+                    onClick={() => handleNavigation("/dashboard/gate-logs")}
+                    className={`${styles.navLink} ${location.pathname === "/dashboard/gate-logs" ? styles.navLinkActive : ""}`}
+                  >
+                    <FaArchive className={styles.iconMargin} /> Gate Logs
+                  </button>
+                )}
           </nav>
         </div>
 
@@ -725,6 +734,12 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
                 ) : (
                   <NotFound />
                 )
+              }
+            />
+            <Route
+              path="gate-logs"
+              element={
+                <GateLogsPage regionScope={regionScope} />
               }
             />
             <Route
