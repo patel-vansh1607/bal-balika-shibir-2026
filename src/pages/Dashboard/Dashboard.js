@@ -463,14 +463,15 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
             </div>
           </div>
           <nav className={styles.navigationList}>
-            {userRole && userRole !== "operator" && (
-              <>
-                <button
+             <button
                   onClick={() => handleNavigation("/dashboard/overview")}
                   className={`${styles.navLink} ${location.pathname === "/dashboard/overview" ? styles.navLinkActive : ""}`}
                 >
                   <FaChartBar className={styles.iconMargin} /> Overview Metrics
                 </button>
+            {userRole && userRole !== "operator" && (
+              <>
+               
                 <button
                   onClick={() => handleNavigation("/dashboard/roster")}
                   className={`${styles.navLink} ${location.pathname === "/dashboard/roster" ? styles.navLinkActive : ""}`}
@@ -726,14 +727,12 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
             <Route
               path="overview"
               element={
-                userRole !== "operator" ? (
+                (
                   <OverviewMetrics
                     attendees={attendeesList}
                     dataFetching={dataFetching}
                     regionScope={regionScope}
                   />
-                ) : (
-                  <NotFound />
                 )
               }
             />

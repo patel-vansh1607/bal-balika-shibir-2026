@@ -28,9 +28,33 @@ import {
   Legend
 } from "recharts";
 import { userRoles, karayakars as karayakarsApi } from "../../apiClient"; 
-import styles from "../Dashboard/Dashboard.module.css";
 
-// Inlined Style Constants to Prevent ESLint 'no-undef' Warnings
+// --- Keyframes & Global Dynamic CSS Injection ---
+const injectCSS = () => {
+  if (typeof document !== "undefined" && !document.getElementById("overview-metrics-styles")) {
+    const styleTag = document.createElement("style");
+    styleTag.id = "overview-metrics-styles";
+    styleTag.innerHTML = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .spin-animation {
+        animation: spin 1s linear infinite;
+      }
+      .nav-card-hover {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      .nav-card-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+      }
+    `;
+    document.head.appendChild(styleTag);
+  }
+};
+
+// --- Inlined Style Constants ---
 const statCardStyle = {
   background: "#ffffff",
   border: "1px solid #dadce0",
@@ -284,8 +308,13 @@ export default function OverviewMetrics({
   dataFetching = false, 
   regionScope = "all" 
 }) {
+  useEffect(() => {
+    injectCSS();
+  }, []);
+
   const navigate = useNavigate();
   const [userName, setUserName] = useState("Admin"); 
+  const [userRole, setUserRole] = useState("");
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   // Karyakars state & loading
@@ -299,11 +328,16 @@ export default function OverviewMetrics({
   const [selectedRegion, setSelectedRegion] = useState(cleanScope || "all");
   const [selectedCenter, setSelectedCenter] = useState(null);
 
-  // T-Shirt Section Filter State ("all", "balak", "balika", "karyakar_male", "karyakar_female", "missing")
+  // T-Shirt Section Filter State
   const [tshirtCategory, setTshirtCategory] = useState("all");
   const [expandedSize, setExpandedSize] = useState(null);
 
   const isRegionLocked = regionScope && regionScope !== "all";
+
+  // Role Permissions
+  const formattedRole = (userRole || "").toLowerCase();
+  const canViewMetrics = ["admin", "super_admin", "superadmin"].includes(formattedRole);
+  const isOperator = formattedRole === "operator";
 
   useEffect(() => {
     setSelectedRegion(cleanRegion(regionScope) || "all");
@@ -316,11 +350,15 @@ export default function OverviewMetrics({
     setSelectedCenter(null);
   };
 
-  // Fetch Admin Profile Greeting
+  // Fetch Admin Profile Greeting & Role Details
   useEffect(() => {
     userRoles.me()
       .then((res) => {
         const rawName = res?.data?.name || res?.name;
+        const role = res?.data?.role || res?.role || "";
+        
+        setUserRole(role);
+
         if (rawName) {
           const cleanName = rawName
             .trim()
@@ -774,10 +812,12 @@ export default function OverviewMetrics({
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%" }}>
       {/* Welcome & Region Scope Filter Header */}
       <section style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
-        <div className={styles.welcomeSection}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <h1 style={{ fontSize: "28px", color: "#202124", marginBottom: "8px", display: "flex", alignItems: "center", gap: "10px" }}>
-            Jay Swaminarayan, {isLoadingProfile ? (
-              <FaSpinner className={styles.spinAnimation} style={{ fontSize: "20px", color: "#e78524" }} />
+            Jay Swaminarayan, {isOperator ? (
+              userName
+            ) : isLoadingProfile ? (
+              <FaSpinner className="spin-animation" style={{ fontSize: "20px", color: "#e78524" }} />
             ) : (
               userName
             )}
@@ -785,6 +825,7 @@ export default function OverviewMetrics({
           <p style={{ color: "#5f6368", margin: 0 }}>Select an option below to manage the event portal.</p>
         </div>
 
+        {/* Region Scope Select Controls */}
         {!isRegionLocked ? (
           <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#fff", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
             <FaFilter style={{ color: "#5f6368", fontSize: "14px" }} />
@@ -820,13 +861,13 @@ export default function OverviewMetrics({
         )}
       </section>
 
-      {/* Action Cards */}
-      <section className={styles.navGrid} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+      {/* Action Navigation Cards */}
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", width: "100%" }}>
         {navOptions.map((opt) => (
           <button
             key={opt.title}
             onClick={() => navigate(opt.path)}
-            className={styles.navCard}
+            className="nav-card-hover"
             style={{
               padding: "24px",
               border: "1px solid #dadce0",
@@ -837,7 +878,7 @@ export default function OverviewMetrics({
               flexDirection: "column",
               alignItems: "center",
               gap: "12px",
-              transition: "transform 0.2s, box-shadow 0.2s"
+              outline: "none"
             }}
           >
             <div style={{ fontSize: "32px", color: opt.color }}>{opt.icon}</div>
@@ -846,381 +887,389 @@ export default function OverviewMetrics({
         ))}
       </section>
 
-      {/* Top Metrics Cards */}
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-        <div style={statCardStyle}>
-          <div style={{ ...circleIconStyle, backgroundColor: "#e8f0fe", color: "#1a73e8" }}>
-            <FaUsers />
-          </div>
-          <div>
-            <div style={statNumberStyle}>
-              {isDataLoading
-                ? "-"
-                : Number(stats.attendeeTotalCount || 0) + Number(stats.karyakarTotalCount || 0)}
+      {/* Role Restriction Check for Administrative Dashboard Visualizations */}
+      {!isLoadingProfile && !canViewMetrics ? (
+        <div style={{ padding: "40px 20px", textAlign: "center", background: "#fff", borderRadius: "12px", border: "1px solid #dadce0" }}>
+        </div>
+      ) : (
+        <>
+          {/* Top Metrics Cards */}
+          <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+            <div style={statCardStyle}>
+              <div style={{ ...circleIconStyle, backgroundColor: "#e8f0fe", color: "#1a73e8" }}>
+                <FaUsers />
+              </div>
+              <div>
+                <div style={statNumberStyle}>
+                  {isDataLoading
+                    ? "-"
+                    : Number(stats.attendeeTotalCount || 0) + Number(stats.karyakarTotalCount || 0)}
+                </div>
+                <div style={statLabelStyle}>
+                  {selectedRegion !== "all" ? `${selectedRegion} Total` : "Attendee Count"}
+                </div>
+              </div>
             </div>
-            <div style={statLabelStyle}>
-              {selectedRegion !== "all" ? `${selectedRegion} Total` : "Attendee Count"}
+
+            <div style={statCardStyle}>
+              <div style={{ ...circleIconStyle, backgroundColor: "#e6f4ea", color: "#137333" }}>
+                <FaCreditCard />
+              </div>
+              <div>
+                <div style={statNumberStyle}>{isDataLoading ? "-" : `${stats.attendeePaidCount} / ${stats.attendeeTotalCount}`}</div>
+                <div style={statLabelStyle}>Balak/Balikas Payment</div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div style={statCardStyle}>
-          <div style={{ ...circleIconStyle, backgroundColor: "#e6f4ea", color: "#137333" }}>
-            <FaCreditCard />
-          </div>
-          <div>
-            <div style={statNumberStyle}>{isDataLoading ? "-" : `${stats.attendeePaidCount} / ${stats.attendeeTotalCount}`}</div>
-            <div style={statLabelStyle}>Balak/Balikas Payment</div>
-          </div>
-        </div>
+            <div style={statCardStyle}>
+              <div style={{ ...circleIconStyle, backgroundColor: "#ccfbf1", color: "#0d9488" }}>
+                <FaUsers />
+              </div>
+              <div>
+                <div style={statNumberStyle}>{isDataLoading ? "-" : `${stats.karyakarPaidCount} / ${stats.karyakarTotalCount}`}</div>
+                <div style={statLabelStyle}>Karayakars Payement</div>
+              </div>
+            </div>
 
-        <div style={statCardStyle}>
-          <div style={{ ...circleIconStyle, backgroundColor: "#ccfbf1", color: "#0d9488" }}>
-            <FaUsers />
-          </div>
-          <div>
-            <div style={statNumberStyle}>{isDataLoading ? "-" : `${stats.karyakarPaidCount} / ${stats.karyakarTotalCount}`}</div>
-            <div style={statLabelStyle}>Karayakars Payement</div>
-          </div>
-        </div>
-
-        <div 
-          style={{ ...statCardStyle, cursor: "pointer" }}
-          onClick={() => setTshirtCategory("missing")}
-        >
-          <div style={{ ...circleIconStyle, backgroundColor: "#fef3c7", color: "#d97706" }}>
-            <FaExclamationCircle />
-          </div>
-          <div>
-            <div style={statNumberStyle}>{isDataLoading ? "-" : unassignedCount}</div>
-            <div style={statLabelStyle}>Missing T-Shirts</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Bar & Drilldown Pie Chart */}
-      <section style={chartCardStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <FaMapMarkerAlt style={{ color: "#4285f4", fontSize: "18px" }} />
-            <h3 style={{ ...chartTitleStyle, margin: 0 }}>
-              {selectedRegion === "all" 
-                ? "Registrations by Region" 
-                : selectedCenter 
-                  ? `${selectedCenter} Center Breakdown`
-                  : `Centers in ${selectedRegion} (Click center to view Breakdown)`}
-            </h3>
-          </div>
-
-          {selectedCenter && (
-            <button
-              onClick={() => setSelectedCenter(null)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                background: "#f1f3f4",
-                border: "1px solid #dadce0",
-                borderRadius: "6px",
-                padding: "6px 12px",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: "600",
-                color: "#3c4043"
-              }}
+            <div 
+              style={{ ...statCardStyle, cursor: "pointer" }}
+              onClick={() => setTshirtCategory("missing")}
             >
-              <FaArrowLeft /> Back to Centers
-            </button>
-          )}
-        </div>
-        
-        {isDataLoading ? (
-          <div style={loaderWrapperStyle}><FaSpinner className={styles.spinAnimation} style={{ fontSize: "24px", color: "#4285f4" }} /></div>
-        ) : selectedCenter ? (
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie
-                data={stats.balakBalikaBreakdown}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={85}
-                paddingAngle={4}
-                dataKey="value"
-                label={({ name, value }) => `${name}: ${value}`}
-              >
-                {stats.balakBalikaBreakdown.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend verticalAlign="bottom" height={36} />
-            </PieChart>
-          </ResponsiveContainer>
-        ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={stats.barChartData} margin={{ top: 15, right: 15, left: -20, bottom: 25 }}>
-              <XAxis dataKey="name" stroke="#5f6368" fontSize={12} tickLine={false} interval={0} angle={-15} textAnchor="end" />
-              <YAxis stroke="#5f6368" fontSize={12} tickLine={false} allowDecimals={false} />
-              <Tooltip cursor={{ fill: "rgba(0,0,0,0.04)" }} />
-              <Bar dataKey="Count" fill="#4285f4" radius={[4, 4, 0, 0]} onClick={handleBarClick} cursor={selectedRegion !== "all" ? "pointer" : "default"} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </section>
-
-      {/* T-Shirt Size Distribution Matrix Section */}
-      <section style={chartCardStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <FaTshirt style={{ color: "#ea4335", fontSize: "18px" }} />
-            <h3 style={{ ...chartTitleStyle, margin: 0 }}>T-Shirt Distribution Matrix</h3>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            {/* Category Filter Buttons */}
-            <div style={{ display: "flex", background: "#f1f3f4", padding: "3px", borderRadius: "8px", border: "1px solid #dadce0" }}>
-              <button
-                onClick={() => setTshirtCategory("all")}
-                style={{
-                  border: "none",
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  background: tshirtCategory === "all" ? "#fff" : "transparent",
-                  color: tshirtCategory === "all" ? "#202124" : "#5f6368",
-                  boxShadow: tshirtCategory === "all" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
-                }}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setTshirtCategory("balak")}
-                style={{
-                  border: "none",
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  background: tshirtCategory === "balak" ? "#fff" : "transparent",
-                  color: tshirtCategory === "balak" ? "#1a73e8" : "#5f6368",
-                  boxShadow: tshirtCategory === "balak" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
-                }}
-              >
-                Balaks
-              </button>
-              <button
-                onClick={() => setTshirtCategory("balika")}
-                style={{
-                  border: "none",
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  background: tshirtCategory === "balika" ? "#fff" : "transparent",
-                  color: tshirtCategory === "balika" ? "#e91e63" : "#5f6368",
-                  boxShadow: tshirtCategory === "balika" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
-                }}
-              >
-                Balikas
-              </button>
-              <button
-                onClick={() => setTshirtCategory("karyakar_male")}
-                style={{
-                  border: "none",
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  background: tshirtCategory === "karyakar_male" ? "#fff" : "transparent",
-                  color: tshirtCategory === "karyakar_male" ? "#0d9488" : "#5f6368",
-                  boxShadow: tshirtCategory === "karyakar_male" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
-                }}
-              >
-                Karyakars (Male)
-              </button>
-              <button
-                onClick={() => setTshirtCategory("karyakar_female")}
-                style={{
-                  border: "none",
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  background: tshirtCategory === "karyakar_female" ? "#fff" : "transparent",
-                  color: tshirtCategory === "karyakar_female" ? "#0d9488" : "#5f6368",
-                  boxShadow: tshirtCategory === "karyakar_female" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
-                }}
-              >
-                Karyakars (Female)
-              </button>
-              <button
-                onClick={() => setTshirtCategory("missing")}
-                style={{
-                  border: "none",
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  background: tshirtCategory === "missing" ? "#fff" : "transparent",
-                  color: tshirtCategory === "missing" ? "#d97706" : "#5f6368",
-                  boxShadow: tshirtCategory === "missing" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
-                }}
-              >
-                Missing
-              </button>
+              <div style={{ ...circleIconStyle, backgroundColor: "#fef3c7", color: "#d97706" }}>
+                <FaExclamationCircle />
+              </div>
+              <div>
+                <div style={statNumberStyle}>{isDataLoading ? "-" : unassignedCount}</div>
+                <div style={statLabelStyle}>Missing T-Shirts</div>
+              </div>
             </div>
+          </section>
 
-            {/* Export CSV Button */}
-            <button
-              onClick={handleExportTshirts}
-              disabled={tshirtStats.length === 0 || isDataLoading}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                background: "#1a73e8",
-                color: "#fff",
-                border: "none",
-                borderRadius: "6px",
-                padding: "6px 12px",
-                fontSize: "13px",
-                fontWeight: "600",
-                cursor: tshirtStats.length === 0 || isDataLoading ? "not-allowed" : "pointer",
-                opacity: tshirtStats.length === 0 || isDataLoading ? 0.6 : 1
-              }}
-            >
-              <FaDownload /> Export CSV
-            </button>
-          </div>
-        </div>
+          {/* Bar & Drilldown Pie Chart */}
+          <section style={chartCardStyle}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <FaMapMarkerAlt style={{ color: "#4285f4", fontSize: "18px" }} />
+                <h3 style={{ ...chartTitleStyle, margin: 0 }}>
+                  {selectedRegion === "all" 
+                    ? "Registrations by Region" 
+                    : selectedCenter 
+                      ? `${selectedCenter} Center Breakdown`
+                      : `Centers in ${selectedRegion} (Click center to view Breakdown)`}
+                </h3>
+              </div>
 
-        {isDataLoading ? (
-          <div style={loaderWrapperStyle}><FaSpinner className={styles.spinAnimation} style={{ fontSize: "24px", color: "#ea4335" }} /></div>
-        ) : tshirtStats.length === 0 ? (
-          <p style={{ textAlign: "center", color: "#5f6368", padding: "20px" }}>No T-Shirt data matching selected filters.</p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {tshirtStats.map((item) => {
-              const isExpanded = expandedSize === item.size;
-
-              return (
-                <div 
-                  key={item.size} 
-                  style={{ 
-                    border: "1px solid #dadce0", 
-                    borderRadius: "8px", 
-                    overflow: "hidden",
-                    background: item.isMissingGroup ? "#fffbeb" : "#fff" 
+              {selectedCenter && (
+                <button
+                  onClick={() => setSelectedCenter(null)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "#f1f3f4",
+                    border: "1px solid #dadce0",
+                    borderRadius: "6px",
+                    padding: "6px 12px",
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#3c4043"
                   }}
                 >
-                  {/* Summary Bar Header */}
-                  <div 
-                    onClick={() => toggleSizeExpand(item.size)}
-                    style={{ 
-                      padding: "12px 16px", 
-                      display: "flex", 
-                      justifyContent: "space-between", 
-                      alignItems: "center", 
+                  <FaArrowLeft /> Back to Centers
+                </button>
+              )}
+            </div>
+            
+            {isDataLoading ? (
+              <div style={loaderWrapperStyle}><FaSpinner className="spin-animation" style={{ fontSize: "24px", color: "#4285f4" }} /></div>
+            ) : selectedCenter ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={stats.balakBalikaBreakdown}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={85}
+                    paddingAngle={4}
+                    dataKey="value"
+                    label={({ name, value }) => `${name}: ${value}`}
+                  >
+                    {stats.balakBalikaBreakdown.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={stats.barChartData} margin={{ top: 15, right: 15, left: -20, bottom: 25 }}>
+                  <XAxis dataKey="name" stroke="#5f6368" fontSize={12} tickLine={false} interval={0} angle={-15} textAnchor="end" />
+                  <YAxis stroke="#5f6368" fontSize={12} tickLine={false} allowDecimals={false} />
+                  <Tooltip cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+                  <Bar dataKey="Count" fill="#4285f4" radius={[4, 4, 0, 0]} onClick={handleBarClick} cursor={selectedRegion !== "all" ? "pointer" : "default"} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </section>
+
+          {/* T-Shirt Size Distribution Matrix Section */}
+          <section style={chartCardStyle}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <FaTshirt style={{ color: "#ea4335", fontSize: "18px" }} />
+                <h3 style={{ ...chartTitleStyle, margin: 0 }}>T-Shirt Distribution Matrix</h3>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                {/* Category Filter Buttons */}
+                <div style={{ display: "flex", background: "#f1f3f4", padding: "3px", borderRadius: "8px", border: "1px solid #dadce0" }}>
+                  <button
+                    onClick={() => setTshirtCategory("all")}
+                    style={{
+                      border: "none",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: "600",
                       cursor: "pointer",
-                      userSelect: "none"
+                      background: tshirtCategory === "all" ? "#fff" : "transparent",
+                      color: tshirtCategory === "all" ? "#202124" : "#5f6368",
+                      boxShadow: tshirtCategory === "all" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <span style={{ 
-                        fontWeight: "700", 
-                        fontSize: "15px", 
-                        minWidth: "70px",
-                        color: item.isMissingGroup ? "#b45309" : "#202124"
-                      }}>
-                        {item.size}
-                      </span>
-                      <span style={{ 
-                        background: item.isMissingGroup ? "#fef3c7" : "#f1f3f4", 
-                        padding: "2px 8px", 
-                        borderRadius: "12px", 
-                        fontSize: "12px", 
-                        fontWeight: "600",
-                        color: item.isMissingGroup ? "#92400e" : "#3c4043"
-                      }}>
-                        {item.count} total
-                      </span>
-                    </div>
+                    All
+                  </button>
+                  <button
+                    onClick={() => setTshirtCategory("balak")}
+                    style={{
+                      border: "none",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      background: tshirtCategory === "balak" ? "#fff" : "transparent",
+                      color: tshirtCategory === "balak" ? "#1a73e8" : "#5f6368",
+                      boxShadow: tshirtCategory === "balak" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
+                    }}
+                  >
+                    Balaks
+                  </button>
+                  <button
+                    onClick={() => setTshirtCategory("balika")}
+                    style={{
+                      border: "none",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      background: tshirtCategory === "balika" ? "#fff" : "transparent",
+                      color: tshirtCategory === "balika" ? "#e91e63" : "#5f6368",
+                      boxShadow: tshirtCategory === "balika" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
+                    }}
+                  >
+                    Balikas
+                  </button>
+                  <button
+                    onClick={() => setTshirtCategory("karyakar_male")}
+                    style={{
+                      border: "none",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      background: tshirtCategory === "karyakar_male" ? "#fff" : "transparent",
+                      color: tshirtCategory === "karyakar_male" ? "#0d9488" : "#5f6368",
+                      boxShadow: tshirtCategory === "karyakar_male" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
+                    }}
+                  >
+                    Karyakars (Male)
+                  </button>
+                  <button
+                    onClick={() => setTshirtCategory("karyakar_female")}
+                    style={{
+                      border: "none",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      background: tshirtCategory === "karyakar_female" ? "#fff" : "transparent",
+                      color: tshirtCategory === "karyakar_female" ? "#0d9488" : "#5f6368",
+                      boxShadow: tshirtCategory === "karyakar_female" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
+                    }}
+                  >
+                    Karyakars (Female)
+                  </button>
+                  <button
+                    onClick={() => setTshirtCategory("missing")}
+                    style={{
+                      border: "none",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      background: tshirtCategory === "missing" ? "#fff" : "transparent",
+                      color: tshirtCategory === "missing" ? "#d97706" : "#5f6368",
+                      boxShadow: tshirtCategory === "missing" ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
+                    }}
+                  >
+                    Missing
+                  </button>
+                </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                      {/* Detailed Breakdown Tags */}
-                      {tshirtCategory === "all" && (
-                        <div style={{ display: "flex", gap: "8px", fontSize: "12px", fontWeight: "500" }}>
-                          <span style={{ color: "#1a73e8" }}>{item.balakCount} Balaks</span>
-                          <span style={{ color: "#e91e63" }}>{item.balikaCount} Balikas</span>
-                          <span style={{ color: "#0d9488" }}>
-                            {item.maleKaryakarCount} Male Karyakars / {item.femaleKaryakarCount} Female Karyakars
+                {/* Export CSV Button */}
+                <button
+                  onClick={handleExportTshirts}
+                  disabled={tshirtStats.length === 0 || isDataLoading}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "#1a73e8",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "6px 12px",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    cursor: tshirtStats.length === 0 || isDataLoading ? "not-allowed" : "pointer",
+                    opacity: tshirtStats.length === 0 || isDataLoading ? 0.6 : 1
+                  }}
+                >
+                  <FaDownload /> Export CSV
+                </button>
+              </div>
+            </div>
+
+            {isDataLoading ? (
+              <div style={loaderWrapperStyle}><FaSpinner className="spin-animation" style={{ fontSize: "24px", color: "#ea4335" }} /></div>
+            ) : tshirtStats.length === 0 ? (
+              <p style={{ textAlign: "center", color: "#5f6368", padding: "20px" }}>No T-Shirt data matching selected filters.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {tshirtStats.map((item) => {
+                  const isExpanded = expandedSize === item.size;
+
+                  return (
+                    <div 
+                      key={item.size} 
+                      style={{ 
+                        border: "1px solid #dadce0", 
+                        borderRadius: "8px", 
+                        overflow: "hidden",
+                        background: item.isMissingGroup ? "#fffbeb" : "#fff" 
+                      }}
+                    >
+                      {/* Summary Bar Header */}
+                      <div 
+                        onClick={() => toggleSizeExpand(item.size)}
+                        style={{ 
+                          padding: "12px 16px", 
+                          display: "flex", 
+                          justifyContent: "space-between", 
+                          alignItems: "center", 
+                          cursor: "pointer",
+                          userSelect: "none"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <span style={{ 
+                            fontWeight: "700", 
+                            fontSize: "15px", 
+                            minWidth: "70px",
+                            color: item.isMissingGroup ? "#b45309" : "#202124"
+                          }}>
+                            {item.size}
+                          </span>
+                          <span style={{ 
+                            background: item.isMissingGroup ? "#fef3c7" : "#f1f3f4", 
+                            padding: "2px 8px", 
+                            borderRadius: "12px", 
+                            fontSize: "12px", 
+                            fontWeight: "600",
+                            color: item.isMissingGroup ? "#92400e" : "#3c4043"
+                          }}>
+                            {item.count} total
                           </span>
                         </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                          {/* Detailed Breakdown Tags */}
+                          {tshirtCategory === "all" && (
+                            <div style={{ display: "flex", gap: "8px", fontSize: "12px", fontWeight: "500" }}>
+                              <span style={{ color: "#1a73e8" }}>{item.balakCount} Balaks</span>
+                              <span style={{ color: "#e91e63" }}>{item.balikaCount} Balikas</span>
+                              <span style={{ color: "#0d9488" }}>
+                                {item.maleKaryakarCount} Male Karyakars / {item.femaleKaryakarCount} Female Karyakars
+                              </span>
+                            </div>
+                          )}
+
+                          {isExpanded ? <FaChevronUp style={{ color: "#5f6368" }} /> : <FaChevronDown style={{ color: "#5f6368" }} />}
+                        </div>
+                      </div>
+
+                      {/* Expandable Member Details List */}
+                      {isExpanded && (
+                        <div style={{ borderTop: "1px solid #dadce0", padding: "12px 16px", background: "#fafafa" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                            <thead>
+                              <tr style={{ borderBottom: "1px solid #e0e0e0", textAlign: "left", color: "#5f6368" }}>
+                                <th style={{ padding: "6px 8px" }}>Member ID</th>
+                                <th style={{ padding: "6px 8px" }}>Name</th>
+                                <th style={{ padding: "6px 8px" }}>Category</th>
+                                <th style={{ padding: "6px 8px" }}>Center</th>
+                                <th style={{ padding: "6px 8px" }}>Payment</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {item.members.map((mem, i) => (
+                                <tr key={i} style={{ borderBottom: i === item.members.length - 1 ? "none" : "1px solid #f0f0f0" }}>
+                                  <td style={{ padding: "6px 8px", fontWeight: "600", color: "#3c4043" }}>{mem.member_id}</td>
+                                  <td style={{ padding: "6px 8px", color: "#202124" }}>{mem.name}</td>
+                                  <td style={{ padding: "6px 8px" }}>
+                                    <span style={{
+                                      padding: "2px 6px",
+                                      borderRadius: "4px",
+                                      fontSize: "11px",
+                                      fontWeight: "600",
+                                      background: mem.category.includes("Karyakar") ? "#ccfbf1" : mem.category === "Balika" ? "#fce7f3" : "#dbeafe",
+                                      color: mem.category.includes("Karyakar") ? "#0f766e" : mem.category === "Balika" ? "#be185d" : "#1e40af"
+                                    }}>
+                                      {mem.category}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: "6px 8px", color: "#5f6368" }}>{mem.center}</td>
+                                  <td style={{ padding: "6px 8px" }}>
+                                    <span style={{
+                                      fontWeight: "600",
+                                      color: mem.isPaid ? "#16a34a" : "#dc2626"
+                                    }}>
+                                      {mem.isPaid ? "Paid" : "Unpaid"}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       )}
-
-                      {isExpanded ? <FaChevronUp style={{ color: "#5f6368" }} /> : <FaChevronDown style={{ color: "#5f6368" }} />}
                     </div>
-                  </div>
-
-                  {/* Expandable Member Details List */}
-                  {isExpanded && (
-                    <div style={{ borderTop: "1px solid #dadce0", padding: "12px 16px", background: "#fafafa" }}>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                        <thead>
-                          <tr style={{ borderBottom: "1px solid #e0e0e0", textAlign: "left", color: "#5f6368" }}>
-                            <th style={{ padding: "6px 8px" }}>Member ID</th>
-                            <th style={{ padding: "6px 8px" }}>Name</th>
-                            <th style={{ padding: "6px 8px" }}>Category</th>
-                            <th style={{ padding: "6px 8px" }}>Center</th>
-                            <th style={{ padding: "6px 8px" }}>Payment</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {item.members.map((mem, i) => (
-                            <tr key={i} style={{ borderBottom: i === item.members.length - 1 ? "none" : "1px solid #f0f0f0" }}>
-                              <td style={{ padding: "6px 8px", fontWeight: "600", color: "#3c4043" }}>{mem.member_id}</td>
-                              <td style={{ padding: "6px 8px", color: "#202124" }}>{mem.name}</td>
-                              <td style={{ padding: "6px 8px" }}>
-                                <span style={{
-                                  padding: "2px 6px",
-                                  borderRadius: "4px",
-                                  fontSize: "11px",
-                                  fontWeight: "600",
-                                  background: mem.category.includes("Karyakar") ? "#ccfbf1" : mem.category === "Balika" ? "#fce7f3" : "#dbeafe",
-                                  color: mem.category.includes("Karyakar") ? "#0f766e" : mem.category === "Balika" ? "#be185d" : "#1e40af"
-                                }}>
-                                  {mem.category}
-                                </span>
-                              </td>
-                              <td style={{ padding: "6px 8px", color: "#5f6368" }}>{mem.center}</td>
-                              <td style={{ padding: "6px 8px" }}>
-                                <span style={{
-                                  fontWeight: "600",
-                                  color: mem.isPaid ? "#16a34a" : "#dc2626"
-                                }}>
-                                  {mem.isPaid ? "Paid" : "Unpaid"}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </>
+      )}
     </div>
   );
 }
