@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   FaSpinner, FaArrowLeft, FaCheckCircle, FaUsers,
-  FaUserClock, FaHistory, FaFileDownload, FaTimesCircle,
+  FaUserClock, FaHistory, FaFileDownload, FaTimesCircle, FaTrash,
 } from "react-icons/fa";
 import { sessions as sessionsApi, sessionLogs, attendees as attendeesApi } from "../../apiClient";
 import jsPDF from "jspdf";
@@ -50,6 +50,9 @@ export default function SessionDataDetails() {
   const navigate      = useNavigate();
   const location      = useLocation();
   const activeRegion  = location.state?.activeRegion || "All";
+
+  const userRole  = localStorage.getItem("user_role");
+  const canDelete = ["master_admin", "super_admin"].includes(userRole);
 
   const [logs, setLogs]               = useState([]);
   const [fullRoster, setFullRoster]   = useState([]);
@@ -105,6 +108,23 @@ export default function SessionDataDetails() {
 
     if (sessionId) fetchSessionDataPool();
   }, [sessionId, activeRegion, isGlobal]);
+
+  const handleDeleteLog = async (logId) => {
+    if (!window.confirm("Remove this attendance record? The person will be moved back to absent.")) return;
+    try {
+      await sessionLogs.delete(logId);
+      const removed = logs.find((l) => l.id === logId);
+      if (removed) {
+        const attendee = fullRoster.find(
+          (m) => String(m._raw_id || parseInt(m.id, 10)) === String(removed._raw_attendee_id)
+        );
+        if (attendee) setAbsentList((prev) => [...prev, attendee]);
+      }
+      setLogs((prev) => prev.filter((l) => l.id !== logId));
+    } catch (err) {
+      console.error("Delete log error:", err.message);
+    }
+  };
 
   const exportToPDF = () => {
     try {
@@ -195,10 +215,10 @@ export default function SessionDataDetails() {
         <h3 className={styles.sectionTitle} style={{ marginBottom:"20px",display:"flex",alignItems:"center",gap:"10px",color:"#137333" }}><FaHistory /> Present</h3>
         <div className={styles.tableResponsiveWrapper}>
           <table className={styles.matrixTable}>
-            <thead><tr><th>ID No</th><th>Full Name</th><th>Region</th><th>Center</th><th>Check-In</th></tr></thead>
+            <thead><tr><th>ID No</th><th>Full Name</th><th>Region</th><th>Center</th><th>Check-In</th>{canDelete && <th>Actions</th>}</tr></thead>
             <tbody>
               {logs.length === 0 ? (
-                <tr><td colSpan="5" className={styles.tableEmptyMessage}>No entry verification actions recorded yet.</td></tr>
+                <tr><td colSpan={canDelete ? 6 : 5} className={styles.tableEmptyMessage}>No entry verification actions recorded yet.</td></tr>
               ) : logs.map((log) => (
                 <tr key={log.id}>
                   <td className={styles.tablePrimaryCell}><code>{log.memberId}</code></td>
@@ -206,6 +226,17 @@ export default function SessionDataDetails() {
                   <td>{log.region}</td>
                   <td><span className={styles.centerBadgeTag}>{isGlobal && log.region && log.center !== "N/A" ? `${log.region} — ${log.center}` : log.center}</span></td>
                   <td className={styles.stampSuccessText}><FaCheckCircle className={styles.inlineCheckIcon} />{formatCheckInTime(log.created_at)}</td>
+                  {canDelete && (
+                    <td>
+                      <button
+                        onClick={() => handleDeleteLog(log.id)}
+                        className={styles.deleteLogBtn}
+                        title="Remove attendance record"
+                      >
+                        <FaTrash />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
