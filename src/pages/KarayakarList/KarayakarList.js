@@ -326,6 +326,7 @@ export default function KarayakarList({ defaultRegion = "" }) {
   const canDelete = ["master_admin", "super_admin"].includes(userRole);
   const canEdit = ["master_admin", "super_admin", "admin"].includes(userRole);
   const canGenerateQr = ["master_admin", "super_admin"].includes(userRole);
+  const canMarkAttendance = ["master_admin", "super_admin"].includes(userRole);
 
   const parseIncomingList = (data) => {
     if (!Array.isArray(data)) return [];
@@ -419,6 +420,25 @@ export default function KarayakarList({ defaultRegion = "" }) {
     } catch (err) {
       console.error(err);
       toast.error("Failed to update status");
+    }
+  };
+
+  const handleToggleAttendance = async (karyakar) => {
+    const newStatus = Number(karyakar.is_present) === 1 ? 0 : 1;
+    try {
+      await karayakarsApi.update(karyakar.id, { is_present: newStatus });
+      setList((prev) =>
+        prev.map((k) =>
+          k.id === karyakar.id ? { ...k, is_present: newStatus } : k,
+        ),
+      );
+      setActiveMenuId(null);
+      toast.success(
+        `${karyakar.full_name} marked as ${newStatus === 1 ? "Present" : "Absent"}`,
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update attendance");
     }
   };
 
@@ -777,10 +797,10 @@ export default function KarayakarList({ defaultRegion = "" }) {
   const showRegionColumn = region === "All";
   const showAccommodationColumn = region.toLowerCase() === "kenya";
 
-  let totalColumns = 10;
+  let totalColumns = 11;
   if (showRegionColumn) totalColumns += 1;
   if (showAccommodationColumn) totalColumns += 1;
-  if (canEdit || canDelete) totalColumns += 1;
+  if (canEdit || canDelete || canMarkAttendance) totalColumns += 1;
 
   return (
     <div className={styles.rosterContainer}>
@@ -944,7 +964,8 @@ export default function KarayakarList({ defaultRegion = "" }) {
                 <th>Seva Designation</th>
                 <th>T-Shirt</th>
                 <th>Status</th>
-                {(canEdit || canDelete) && <th>Actions</th>}
+                <th>Attendance</th>
+                {(canEdit || canDelete || canMarkAttendance) && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -1094,7 +1115,18 @@ export default function KarayakarList({ defaultRegion = "" }) {
                         </span>
                       )}
                     </td>
-                    {(canEdit || canDelete) && (
+                    <td className={styles.centerAlignCell}>
+                      {Number(k.is_present) === 1 ? (
+                        <span className={styles.presentBadge}>
+                          <FaCircleCheck /> Present
+                        </span>
+                      ) : (
+                        <span className={styles.absentBadge}>
+                          <FaCircleXmark /> Absent
+                        </span>
+                      )}
+                    </td>
+                    {(canEdit || canDelete || canMarkAttendance) && (
                       <td className={styles.centerAlignCell}>
                         <div
                           className={styles.actionMenuRelativeAnchor}
@@ -1132,6 +1164,18 @@ export default function KarayakarList({ defaultRegion = "" }) {
                                   {Number(k.is_paid) === 1
                                     ? "Mark as Unpaid"
                                     : "Mark as Paid"}
+                                </button>
+                              )}
+
+                              {canMarkAttendance && (
+                                <button
+                                  className={styles.dropdownMenuItem}
+                                  onClick={() => handleToggleAttendance(k)}
+                                >
+                                  <FaCircleCheck />
+                                  {Number(k.is_present) === 1
+                                    ? "Mark as Absent"
+                                    : "Mark as Present"}
                                 </button>
                               )}
 
