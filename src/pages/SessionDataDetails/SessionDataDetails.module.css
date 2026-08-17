@@ -206,6 +206,24 @@
   font-style: italic;
 }
 
+.deleteLogBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #e5bcbc;
+  color: #8a151b;
+  border-radius: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+
+.deleteLogBtn:hover {
+  background: #fde8e8;
+}
+
 /* Loading Core Spin Elements */
 .loader {
   display: flex;
