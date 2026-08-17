@@ -103,6 +103,7 @@ export const sessionLogs = {
     return apiFetch('GET', `/session-logs${qs ? '?' + qs : ''}`);
   },
   create: (data) => apiFetch('POST', '/session-logs', data),
+  delete: (id)   => apiFetch('DELETE', `/session-logs/${id}`),
 };
 
 // ---- Gate Logs ----
