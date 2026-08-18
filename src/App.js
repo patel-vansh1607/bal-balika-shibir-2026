@@ -10,6 +10,7 @@ import PublicRegister from './pages/PublicRegister/PublicRegister';
 import SelectRegion from './pages/SelectRegion/SelectRegion';
 import NotFound from './pages/NotFound/NotFound';
 import HomeRoute from './pages/HomeRoute/HomeRoute';
+import ShibirFeedbackForm from './pages/ShibirFeedbackForm/ShibirFeedbackForm';
 
 export default function App() {
   const [isMaintenance, setIsMaintenance] = useState(false);
@@ -57,6 +58,8 @@ export default function App() {
           } 
         />
         <Route path="/register" element={<PublicRegister />} />
+        <Route path="/feedback" element={<ShibirFeedbackForm />} />
+
         <Route path="/select-region" element={<SelectRegion />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
