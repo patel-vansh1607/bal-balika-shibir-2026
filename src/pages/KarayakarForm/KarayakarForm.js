@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import Cropper from "react-easy-crop";
 import {
   FaPlus,
   FaUser,
@@ -232,6 +233,48 @@ const SEVA_DESIGNATIONS = [
   "Balika Helper",
 ];
 
+// Helper function to render cropped canvas and output Blob / File
+const getCroppedImg = async (imageSrc, pixelCrop) => {
+  const image = new Image();
+  image.src = imageSrc;
+  await new Promise((resolve) => {
+    image.onload = resolve;
+  });
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) {
+    throw new Error("No 2d context");
+  }
+
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("Canvas is empty"));
+        return;
+      }
+      blob.name = "cropped_avatar.jpeg";
+      resolve(blob);
+    }, "image/jpeg");
+  });
+};
+
 export default function KarayakarForm() {
   const currentRegionSetting =
     localStorage.getItem("selected_shibir_region") || "Kenya";
@@ -248,6 +291,13 @@ export default function KarayakarForm() {
 
   const [submitting, setSubmitting] = useState(false);
   const [preview, setPreview] = useState(null);
+
+  // Cropper states
+  const [imageToCrop, setImageToCrop] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
   const [toast, setToast] = useState({
     show: false,
@@ -267,6 +317,7 @@ export default function KarayakarForm() {
   const regionRef = useRef(null);
   const centerRef = useRef(null);
   const sevaRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const showNotification = (type, title, message) => {
     setToast({ show: true, type, title, message });
@@ -276,7 +327,7 @@ export default function KarayakarForm() {
     if (toast.show) {
       const timer = setTimeout(
         () => setToast((t) => ({ ...t, show: false })),
-        5000,
+        5000
       );
       return () => clearTimeout(timer);
     }
@@ -311,13 +362,13 @@ export default function KarayakarForm() {
   const availableCenters = regionDataset[form.region]?.centers || [];
 
   const filteredRegions = ALL_REGIONS.filter((r) =>
-    r.toLowerCase().includes(regionSearch.toLowerCase()),
+    r.toLowerCase().includes(regionSearch.toLowerCase())
   );
   const filteredCenters = availableCenters.filter((c) =>
-    c.toLowerCase().includes(centerSearch.toLowerCase()),
+    c.toLowerCase().includes(centerSearch.toLowerCase())
   );
   const filteredSeva = SEVA_DESIGNATIONS.filter((d) =>
-    d.toLowerCase().includes(sevaSearch.toLowerCase()),
+    d.toLowerCase().includes(sevaSearch.toLowerCase())
   );
 
   const handleFileChange = (e) => {
@@ -329,14 +380,52 @@ export default function KarayakarForm() {
       showNotification(
         "error",
         "File limit exceeded",
-        "Please select a photo smaller than 2MB.",
+        "Please select a photo smaller than 2MB."
       );
       e.target.value = null;
       return;
     }
 
-    setForm((f) => ({ ...f, profilePhoto: file }));
-    setPreview(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      setImageToCrop(reader.result);
+      setZoom(1);
+      setCrop({ x: 0, y: 0 });
+      setIsCropModalOpen(true);
+    });
+    reader.readAsDataURL(file);
+    e.target.value = null;
+  };
+
+  const onCropComplete = useCallback((_croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleCropSave = async () => {
+    try {
+      if (imageToCrop && croppedAreaPixels) {
+        const croppedBlob = await getCroppedImg(imageToCrop, croppedAreaPixels);
+        const croppedFile = new File([croppedBlob], "avatar.jpg", {
+          type: "image/jpeg",
+        });
+
+        setForm((f) => ({ ...f, profilePhoto: croppedFile }));
+        setPreview(URL.createObjectURL(croppedBlob));
+        setIsCropModalOpen(false);
+        setImageToCrop(null);
+      }
+    } catch (e) {
+      showNotification(
+        "error",
+        "Crop Error",
+        "Failed to crop the image. Please try again."
+      );
+    }
+  };
+
+  const handleCropCancel = () => {
+    setIsCropModalOpen(false);
+    setImageToCrop(null);
   };
 
   const handleSevaToggle = (designation) => {
@@ -392,7 +481,7 @@ export default function KarayakarForm() {
       showNotification(
         "success",
         "Registration Successful",
-        `${form.fullName.trim() || "Karyakar"} has been added safely to the directory.`,
+        `${form.fullName.trim() || "Karyakar"} has been added safely to the directory.`
       );
 
       setForm({
@@ -411,7 +500,7 @@ export default function KarayakarForm() {
       showNotification(
         "error",
         "Registration Failed",
-        err.message || "System encountered an execution error.",
+        err.message || "System encountered an execution error."
       );
     } finally {
       setSubmitting(false);
@@ -465,6 +554,7 @@ export default function KarayakarForm() {
                 Upload Photo (Max 2MB)
               </span>
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
@@ -719,6 +809,69 @@ export default function KarayakarForm() {
             )}
           </button>
         </form>
+
+        {/* Image Cropping Modal */}
+        {isCropModalOpen && imageToCrop && (
+          <div className={styles.cropModalOverlay}>
+            <div className={styles.cropModalCard}>
+              <div className={styles.cropModalHeader}>
+                <h3>Crop Profile Photo</h3>
+                <button
+                  type="button"
+                  className={styles.cropCloseBtn}
+                  onClick={handleCropCancel}
+                >
+                  <FaXmark />
+                </button>
+              </div>
+
+              <div className={styles.cropperAreaContainer}>
+                <Cropper
+                  image={imageToCrop}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                />
+              </div>
+
+              <div className={styles.cropZoomControlGroup}>
+                <label className={styles.zoomLabel}>Zoom</label>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  aria-labelledby="Zoom"
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className={styles.zoomRangeInput}
+                />
+              </div>
+
+              <div className={styles.cropModalFooter}>
+                <button
+                  type="button"
+                  className={styles.cropCancelBtn}
+                  onClick={handleCropCancel}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={styles.cropApplyBtn}
+                  onClick={handleCropSave}
+                >
+                  Save & Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
