@@ -162,6 +162,35 @@ export const karayakars = {
   exportQrUrls: (region = null) => apiFetch('GET', `/karayakars/qr-export${region ? '?region=' + encodeURIComponent(region) : ''}`),
 };
 
+// ---- Feedback ----
+export const feedback = {
+  // Auth required — list all feedback, optional region filter
+  list: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null && v !== ''))
+    ).toString();
+    return apiFetch('GET', `/feedback${qs ? '?' + qs : ''}`);
+  },
+
+  // Public — returns attendee names for the form dropdown
+  attendees: (country, center) =>
+    apiFetch('GET', `/feedback/attendees?country=${encodeURIComponent(country)}&center=${encodeURIComponent(center)}`),
+
+  // Public — submit feedback; pass videoFile to send as multipart
+  create: (fields, videoFile = null) => {
+    if (videoFile) {
+      const fd = new FormData();
+      Object.entries(fields).forEach(([k, v]) => fd.append(k, String(v)));
+      fd.append('video', videoFile);
+      return apiFetch('POST', '/feedback', fd, true);
+    }
+    return apiFetch('POST', '/feedback', fields);
+  },
+
+  // Auth required — delete a feedback entry
+  remove: (id) => apiFetch('DELETE', `/feedback/${id}`),
+};
+
 // Default export for convenience
-const api = { auth, attendees, sessions, sessionLogs, gateLogs, userRoles, upload, email, karayakars };
+const api = { auth, attendees, sessions, sessionLogs, gateLogs, userRoles, upload, email, karayakars, feedback };
 export default api;
