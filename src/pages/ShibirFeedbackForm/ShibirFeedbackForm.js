@@ -12,6 +12,7 @@ import styles from "./ShibirFeedbackForm.module.css";
 
 // LOCAL ASSETS
 import logo from "../../assets/images/Making the Right Choices - Logo_ColorScalable.svg";
+import rightchampion from "../../assets/images/Trophy Design-01.png"
 
 const regionDataset = {
   Kenya: [
@@ -326,7 +327,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
         >
           <div className={styles.stingerContent}>
             <img
-              src={logo}
+              src={rightchampion}
               alt="Shibir Logo"
               className={`${styles.stingerLogo} ${
                 isMorphing ? styles.stingerLogoMorph : ""

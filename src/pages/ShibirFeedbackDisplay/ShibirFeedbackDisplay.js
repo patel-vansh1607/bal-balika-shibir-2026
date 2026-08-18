@@ -1,21 +1,49 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   FaStar,
   FaMagnifyingGlass,
   FaVideo,
   FaTrash,
   FaXmark,
+  FaChevronDown,
+  FaFilter,
+  FaLock,
 } from "react-icons/fa6";
 import { supabase } from "../../supabaseClient";
 import styles from "./ShibirFeedbackDisplay.module.css";
 
-export default function ShibirFeedbackDisplay() {
+// LOCAL ASSETS
+import logo from "../../assets/images/Making the Right Choices - Logo_ColorScalable.svg";
+
+// Helper function to strip region prefixes (e.g., "_3xl_South", "3xl_North")
+const cleanRegion = (rawRegion) => {
+  if (!rawRegion || typeof rawRegion !== "string") return "";
+  
+  const sanitized = rawRegion.trim().replace(/^(_?\d*[a-zA-Z0-9]+_|_)/, "");
+  
+  if (!sanitized) return rawRegion.trim();
+  return sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
+};
+
+export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
   const [feedbackList, setFeedbackList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Region & Country & Rating Filters
+  const cleanScope = cleanRegion(regionScope);
+  const [selectedRegion, setSelectedRegion] = useState(cleanScope || "ALL");
   const [countryFilter, setCountryFilter] = useState("ALL");
   const [ratingFilter, setRatingFilter] = useState("ALL");
   const [activeVideoUrl, setActiveVideoUrl] = useState(null);
+
+  // Is region locked by parent prop?
+  const isRegionLocked = regionScope && regionScope !== "all";
+
+  // Sync region state if prop changes
+  useEffect(() => {
+    setSelectedRegion(cleanRegion(regionScope) || "ALL");
+  }, [regionScope]);
 
   useEffect(() => {
     fetchFeedback();
@@ -30,7 +58,14 @@ export default function ShibirFeedbackDisplay() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setFeedbackList(data || []);
+      
+      // Normalize and attach cleaned region to each feedback item
+      const formattedData = (data || []).map(item => ({
+        ...item,
+        normalizedRegion: cleanRegion(item.region || item.zone || item.area || "")
+      }));
+
+      setFeedbackList(formattedData);
     } catch (err) {
       console.error("Error fetching feedback:", err);
       alert("Failed to load feedback records: " + err.message);
@@ -69,13 +104,32 @@ export default function ShibirFeedbackDisplay() {
     }
   };
 
-  // Unique country list for dropdown filter
-  const uniqueCountries = [
-    ...new Set(feedbackList.map((item) => item.country).filter(Boolean)),
-  ];
+  // Extract unique regions for the dropdown
+  const uniqueRegions = useMemo(() => {
+    const set = new Set();
+    feedbackList.forEach((item) => {
+      if (item.normalizedRegion) {
+        set.add(item.normalizedRegion);
+      }
+    });
+    return Array.from(set).sort();
+  }, [feedbackList]);
 
-  // Filter Logic
+  // Unique country list for dropdown filter (based on region filter if applied)
+  const uniqueCountries = useMemo(() => {
+    const subset = selectedRegion === "ALL" 
+      ? feedbackList 
+      : feedbackList.filter(item => item.normalizedRegion?.toLowerCase() === selectedRegion.toLowerCase());
+    
+    return [...new Set(subset.map((item) => item.country).filter(Boolean))].sort();
+  }, [feedbackList, selectedRegion]);
+
+  // Filter Logic (Region + Country + Rating + Search)
   const filteredData = feedbackList.filter((item) => {
+    const matchesRegion =
+      selectedRegion === "ALL" || 
+      item.normalizedRegion?.toLowerCase() === selectedRegion.toLowerCase();
+
     const matchesSearch =
       item.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.center?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -87,167 +141,225 @@ export default function ShibirFeedbackDisplay() {
     const matchesRating =
       ratingFilter === "ALL" || item.rating === parseInt(ratingFilter, 10);
 
-    return matchesSearch && matchesCountry && matchesRating;
+    return matchesRegion && matchesSearch && matchesCountry && matchesRating;
   });
 
-  // Calculate statistics
-  const totalSubmissions = feedbackList.length;
-  const totalVideos = feedbackList.filter((f) => f.video_url).length;
+  // Calculate statistics based on filtered data (or global feedback list)
+  const totalSubmissions = filteredData.length;
+  const totalVideos = filteredData.filter((f) => f.video_url).length;
   const avgRating =
     totalSubmissions > 0
       ? (
-          feedbackList.reduce((acc, curr) => acc + (curr.rating || 0), 0) /
+          filteredData.reduce((acc, curr) => acc + (curr.rating || 0), 0) /
           totalSubmissions
         ).toFixed(1)
       : "0.0";
 
   return (
     <div className={styles.wrapper}>
-      <div className={styles.headerContainer}>
-        <div className={styles.titleGroup}>
-          <h1>Shibir Feedback Submissions</h1>
-          <p>Review participant responses, star ratings, and video interviews.</p>
-        </div>
-      </div>
-
-      {/* Stats Section */}
-      <div className={styles.statsRow}>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Total Responses</div>
-          <div className={styles.statValue}>{totalSubmissions}</div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Average Rating</div>
-          <div className={styles.statValue}>{avgRating} / 5.0</div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Videos Uploaded</div>
-          <div className={styles.statValue}>{totalVideos}</div>
-        </div>
-      </div>
-
-      {/* Search & Filter Controls */}
-      <div className={styles.controlsBar}>
-        <div className={styles.searchBox}>
-          <FaMagnifyingGlass className={styles.searchIcon} />
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder="Search by name, center, or feedback..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        <select
-          className={styles.filterSelect}
-          value={countryFilter}
-          onChange={(e) => setCountryFilter(e.target.value)}
-        >
-          <option value="ALL">All Countries</option>
-          {uniqueCountries.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-
-        <select
-          className={styles.filterSelect}
-          value={ratingFilter}
-          onChange={(e) => setRatingFilter(e.target.value)}
-        >
-          <option value="ALL">All Ratings</option>
-          <option value="5">5 Stars</option>
-          <option value="4">4 Stars</option>
-          <option value="3">3 Stars</option>
-          <option value="2">2 Stars</option>
-          <option value="1">1 Star</option>
-        </select>
-      </div>
-
-      {/* Table Section */}
-      <div className={styles.tableContainer}>
-        {loading ? (
-          <div className={styles.loadingContainer}>
-            <div className={styles.spinner} />
-            <p>Loading feedback data...</p>
+      <div className={styles.card}>
+        {/* Header & Region Filter Bar */}
+        <div className={styles.headerGroup} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+          <div className={styles.logoAndTitleInline}>
+            <img
+              src={logo}
+              alt="Shibir Logo"
+              className={styles.logoInline}
+            />
+            <div className={styles.titleTextGroup}>
+              <h2 className={styles.title}>Feedback Dashboard</h2>
+              <p className={styles.titleSubtext}>Bal-Balika Shibir, Africa - 2026</p>
+            </div>
           </div>
-        ) : filteredData.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p>No feedback entries found matching your criteria.</p>
+
+          {/* Region Filter / Scope Selector */}
+          {!isRegionLocked ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#fff", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
+              <FaFilter style={{ color: "#5f6368", fontSize: "14px" }} />
+              <span style={{ fontSize: "14px", fontWeight: "600", color: "#3c4043" }}>Region:</span>
+              <select
+                value={selectedRegion}
+                onChange={(e) => {
+                  setSelectedRegion(e.target.value);
+                  setCountryFilter("ALL"); // Reset country filter on region change
+                }}
+                style={{
+                  border: "none",
+                  outline: "none",
+                  background: "transparent",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#1a73e8",
+                  cursor: "pointer"
+                }}
+              >
+                <option value="ALL">All Regions</option>
+                {uniqueRegions.map((reg) => (
+                  <option key={reg} value={reg}>
+                    {reg}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f1f3f4", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
+              <FaLock style={{ color: "#5f6368", fontSize: "13px" }} />
+              <span style={{ fontSize: "14px", fontWeight: "600", color: "#3c4043" }}>
+                Region Locked: <span style={{ color: "#1a73e8" }}>{selectedRegion}</span>
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Stats Section */}
+        <div className={styles.statsRow}>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Total Responses</div>
+            <div className={styles.statValue}>{totalSubmissions}</div>
           </div>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Name</th>
-                <th>Location</th>
-                <th>Rating</th>
-                <th>Feedback</th>
-                <th>Video Interview</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredData.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    {new Date(item.created_at).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </td>
-                  <td>
-                    <strong>{item.full_name}</strong>
-                  </td>
-                  <td>
-                    <div>{item.center}</div>
-                    <span className={styles.badge}>{item.country}</span>
-                  </td>
-                  <td>
-                    <div className={styles.ratingStars}>
-                      {[...Array(5)].map((_, i) => (
-                        <FaStar
-                          key={i}
-                          style={{
-                            color: i < item.rating ? "#ecc94b" : "#e2e8f0",
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.responseText}>{item.response}</div>
-                  </td>
-                  <td>
-                    {item.video_url ? (
-                      <button
-                        className={styles.videoLinkBtn}
-                        onClick={() => setActiveVideoUrl(item.video_url)}
-                      >
-                        <FaVideo /> Play Video
-                      </button>
-                    ) : (
-                      <span className={styles.noVideoText}>No Video</span>
-                    )}
-                  </td>
-                  <td>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => handleDelete(item.id, item.video_url)}
-                      title="Delete entry"
-                    >
-                      <FaTrash />
-                    </button>
-                  </td>
-                </tr>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Average Rating</div>
+            <div className={styles.statValue}>{avgRating} / 5.0</div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Videos Uploaded</div>
+            <div className={styles.statValue}>{totalVideos}</div>
+          </div>
+        </div>
+
+        {/* Search & Filter Controls */}
+        <div className={styles.controlsBar}>
+          <div className={styles.searchBox}>
+            <div className={styles.inputWithIcon} style={{ width: "100%" }}>
+              <FaMagnifyingGlass className={styles.searchFieldIcon} />
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="Search by name, center, or feedback..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className={styles.filterWrapper}>
+            <select
+              className={styles.filterSelect}
+              value={countryFilter}
+              onChange={(e) => setCountryFilter(e.target.value)}
+            >
+              <option value="ALL">All Countries</option>
+              {uniqueCountries.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
               ))}
-            </tbody>
-          </table>
-        )}
+            </select>
+            <FaChevronDown className={styles.selectChevron} />
+          </div>
+
+          <div className={styles.filterWrapper}>
+            <select
+              className={styles.filterSelect}
+              value={ratingFilter}
+              onChange={(e) => setRatingFilter(e.target.value)}
+            >
+              <option value="ALL">All Ratings</option>
+              <option value="5">5 Stars</option>
+              <option value="4">4 Stars</option>
+              <option value="3">3 Stars</option>
+              <option value="2">2 Stars</option>
+              <option value="1">1 Star</option>
+            </select>
+            <FaChevronDown className={styles.selectChevron} />
+          </div>
+        </div>
+
+        {/* Table Section */}
+        <div className={styles.tableContainer}>
+          {loading ? (
+            <div className={styles.loadingContainer}>
+              <div className={styles.spinner} />
+              <p>Loading feedback data...</p>
+            </div>
+          ) : filteredData.length === 0 ? (
+            <div className={styles.emptyState}>
+              <p>No feedback entries found matching your criteria.</p>
+            </div>
+          ) : (
+            <div className={styles.tableResponsiveWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Rating</th>
+                    <th>Feedback</th>
+                    <th>Video Interview</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredData.map((item) => (
+                    <tr key={item.id}>
+                      <td>
+                        {new Date(item.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td>
+                        <strong>{item.full_name}</strong>
+                      </td>
+                      <td>
+                        <div className={styles.centerName}>{item.center}</div>
+                        <span className={styles.badge}>{item.country}</span>
+                      </td>
+                      <td>
+                        <div className={styles.ratingStars}>
+                          {[...Array(5)].map((_, i) => (
+                            <FaStar
+                              key={i}
+                              style={{
+                                color: i < item.rating ? "#f59e0b" : "#cbd5e1",
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.responseText}>{item.response}</div>
+                      </td>
+                      <td>
+                        {item.video_url ? (
+                          <button
+                            className={styles.videoLinkBtn}
+                            onClick={() => setActiveVideoUrl(item.video_url)}
+                          >
+                            <FaVideo /> Play Video
+                          </button>
+                        ) : (
+                          <span className={styles.noVideoText}>No Video</span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDelete(item.id, item.video_url)}
+                          title="Delete entry"
+                        >
+                          <FaTrash />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Video Preview Modal */}

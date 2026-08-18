@@ -62,7 +62,7 @@
 }
 
 .stingerLogo {
-  height: 300px;
+  height: 500px;
   width: auto;
   object-fit: contain;
 }
@@ -540,6 +540,12 @@
   .volumeSlider {
     width: 65px;
   }
+  .stingerLogo {
+  height: 200px;
+}
+.stingerWelcomeText{
+    font-size: 30px;
+}
 }
 
 @media (max-width: 480px) {
