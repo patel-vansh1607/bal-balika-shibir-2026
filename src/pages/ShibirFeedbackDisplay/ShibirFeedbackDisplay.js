@@ -5,7 +5,6 @@ import {
   FaVideo,
   FaTrash,
   FaXmark,
-  FaArrowUpRightFromSquare,
 } from "react-icons/fa6";
 import { supabase } from "../../supabaseClient";
 import styles from "./ShibirFeedbackDisplay.module.css";
