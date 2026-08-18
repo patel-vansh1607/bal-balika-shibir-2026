@@ -9,6 +9,7 @@ import {
   FaUserCheck,
 } from "react-icons/fa6";
 import { feedback as feedbackApi } from "../../apiClient";
+import { supabase } from "../../supabaseClient";
 import styles from "./ShibirFeedbackForm.module.css";
 
 // LOCAL ASSETS
@@ -202,7 +203,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     c.toLowerCase().includes(centerSearch.toLowerCase())
   );
 
-  // Filter attendees based on selected toggle category (Balak/Balika vs Karyakar) and search text
   const filteredAttendees = attendeeList.filter((item) => {
     const matchesCategory = item.category?.toLowerCase() === form.category.toLowerCase();
     const matchesSearch = item.full_name?.toLowerCase().includes(nameSearch.toLowerCase());
@@ -252,20 +252,59 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     if (form.rating === 0) return alert("Please select a star rating.");
 
     const lastSubmissionTime = localStorage.getItem("shibir_last_submission");
-    const COOLDOWN_PERIOD = 24 * 60 * 60 * 1000;
+    const COOLDOWN_PERIOD = 10 * 1000;
 
     if (
       lastSubmissionTime &&
       Date.now() - parseInt(lastSubmissionTime, 10) < COOLDOWN_PERIOD
     ) {
-      alert("You have already submitted feedback recently. Please wait before submitting again.");
+      alert("Please wait 10 seconds before submitting again.");
       return;
     }
 
     setSubmitting(true);
 
     try {
-      if (videoFile) setUploadStatus("Uploading video...");
+      let uploadedVideoUrl = null;
+
+      // Upload video file directly to Supabase storage bucket ('feedback_videos') if attached
+      if (videoFile) {
+        setUploadStatus("Uploading video to Supabase...");
+        const fileExt = videoFile.name.split(".").pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+        const filePath = `${form.country}/${form.center}/${fileName}`;
+
+        let uploadError = null;
+        let bucketName = "feedback_videos";
+
+        // Attempt upload to 'feedback_videos'
+        let res = await supabase.storage.from(bucketName).upload(filePath, videoFile);
+        uploadError = res.error;
+
+        // Fallback check if bucket doesn't exist or has a different name
+        if (uploadError && uploadError.message?.toLowerCase().includes("bucket not found")) {
+          // Try alternative common bucket name or public
+          bucketName = "public";
+          let resFallback = await supabase.storage.from(bucketName).upload(filePath, videoFile);
+          if (resFallback.error) {
+            // If fallback also fails, throw original or fallback error
+            throw new Error(`Video upload failed: Bucket 'feedback_videos' not found. Please create the 'feedback_videos' storage bucket in your Supabase dashboard and make it public.`);
+          }
+          uploadError = null;
+        }
+
+        if (uploadError) {
+          throw new Error("Video upload failed: " + uploadError.message);
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(filePath);
+
+        uploadedVideoUrl = publicUrlData?.publicUrl || null;
+      }
+
+      setUploadStatus("Submitting feedback...");
 
       const fields = {
         full_name: form.fullName,
@@ -275,9 +314,10 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
         response:  form.response,
         rating:    form.rating,
         region:    form.country,
+        video_url: uploadedVideoUrl,
       };
 
-      await feedbackApi.create(fields, videoFile || null);
+      await feedbackApi.create(fields, null);
 
       localStorage.setItem("shibir_last_submission", Date.now().toString());
 

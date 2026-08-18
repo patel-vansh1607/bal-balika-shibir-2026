@@ -46,7 +46,7 @@ export default function AdminRegister() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [tshirtSize, setTshirtSize] = useState("");
-  const closedRegions = [""]; // Define your list of closed regions
+  const closedRegions = ["Tanzania", "Kenya", ]; // Define your list of closed regions
   const [formMode, setFormMode] = useState("form"); // "form" | "review"
 
   const phoneRef = useRef(null);
