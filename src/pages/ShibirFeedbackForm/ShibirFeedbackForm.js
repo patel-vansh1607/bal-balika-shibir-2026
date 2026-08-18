@@ -6,13 +6,14 @@ import {
   FaPaperPlane,
   FaVideo,
   FaTrash,
+  FaUserCheck,
 } from "react-icons/fa6";
 import { supabase } from "../../supabaseClient";
 import styles from "./ShibirFeedbackForm.module.css";
 
 // LOCAL ASSETS
 import logo from "../../assets/images/Making the Right Choices - Logo_ColorScalable.svg";
-import rightchampion from "../../assets/images/Trophy Design-01.png"
+import rightchampion from "../../assets/images/Trophy Design-01.png";
 
 const regionDataset = {
   Kenya: [
@@ -61,12 +62,16 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   const [isMorphing, setIsMorphing] = useState(false);
 
   const [form, setForm] = useState({
+    category: "Balak/Balika", // Toggle state: "Balak/Balika" or "Karyakar"
     country: "",
     center: "",
     fullName: "",
     response: "",
     rating: 0,
   });
+
+  const [attendeeList, setAttendeeList] = useState([]);
+  const [loadingAttendees, setLoadingAttendees] = useState(false);
 
   const [videoFile, setVideoFile] = useState(null);
   const [hoverRating, setHoverRating] = useState(0);
@@ -78,9 +83,12 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   const [showCountryList, setShowCountryList] = useState(false);
   const [centerSearch, setCenterSearch] = useState("");
   const [showCenterList, setShowCenterList] = useState(false);
+  const [nameSearch, setNameSearch] = useState("");
+  const [showNameList, setShowNameList] = useState(false);
 
   const countryRef = useRef(null);
   const centerRef = useRef(null);
+  const nameRef = useRef(null);
   const fileInputRef = useRef(null);
   const audioRef = useRef(null);
 
@@ -104,12 +112,9 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
       }
     }
 
-    // Smooth audio fade out/in when switching tabs or minimizing browser
     const handleVisibilityChange = () => {
       if (!audioRef.current) return;
-      
       if (document.hidden) {
-        // Fade out audio smoothly over 600ms before pausing
         let vol = audioRef.current.volume;
         const fadeInterval = setInterval(() => {
           if (vol > 0.05) {
@@ -121,7 +126,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
           }
         }, 30);
       } else {
-        // Come back: reset volume & play
         audioRef.current.volume = 0.5;
         audioRef.current.play().catch(() => {});
       }
@@ -149,6 +153,35 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     };
   }, []);
 
+  // Fetch attendees from Supabase when Country and Center are selected
+  useEffect(() => {
+    async function fetchAttendees() {
+      if (!form.country || !form.center) {
+        setAttendeeList([]);
+        return;
+      }
+
+      setLoadingAttendees(true);
+      try {
+        const { data, error } = await supabase
+          .from("attendees")
+          .select("full_name, category")
+          .eq("country", form.country)
+          .eq("center", form.center);
+
+        if (error) throw error;
+        setAttendeeList(data || []);
+      } catch (err) {
+        console.error("Error fetching attendees:", err);
+        setAttendeeList([]);
+      } finally {
+        setLoadingAttendees(false);
+      }
+    }
+
+    fetchAttendees();
+  }, [form.country, form.center]);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (countryRef.current && !countryRef.current.contains(event.target)) {
@@ -156,6 +189,9 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
       }
       if (centerRef.current && !centerRef.current.contains(event.target)) {
         setShowCenterList(false);
+      }
+      if (nameRef.current && !nameRef.current.contains(event.target)) {
+        setShowNameList(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -172,17 +208,32 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     c.toLowerCase().includes(centerSearch.toLowerCase())
   );
 
+  // Filter attendees based on selected toggle category (Balak/Balika vs Karyakar) and search text
+  const filteredAttendees = attendeeList.filter((item) => {
+    const matchesCategory = item.category?.toLowerCase() === form.category.toLowerCase();
+    const matchesSearch = item.full_name?.toLowerCase().includes(nameSearch.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
   const handleCountrySelect = (country) => {
-    setForm((f) => ({ ...f, country, center: "" }));
+    setForm((f) => ({ ...f, country, center: "", fullName: "" }));
     setCountrySearch(country);
     setCenterSearch("");
+    setNameSearch("");
     setShowCountryList(false);
   };
 
   const handleCenterSelect = (center) => {
-    setForm((f) => ({ ...f, center }));
+    setForm((f) => ({ ...f, center, fullName: "" }));
     setCenterSearch(center);
+    setNameSearch("");
     setShowCenterList(false);
+  };
+
+  const handleNameSelect = (fullName) => {
+    setForm((f) => ({ ...f, fullName }));
+    setNameSearch(fullName);
+    setShowNameList(false);
   };
 
   const handleVideoChange = (e) => {
@@ -202,7 +253,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
 
     if (!form.country) return alert("Please select a country.");
     if (!form.center) return alert("Please select a center.");
-    if (!form.fullName.trim()) return alert("Please enter full name.");
+    if (!form.fullName.trim()) return alert("Please select or enter full name.");
     if (!form.response.trim()) return alert("Please write your response/feedback.");
     if (form.rating === 0) return alert("Please select a star rating.");
 
@@ -220,23 +271,9 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     setSubmitting(true);
 
     try {
-      const { data: existingRecords, error: checkError } = await supabase
-        .from("shibir_feedback")
-        .select("id, created_at")
-        .ilike("full_name", form.fullName.trim())
-        .eq("center", form.center)
-        .gte("created_at", new Date(Date.now() - COOLDOWN_PERIOD).toISOString());
-
-      if (checkError) {
-        console.error("Error checking duplicates:", checkError);
-      } else if (existingRecords && existingRecords.length > 0) {
-        alert("A submission for this person and center was already received within the last 24 hours.");
-        setSubmitting(false);
-        return;
-      }
-
       let publicVideoUrl = "";
 
+      // Supabase is used ONLY for uploading videos
       if (videoFile) {
         setUploadStatus("Uploading video to Supabase Storage...");
 
@@ -262,28 +299,15 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
         publicVideoUrl = publicUrlData.publicUrl;
       }
 
-      setUploadStatus("Saving response to Supabase Database...");
-
-      const { data, error: dbError } = await supabase
-        .from("shibir_feedback")
-        .insert([
-          {
-            country: form.country,
-            center: form.center,
-            full_name: form.fullName.trim(),
-            response: form.response.trim(),
-            rating: form.rating,
-            video_url: publicVideoUrl,
-          },
-        ]);
-
-      if (dbError) throw dbError;
+      // Text feedback storage removed from Supabase table insert entirely.
+      // Video URL (if uploaded) is handled. You can integrate your alternate text storage/webhook here if needed.
+      console.log("Submitted Data (No Supabase Database Insert):", { ...form, video_url: publicVideoUrl });
 
       localStorage.setItem("shibir_last_submission", Date.now().toString());
 
       setSubmitting(false);
       setSubmitted(true);
-      if (onSubmitSuccess) onSubmitSuccess(data);
+      if (onSubmitSuccess) onSubmitSuccess({ ...form, video_url: publicVideoUrl });
     } catch (err) {
       console.error("Submission error:", err);
       alert("Failed to submit feedback: " + err.message);
@@ -294,6 +318,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
 
   const handleReset = () => {
     setForm({
+      category: "Balak/Balika",
       country: "",
       center: "",
       fullName: "",
@@ -303,6 +328,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     setVideoFile(null);
     setCountrySearch("");
     setCenterSearch("");
+    setNameSearch("");
     setHoverRating(0);
     setSubmitted(false);
     setUploadStatus("");
@@ -310,7 +336,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
 
   return (
     <div className={styles.wrapper}>
-      {/* Hidden Audio Player with Cloudinary Theme Song */}
       <audio
         ref={audioRef}
         src="https://res.cloudinary.com/dxgkcyfrl/video/upload/v1787062968/Theme_Song_Instrumental_flwmap.wav"
@@ -318,7 +343,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
         preload="auto"
       />
 
-      {/* Stinger Splash Overlay */}
       {showStinger && (
         <div
           className={`${styles.stingerContainer} ${
@@ -378,12 +402,39 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 <p className={styles.titleSubtext}>Bal-Balika Shibir, Africa - 2026</p>
               </div>
             </div>
-            <p className={styles.subtitle}>
-              How was your Choice?
-            </p>
+            <p className={styles.subtitle}>How was your Choice?</p>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.formElement}>
+            {/* Category Toggle Switcher */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                I am a <span className={styles.required}>*</span>
+              </label>
+              <div style={{ display: "flex", gap: "1rem", marginTop: "0.25rem" }}>
+                {["Balak/Balika", "Karyakar"].map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, category: cat, fullName: "" }))}
+                    style={{
+                      flex: 1,
+                      padding: "0.75rem",
+                      borderRadius: "0.75rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      border: form.category === cat ? "2px solid #f59e0b" : "2px solid #e2e8f0",
+                      background: form.category === cat ? "#fef3c7" : "#ffffff",
+                      color: form.category === cat ? "#d97706" : "#64748b",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className={styles.formRow}>
               <div className={styles.formGroup} ref={countryRef}>
                 <label className={styles.label}>
@@ -469,19 +520,59 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
               </div>
             </div>
 
-            <div className={styles.formGroup}>
+            {/* Pulled Attendee Name Dropdown */}
+            <div className={styles.formGroup} ref={nameRef}>
               <label className={styles.label}>
-                Balak/Balika's Full Name <span className={styles.required}>*</span>
+                {form.category} Full Name <span className={styles.required}>*</span>
               </label>
-              <input
-                type="text"
-                className={styles.inputNoIcon}
-                placeholder="Enter full name"
-                value={form.fullName}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, fullName: e.target.value }))
-                }
-              />
+              <div className={styles.searchDropdownWrapper}>
+                <div className={styles.inputWithIcon}>
+                  <FaUserCheck className={styles.searchFieldIcon} />
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder={
+                      !form.center
+                        ? "Select Country & Center First..."
+                        : loadingAttendees
+                        ? "Loading attendees..."
+                        : `Select your name from ${form.center}...`
+                    }
+                    disabled={!form.center || loadingAttendees}
+                    value={nameSearch}
+                    onFocus={() => form.center && setShowNameList(true)}
+                    onChange={(e) => {
+                      setNameSearch(e.target.value);
+                      setShowNameList(true);
+                    }}
+                  />
+                  <FaChevronDown
+                    className={`${styles.chevronIcon} ${
+                      showNameList ? styles.rotateChevron : ""
+                    }`}
+                  />
+                </div>
+                {showNameList && (
+                  <ul className={styles.dropdownResultsList}>
+                    {filteredAttendees.length > 0 ? (
+                      filteredAttendees.map((att, idx) => (
+                        <li
+                          key={idx}
+                          onClick={() => handleNameSelect(att.full_name)}
+                        >
+                          {att.full_name}
+                        </li>
+                      ))
+                    ) : (
+                      <li className={styles.noResults}>
+                        {loadingAttendees
+                          ? "Loading..."
+                          : "No attendee found for this center/category"}
+                      </li>
+                    )}
+                  </ul>
+                )}
+              </div>
             </div>
 
             <div className={styles.formGroup}>
@@ -541,7 +632,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
               )}
             </div>
 
-            <div 
+            <div
               className={styles.ratingCardGroup}
               style={{
                 display: "flex",
@@ -550,50 +641,74 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 padding: "1.25rem 1.5rem",
                 borderRadius: "1.25rem",
                 background: "linear-gradient(145deg, #ffffff, #f8fafc)",
-                border: (hoverRating || form.rating) > 0 ? "2px solid #f59e0b" : "2px solid #e2e8f0",
-                boxShadow: (hoverRating || form.rating) > 0 
-                  ? "0 10px 25px -5px rgba(245, 158, 11, 0.25), 0 8px 10px -6px rgba(245, 158, 11, 0.1)" 
-                  : "0 4px 12px rgba(0, 0, 0, 0.03)",
-                transition: "all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)"
+                border:
+                  (hoverRating || form.rating) > 0
+                    ? "2px solid #f59e0b"
+                    : "2px solid #e2e8f0",
+                boxShadow:
+                  (hoverRating || form.rating) > 0
+                    ? "0 10px 25px -5px rgba(245, 158, 11, 0.25), 0 8px 10px -6px rgba(245, 158, 11, 0.1)"
+                    : "0 4px 12px rgba(0, 0, 0, 0.03)",
+                transition: "all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
               }}
             >
-              <label className={styles.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label
+                className={styles.label}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              >
                 <span>
                   How Right Was This Choice? <span className={styles.required}>*</span>
                 </span>
                 {(hoverRating || form.rating) > 0 ? (
-                  <span style={{
-                    fontSize: "0.85rem",
-                    fontWeight: 800,
-                    color: "#d97706",
-                    backgroundColor: "#fef3c7",
-                    padding: "0.2rem 0.65rem",
-                    borderRadius: "1rem"
-                  }}>
+                  <span
+                    style={{
+                      fontSize: "0.85rem",
+                      fontWeight: 800,
+                      color: "#d97706",
+                      backgroundColor: "#fef3c7",
+                      padding: "0.2rem 0.65rem",
+                      borderRadius: "1rem",
+                    }}
+                  >
                     {hoverRating || form.rating} / 5
                   </span>
                 ) : (
-                  <span style={{
-                    fontSize: "0.85rem",
-                    fontWeight: 700,
-                    color: "#94a3b8",
-                    backgroundColor: "#f1f5f9",
-                    padding: "0.2rem 0.65rem",
-                    borderRadius: "1rem"
-                  }}>
+                  <span
+                    style={{
+                      fontSize: "0.85rem",
+                      fontWeight: 700,
+                      color: "#94a3b8",
+                      backgroundColor: "#f1f5f9",
+                      padding: "0.2rem 0.65rem",
+                      borderRadius: "1rem",
+                    }}
+                  >
                     0 / 5
                   </span>
                 )}
               </label>
 
-              <div 
-                className={styles.starRatingContainer} 
+              <div
+                className={styles.starRatingContainer}
                 onMouseLeave={() => setHoverRating(0)}
-                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem", background: "transparent", border: "none", padding: 0 }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "0.75rem",
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                }}
               >
-                <div className={styles.starsWrapper} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                <div
+                  className={styles.starsWrapper}
+                  style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
+                >
                   {[1, 2, 3, 4, 5].map((star) => {
-                    const activeValue = hoverRating !== 0 ? hoverRating : (form.rating || 0);
+                    const activeValue =
+                      hoverRating !== 0 ? hoverRating : form.rating || 0;
                     const isActive = star <= activeValue;
                     const isHovered = hoverRating === star;
 
@@ -601,7 +716,9 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                       <button
                         key={star}
                         type="button"
-                        className={`${styles.starBtn} ${isActive ? styles.starActive : ""}`}
+                        className={`${styles.starBtn} ${
+                          isActive ? styles.starActive : ""
+                        }`}
                         onClick={() => setForm((f) => ({ ...f, rating: star }))}
                         onMouseEnter={() => setHoverRating(star)}
                         style={{
@@ -611,13 +728,20 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                           padding: "0.25rem",
                           fontSize: "2.2rem",
                           color: isActive ? "#f59e0b" : "#cbd5e1",
-                          filter: isActive ? "drop-shadow(0 0 10px rgba(245, 158, 11, 0.7))" : "none",
-                          transform: isHovered ? "scale(1.35) rotate(-8deg)" : isActive ? "scale(1.1)" : "scale(1)",
-                          transition: "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease, filter 0.2s ease",
+                          filter: isActive
+                            ? "drop-shadow(0 0 10px rgba(245, 158, 11, 0.7))"
+                            : "none",
+                          transform: isHovered
+                            ? "scale(1.35) rotate(-8deg)"
+                            : isActive
+                            ? "scale(1.1)"
+                            : "scale(1)",
+                          transition:
+                            "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease, filter 0.2s ease",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          outline: "none"
+                          outline: "none",
                         }}
                       >
                         <FaStar style={{ pointerEvents: "none" }} />
@@ -626,19 +750,24 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                   })}
                 </div>
 
-                <span 
+                <span
                   className={styles.ratingText}
                   style={{
                     fontSize: "0.88rem",
                     fontWeight: 700,
                     padding: "0.45rem 0.95rem",
                     borderRadius: "2rem",
-                    background: (hoverRating || form.rating) > 0 
-                      ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" 
-                      : "#f1f5f9",
-                    color: (hoverRating || form.rating) > 0 ? "#ffffff" : "#94a3b8",
-                    boxShadow: (hoverRating || form.rating) > 0 ? "0 4px 12px rgba(245, 158, 11, 0.35)" : "none",
-                    transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)"
+                    background:
+                      (hoverRating || form.rating) > 0
+                        ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+                        : "#f1f5f9",
+                    color:
+                      (hoverRating || form.rating) > 0 ? "#ffffff" : "#94a3b8",
+                    boxShadow:
+                      (hoverRating || form.rating) > 0
+                        ? "0 4px 12px rgba(245, 158, 11, 0.35)"
+                        : "none",
+                    transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
                   }}
                 >
                   {(hoverRating || form.rating) === 1 && "Needs Course Correction 🧭"}
