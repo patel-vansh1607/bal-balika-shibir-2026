@@ -231,6 +231,25 @@ const SEVA_DESIGNATIONS = [
   "Balika Sah-Sanchalak",
   "Balika I.C",
   "Balika Helper",
+  "Volunteer",
+  "BK",
+  "IT Team",
+  "Kishore Sampark Karyakar",
+  "Kishore IC",
+  "National Exam Cordinator",
+  "Kitchen Team",
+  "Kishore Ghosthi Sanchalak",
+  "Kishore Sanchalak",
+  "KST Sah Sanchalak",
+  "KST IC",
+  "Bal Sanskar Sah Sanchalak",
+  "Room Sevak",
+  "Balika Sanskar Sanchalika",
+  "Balika Sanskar Sah Sanchalika",
+  "Balika Sanskar IC",
+  "iKST Sanchalika",
+  "i-Admin",
+  "i-IT Team"
 ];
 
 // Helper function to render cropped canvas and output Blob / File

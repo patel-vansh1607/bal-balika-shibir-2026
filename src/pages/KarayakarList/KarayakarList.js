@@ -224,6 +224,25 @@ const SEVA_DESIGNATIONS = [
   "Balika Sah-Sanchalak",
   "Balika I.C",
   "Balika Helper",
+  "Volunteer",
+  "BK",
+  "IT Team",
+  "Kishore Sampark Karyakar",
+  "Kishore IC",
+  "National Exam Cordinator",
+  "Kitchen Team",
+  "Kishore Ghosthi Sanchalak",
+  "Kishore Sanchalak",
+  "KST Sah Sanchalak",
+  "KST IC",
+  "Bal Sanskar Sah Sanchalak",
+  "Room Sevak",
+  "Balika Sanskar Sanchalika",
+  "Balika Sanskar Sah Sanchalika",
+  "Balika Sanskar IC",
+  "iKST Sanchalika",
+  "i-Admin",
+  "i-IT Team"
 ];
 const TSHIRT_SIZES = ["XXXS", "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"];
 
@@ -444,34 +463,43 @@ export default function KarayakarList({ defaultRegion = "" }) {
     }
   };
 
-  const getIsFemale = (karyakar) => {
-    if (!karyakar.seva_designation) return false;
+const getIsFemale = (karyakar) => {
+  if (!karyakar.seva_designation) return false;
 
-    const designations =
-      typeof karyakar.seva_designation === "string"
-        ? karyakar.seva_designation.split(", ")
-        : Array.isArray(karyakar.seva_designation)
-          ? karyakar.seva_designation
-          : [];
+  const designations =
+    typeof karyakar.seva_designation === "string"
+      ? karyakar.seva_designation.split(", ")
+      : Array.isArray(karyakar.seva_designation)
+        ? karyakar.seva_designation
+        : [];
 
-    return designations.some((role) => {
-      const r = role.toUpperCase();
+  return designations.some((role) => {
+    const r = role.toUpperCase().trim();
 
-      const matchesExisting =
-        r === "I-NC" ||
-        r === "I-NOC" ||
-        r === "I-RC" ||
-        r.includes("SHISHIKA") ||
-        r.includes("BALIKA");
+    const matchesExisting =
+      r === "I-NC" ||
+      r === "I-NOC" ||
+      r === "I-RC" ||
+      r.includes("SHISHIKA") ||
+      r.includes("BALIKA");
 
-      const isBstFemaleRole =
-        r === "BST SANCHALIKA" ||
-        r === "BST SAH-SANCHALIKA" ||
-        r === "BST BALIKA IC";
+    const isBstFemaleRole =
+      r === "BST SANCHALIKA" ||
+      r === "BST SAH-SANCHALIKA" ||
+      r === "BST BALIKA IC";
 
-      return matchesExisting || isBstFemaleRole;
-    });
-  };
+    const isNewFemaleRole =
+      r === "BALIKA SANSKAR SANCHALIKA" ||
+      r === "BALIKA SANSKAR SAH SANCHALIKA" ||
+      r === "BALIKA SANSKAR IC" ||
+      r === "IKST SANCHALIKA" ||
+      r === "I-ADMIN" ||
+      r === "I-IT TEAM" ||
+      r.includes("IKST");
+
+    return matchesExisting || isBstFemaleRole || isNewFemaleRole;
+  });
+};
 
   const baseFilteredList = list.filter((k) => {
     const matchesCenter = centerFilter === "All" || k.center === centerFilter;
