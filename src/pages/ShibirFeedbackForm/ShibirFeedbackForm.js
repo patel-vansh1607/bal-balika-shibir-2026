@@ -83,11 +83,12 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   const fileInputRef = useRef(null);
   const audioRef = useRef(null);
 
-  // Background Audio Autoplay (Cloudinary URL / No UI / No Volume Slider)
+  // Background Audio Autoplay & Smooth Visibility Fade Handler
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = 0.5;
-      const playPromise = audioRef.current.play();
+    const audioEl = audioRef.current;
+    if (audioEl) {
+      audioEl.volume = 0.5;
+      const playPromise = audioEl.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
           console.log("Autoplay prevented by browser. Audio will start on user interaction:", err);
@@ -101,6 +102,34 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
         });
       }
     }
+
+    // Smooth audio fade out/in when switching tabs or minimizing browser
+    const handleVisibilityChange = () => {
+      if (!audioRef.current) return;
+      
+      if (document.hidden) {
+        // Fade out audio smoothly over 600ms before pausing
+        let vol = audioRef.current.volume;
+        const fadeInterval = setInterval(() => {
+          if (vol > 0.05) {
+            vol -= 0.05;
+            try { audioRef.current.volume = Math.max(0, vol); } catch (e) {}
+          } else {
+            clearInterval(fadeInterval);
+            audioRef.current.pause();
+          }
+        }, 30);
+      } else {
+        // Come back: reset volume & play
+        audioRef.current.volume = 0.5;
+        audioRef.current.play().catch(() => {});
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   // Stinger Timer & Logo Morph Sequence
@@ -308,7 +337,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 isMorphing ? styles.stingerTextFade : ""
               }`}
             >
-              Welcome Right Choice Champion
+              Welcome, Right Choice Champion
             </h1>
             <div
               className={`${styles.stingerSpinner} ${
@@ -446,8 +475,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
               <input
                 type="text"
                 className={styles.inputNoIcon}
-                placeholder="Vansh Vimalkumar Patel"
-
+                placeholder="Enter full name"
                 value={form.fullName}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, fullName: e.target.value }))
