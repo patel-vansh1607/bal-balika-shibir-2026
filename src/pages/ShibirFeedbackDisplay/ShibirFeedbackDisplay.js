@@ -9,7 +9,7 @@ import {
   FaFilter,
   FaLock,
 } from "react-icons/fa6";
-import { supabase } from "../../supabaseClient";
+import { feedback as feedbackApi } from "../../apiClient";
 import styles from "./ShibirFeedbackDisplay.module.css";
 
 // LOCAL ASSETS
@@ -29,21 +29,23 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
   const [feedbackList, setFeedbackList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
+  const isGlobalScope = !regionScope || regionScope.toLowerCase() === "all";
+
   // Region & Country & Rating Filters
-  const cleanScope = cleanRegion(regionScope);
+  const cleanScope = isGlobalScope ? "ALL" : cleanRegion(regionScope);
   const [selectedRegion, setSelectedRegion] = useState(cleanScope || "ALL");
   const [countryFilter, setCountryFilter] = useState("ALL");
   const [ratingFilter, setRatingFilter] = useState("ALL");
   const [activeVideoUrl, setActiveVideoUrl] = useState(null);
 
   // Is region locked by parent prop?
-  const isRegionLocked = regionScope && regionScope !== "all";
+  const isRegionLocked = !isGlobalScope;
 
   // Sync region state if prop changes
   useEffect(() => {
-    setSelectedRegion(cleanRegion(regionScope) || "ALL");
-  }, [regionScope]);
+    setSelectedRegion(isGlobalScope ? "ALL" : (cleanRegion(regionScope) || "ALL"));
+  }, [regionScope, isGlobalScope]);
 
   useEffect(() => {
     fetchFeedback();
@@ -52,14 +54,8 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
   const fetchFeedback = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("shibir_feedback")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data } = await feedbackApi.list();
 
-      if (error) throw error;
-      
-      // Normalize and attach cleaned region to each feedback item
       const formattedData = (data || []).map(item => ({
         ...item,
         normalizedRegion: cleanRegion(item.region || item.zone || item.area || "")
@@ -74,29 +70,11 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
     }
   };
 
-  const handleDelete = async (id, videoUrl) => {
-    if (!window.confirm("Are you sure you want to delete this response?")) {
-      return;
-    }
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this response?")) return;
 
     try {
-      // 1. Delete video file from storage if present
-      if (videoUrl) {
-        const urlParts = videoUrl.split("/shibir-videos/");
-        if (urlParts.length > 1) {
-          const filePath = urlParts[1];
-          await supabase.storage.from("shibir-videos").remove([filePath]);
-        }
-      }
-
-      // 2. Delete database record
-      const { error } = await supabase
-        .from("shibir_feedback")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
+      await feedbackApi.remove(id);
       setFeedbackList((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
       console.error("Error deleting feedback:", err);
@@ -347,7 +325,7 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                       <td>
                         <button
                           className={styles.deleteBtn}
-                          onClick={() => handleDelete(item.id, item.video_url)}
+                          onClick={() => handleDelete(item.id)}
                           title="Delete entry"
                         >
                           <FaTrash />
