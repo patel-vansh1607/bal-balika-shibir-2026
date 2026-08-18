@@ -68,6 +68,7 @@ const REGION_CENTERS = {
     "Bungoma",
   ],
   Tanzania: [
+    "Akshardham",
     "Dar es Salaam",
     "Arusha",
     "Mwanza",
@@ -193,6 +194,7 @@ const REGION_CENTERS = {
 REGION_CENTERS.All = Object.values(REGION_CENTERS).flat();
 
 const SEVA_DESIGNATIONS = [
+  "AKSHARDHAM",
   "NC",
   "I-NC",
   "NOC",

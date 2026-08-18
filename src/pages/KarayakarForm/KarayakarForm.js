@@ -49,6 +49,7 @@ const regionDataset = {
   Tanzania: {
     code: "+255",
     centers: [
+      "Akshardham",
       "Dar es Salaam",
       "Arusha",
       "Mwanza",
@@ -199,6 +200,7 @@ const TSHIRT_REGIONS = [
 ];
 const TSHIRT_SIZES = ["XXXS", "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"];
 const SEVA_DESIGNATIONS = [
+  "AKSHARDHAM",
   "NC",
   "I-NC",
   "NOC",
