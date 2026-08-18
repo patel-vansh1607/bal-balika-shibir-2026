@@ -52,6 +52,7 @@ import AccommodationManager from "../AccomodationManager/AccomodationManager";
 import { FaBed } from "react-icons/fa6";
 import AccommodationMetrics from "../AccomodationMetrics/AccomodationMetrics";
 import GateLogsPage from "../GateLogsPage/GateLogsPage";
+import ShibirFeedbackDisplay from "../ShibirFeedbackDisplay/ShibirFeedbackDisplay";
 
 // ---------------------------------------------------------------------------
 // PRODUCTION TIMERS
@@ -469,6 +470,12 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
                 >
                   <FaChartBar className={styles.iconMargin} /> Overview Metrics
                 </button>
+                <button
+                  onClick={() => handleNavigation("/dashboard/feedback")}
+                  className={`${styles.navLink} ${location.pathname === "/dashboard/feedback" ? styles.navLinkActive : ""}`}
+                >
+                  <FaChartBar className={styles.iconMargin} /> Feedback Data
+                </button>
             {userRole && userRole !== "operator" && (
               <>
                
@@ -740,6 +747,12 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
               path="gate-logs"
               element={
                 <GateLogsPage regionScope={regionScope} />
+              }
+            />
+            <Route
+              path="feedback"
+              element={
+                <ShibirFeedbackDisplay regionScope={regionScope} />
               }
             />
             <Route

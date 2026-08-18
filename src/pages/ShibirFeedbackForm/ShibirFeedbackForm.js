@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FaStar, FaChevronDown, FaMagnifyingGlass, FaPaperPlane } from "react-icons/fa6";
+import {
+  FaStar,
+  FaChevronDown,
+  FaMagnifyingGlass,
+  FaPaperPlane,
+  FaVideo,
+  FaTrash,
+} from "react-icons/fa6";
+import { supabase } from "../../supabaseClient";
 import styles from "./ShibirFeedbackForm.module.css";
+
+// LOCAL ASSETS
+import logo from "../../assets/images/Making the Right Choices - Logo_ColorScalable.svg";
 
 const regionDataset = {
   Kenya: [
@@ -44,6 +55,10 @@ const regionDataset = {
 const COUNTRIES = Object.keys(regionDataset);
 
 export default function ShibirFeedbackForm({ onSubmitSuccess }) {
+  // Splash & Stinger Animation States
+  const [showStinger, setShowStinger] = useState(true);
+  const [isMorphing, setIsMorphing] = useState(false);
+
   const [form, setForm] = useState({
     country: "",
     center: "",
@@ -52,11 +67,12 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     rating: 0,
   });
 
+  const [videoFile, setVideoFile] = useState(null);
   const [hoverRating, setHoverRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  // Searchable dropdown states
   const [countrySearch, setCountrySearch] = useState("");
   const [showCountryList, setShowCountryList] = useState(false);
   const [centerSearch, setCenterSearch] = useState("");
@@ -64,6 +80,44 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
 
   const countryRef = useRef(null);
   const centerRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const audioRef = useRef(null);
+
+  // Background Audio Autoplay (Cloudinary URL / No UI / No Volume Slider)
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = 0.5;
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.log("Autoplay prevented by browser. Audio will start on user interaction:", err);
+          const handleFirstInteraction = () => {
+            if (audioRef.current) audioRef.current.play();
+            document.removeEventListener("click", handleFirstInteraction);
+            document.removeEventListener("touchstart", handleFirstInteraction);
+          };
+          document.addEventListener("click", handleFirstInteraction);
+          document.addEventListener("touchstart", handleFirstInteraction);
+        });
+      }
+    }
+  }, []);
+
+  // Stinger Timer & Logo Morph Sequence
+  useEffect(() => {
+    const morphTimer = setTimeout(() => {
+      setIsMorphing(true);
+    }, 2000);
+
+    const removeTimer = setTimeout(() => {
+      setShowStinger(false);
+    }, 2800);
+
+    return () => {
+      clearTimeout(morphTimer);
+      clearTimeout(removeTimer);
+    };
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -101,39 +155,110 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     setShowCenterList(false);
   };
 
+  const handleVideoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      alert("Video file size must be less than 50MB.");
+      return;
+    }
+
+    setVideoFile(file);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!form.country) return alert("Please select a country.");
     if (!form.center) return alert("Please select a center.");
-    if (!form.fullName.trim()) return alert("Please enter your full name.");
+    if (!form.fullName.trim()) return alert("Please enter full name.");
     if (!form.response.trim()) return alert("Please write your response/feedback.");
     if (form.rating === 0) return alert("Please select a star rating.");
+
+    const lastSubmissionTime = localStorage.getItem("shibir_last_submission");
+    const COOLDOWN_PERIOD = 24 * 60 * 60 * 1000;
+
+    if (
+      lastSubmissionTime &&
+      Date.now() - parseInt(lastSubmissionTime, 10) < COOLDOWN_PERIOD
+    ) {
+      alert("You have already submitted feedback recently. Please wait before submitting again.");
+      return;
+    }
 
     setSubmitting(true);
 
     try {
-      // API call to store feedback
-      const payload = {
-        country: form.country,
-        center: form.center,
-        full_name: form.fullName.trim(),
-        response: form.response.trim(),
-        rating: form.rating,
-        submitted_at: new Date().toISOString(),
-      };
+      const { data: existingRecords, error: checkError } = await supabase
+        .from("shibir_feedback")
+        .select("id, created_at")
+        .ilike("full_name", form.fullName.trim())
+        .eq("center", form.center)
+        .gte("created_at", new Date(Date.now() - COOLDOWN_PERIOD).toISOString());
 
-      // Replace with your actual API endpoint e.g., await forumApi.submitFeedback(payload)
-      console.log("Submitting Feedback:", payload);
+      if (checkError) {
+        console.error("Error checking duplicates:", checkError);
+      } else if (existingRecords && existingRecords.length > 0) {
+        alert("A submission for this person and center was already received within the last 24 hours.");
+        setSubmitting(false);
+        return;
+      }
+
+      let publicVideoUrl = "";
+
+      if (videoFile) {
+        setUploadStatus("Uploading video to Supabase Storage...");
+
+        const fileExt = videoFile.name.split(".").pop();
+        const fileName = `${form.country}_${form.center}_${Date.now()}.${fileExt}`;
+        const filePath = `interviews/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("shibir-videos")
+          .upload(filePath, videoFile, {
+            cacheControl: "3600",
+            upsert: false,
+          });
+
+        if (uploadError) {
+          throw new Error("Supabase video upload failed: " + uploadError.message);
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("shibir-videos")
+          .getPublicUrl(filePath);
+
+        publicVideoUrl = publicUrlData.publicUrl;
+      }
+
+      setUploadStatus("Saving response to Supabase Database...");
+
+      const { data, error: dbError } = await supabase
+        .from("shibir_feedback")
+        .insert([
+          {
+            country: form.country,
+            center: form.center,
+            full_name: form.fullName.trim(),
+            response: form.response.trim(),
+            rating: form.rating,
+            video_url: publicVideoUrl,
+          },
+        ]);
+
+      if (dbError) throw dbError;
+
+      localStorage.setItem("shibir_last_submission", Date.now().toString());
 
       setSubmitting(false);
       setSubmitted(true);
-
-      if (onSubmitSuccess) onSubmitSuccess(payload);
+      if (onSubmitSuccess) onSubmitSuccess(data);
     } catch (err) {
-      console.error("Submission failed:", err);
-      alert("Failed to submit feedback. Please try again.");
+      console.error("Submission error:", err);
+      alert("Failed to submit feedback: " + err.message);
       setSubmitting(false);
+      setUploadStatus("");
     }
   };
 
@@ -145,202 +270,377 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
       response: "",
       rating: 0,
     });
+    setVideoFile(null);
     setCountrySearch("");
     setCenterSearch("");
     setHoverRating(0);
     setSubmitted(false);
+    setUploadStatus("");
   };
 
-  if (submitted) {
-    return (
-      <div className={styles.wrapper}>
+  return (
+    <div className={styles.wrapper}>
+      {/* Hidden Audio Player with Cloudinary Theme Song */}
+      <audio
+        ref={audioRef}
+        src="https://res.cloudinary.com/dxgkcyfrl/video/upload/v1787062968/Theme_Song_Instrumental_flwmap.wav"
+        loop
+        preload="auto"
+      />
+
+      {/* Stinger Splash Overlay */}
+      {showStinger && (
+        <div
+          className={`${styles.stingerContainer} ${
+            isMorphing ? styles.stingerFadeOut : ""
+          }`}
+        >
+          <div className={styles.stingerContent}>
+            <img
+              src={logo}
+              alt="Shibir Logo"
+              className={`${styles.stingerLogo} ${
+                isMorphing ? styles.stingerLogoMorph : ""
+              }`}
+            />
+            <h1
+              className={`${styles.stingerWelcomeText} ${
+                isMorphing ? styles.stingerTextFade : ""
+              }`}
+            >
+              Welcome Right Choice Champion
+            </h1>
+            <div
+              className={`${styles.stingerSpinner} ${
+                isMorphing ? styles.stingerTextFade : ""
+              }`}
+            />
+          </div>
+        </div>
+      )}
+
+      {submitted ? (
         <div className={styles.card}>
           <div className={styles.successState}>
             <div className={styles.successIcon}>
               <FaStar />
             </div>
             <h2>Thank You!</h2>
-            <p>Your feedback has been submitted successfully.</p>
+            <p>Your feedback and video interview have been submitted successfully.</p>
             <button className={styles.submitBtn} onClick={handleReset}>
               Submit Another Response
             </button>
           </div>
         </div>
-      </div>
-    );
-  }
+      ) : (
+        <div className={styles.card}>
+          <div className={styles.headerGroup}>
+            <div className={styles.logoAndTitleInline}>
+              <img
+                src={logo}
+                alt="Shibir Logo"
+                className={`${styles.logoInline} ${
+                  !showStinger ? styles.logoHeaderVisible : styles.logoHeaderHidden
+                }`}
+              />
+              <div className={styles.titleTextGroup}>
+                <h2 className={styles.title}>Making the Right Choices</h2>
+                <p className={styles.titleSubtext}>Bal-Balika Shibir, Africa - 2026</p>
+              </div>
+            </div>
+            <p className={styles.subtitle}>
+              How was your Choice?
+            </p>
+          </div>
 
-  return (
-    <div className={styles.wrapper}>
-      <div className={styles.card}>
-        <div className={styles.headerGroup}>
-          <h2 className={styles.title}>Shibir Forum Update</h2>
-          <p className={styles.subtitle}>
-            Please share your feedback and experience regarding the shibir.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className={styles.formElement}>
-          {/* Country & Center Row */}
-          <div className={styles.formRow}>
-            {/* Country Dropdown */}
-            <div className={styles.formGroup} ref={countryRef}>
-              <label className={styles.label}>
-                Country <span className={styles.required}>*</span>
-              </label>
-              <div className={styles.searchDropdownWrapper}>
-                <div className={styles.inputWithIcon}>
-                  <FaMagnifyingGlass className={styles.searchFieldIcon} />
-                  <input
-                    type="text"
-                    className={styles.input}
-                    placeholder="Select Country..."
-                    value={countrySearch}
-                    onFocus={() => setShowCountryList(true)}
-                    onChange={(e) => {
-                      setCountrySearch(e.target.value);
-                      setShowCountryList(true);
-                    }}
-                  />
-                  <FaChevronDown
-                    className={`${styles.chevronIcon} ${showCountryList ? styles.rotateChevron : ""}`}
-                  />
+          <form onSubmit={handleSubmit} className={styles.formElement}>
+            <div className={styles.formRow}>
+              <div className={styles.formGroup} ref={countryRef}>
+                <label className={styles.label}>
+                  Country <span className={styles.required}>*</span>
+                </label>
+                <div className={styles.searchDropdownWrapper}>
+                  <div className={styles.inputWithIcon}>
+                    <FaMagnifyingGlass className={styles.searchFieldIcon} />
+                    <input
+                      type="text"
+                      className={styles.input}
+                      placeholder="Select Country..."
+                      value={countrySearch}
+                      onFocus={() => setShowCountryList(true)}
+                      onChange={(e) => {
+                        setCountrySearch(e.target.value);
+                        setShowCountryList(true);
+                      }}
+                    />
+                    <FaChevronDown
+                      className={`${styles.chevronIcon} ${
+                        showCountryList ? styles.rotateChevron : ""
+                      }`}
+                    />
+                  </div>
+                  {showCountryList && (
+                    <ul className={styles.dropdownResultsList}>
+                      {filteredCountries.length > 0 ? (
+                        filteredCountries.map((c) => (
+                          <li key={c} onClick={() => handleCountrySelect(c)}>
+                            {c}
+                          </li>
+                        ))
+                      ) : (
+                        <li className={styles.noResults}>No country found</li>
+                      )}
+                    </ul>
+                  )}
                 </div>
-                {showCountryList && (
-                  <ul className={styles.dropdownResultsList}>
-                    {filteredCountries.length > 0 ? (
-                      filteredCountries.map((c) => (
-                        <li key={c} onClick={() => handleCountrySelect(c)}>
-                          {c}
-                        </li>
-                      ))
-                    ) : (
-                      <li className={styles.noResults}>No country found</li>
-                    )}
-                  </ul>
-                )}
+              </div>
+
+              <div className={styles.formGroup} ref={centerRef}>
+                <label className={styles.label}>
+                  Center <span className={styles.required}>*</span>
+                </label>
+                <div className={styles.searchDropdownWrapper}>
+                  <div className={styles.inputWithIcon}>
+                    <FaMagnifyingGlass className={styles.searchFieldIcon} />
+                    <input
+                      type="text"
+                      className={styles.input}
+                      placeholder={
+                        form.country ? "Select Center..." : "Select Country First"
+                      }
+                      disabled={!form.country}
+                      value={centerSearch}
+                      onFocus={() => form.country && setShowCenterList(true)}
+                      onChange={(e) => {
+                        setCenterSearch(e.target.value);
+                        setShowCenterList(true);
+                      }}
+                    />
+                    <FaChevronDown
+                      className={`${styles.chevronIcon} ${
+                        showCenterList ? styles.rotateChevron : ""
+                      }`}
+                    />
+                  </div>
+                  {showCenterList && availableCenters.length > 0 && (
+                    <ul className={styles.dropdownResultsList}>
+                      {filteredCenters.length > 0 ? (
+                        filteredCenters.map((c) => (
+                          <li key={c} onClick={() => handleCenterSelect(c)}>
+                            {c}
+                          </li>
+                        ))
+                      ) : (
+                        <li className={styles.noResults}>No center found</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Center Dropdown */}
-            <div className={styles.formGroup} ref={centerRef}>
+            <div className={styles.formGroup}>
               <label className={styles.label}>
-                Center <span className={styles.required}>*</span>
+                Balak/Balika's Full Name <span className={styles.required}>*</span>
               </label>
-              <div className={styles.searchDropdownWrapper}>
-                <div className={styles.inputWithIcon}>
-                  <FaMagnifyingGlass className={styles.searchFieldIcon} />
-                  <input
-                    type="text"
-                    className={styles.input}
-                    placeholder={
-                      form.country ? "Select Center..." : "Select Country First"
-                    }
-                    disabled={!form.country}
-                    value={centerSearch}
-                    onFocus={() => form.country && setShowCenterList(true)}
-                    onChange={(e) => {
-                      setCenterSearch(e.target.value);
-                      setShowCenterList(true);
-                    }}
-                  />
-                  <FaChevronDown
-                    className={`${styles.chevronIcon} ${showCenterList ? styles.rotateChevron : ""}`}
-                  />
-                </div>
-                {showCenterList && availableCenters.length > 0 && (
-                  <ul className={styles.dropdownResultsList}>
-                    {filteredCenters.length > 0 ? (
-                      filteredCenters.map((c) => (
-                        <li key={c} onClick={() => handleCenterSelect(c)}>
-                          {c}
-                        </li>
-                      ))
-                    ) : (
-                      <li className={styles.noResults}>No center found</li>
-                    )}
-                  </ul>
-                )}
-              </div>
+              <input
+                type="text"
+                className={styles.inputNoIcon}
+                placeholder="Vansh Vimalkumar Patel"
+
+                value={form.fullName}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, fullName: e.target.value }))
+                }
+              />
             </div>
-          </div>
 
-          {/* Full Name */}
-          <div className={styles.formGroup}>
-            <label className={styles.label}>
-              Full Name <span className={styles.required}>*</span>
-            </label>
-            <input
-              type="text"
-              className={styles.input}
-              placeholder="e.g. Jayesh Patel"
-              value={form.fullName}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, fullName: e.target.value }))
-              }
-            />
-          </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                My Shibir Story & Learnings <span className={styles.required}>*</span>
+              </label>
+              <textarea
+                className={styles.textarea}
+                rows={4}
+                placeholder="Share your favourite moments, coolest activities, and what you learned from the Shibir!..."
+                value={form.response}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, response: e.target.value }))
+                }
+              />
+            </div>
 
-          {/* Response / Feedback Text area */}
-          <div className={styles.formGroup}>
-            <label className={styles.label}>
-              Response / Feedback <span className={styles.required}>*</span>
-            </label>
-            <textarea
-              className={styles.textarea}
-              rows={4}
-              placeholder="Write your feedback, experiences, or recommendations..."
-              value={form.response}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, response: e.target.value }))
-              }
-            />
-          </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                Video Interview <span className={styles.optionalTag}>(Optional)</span>
+              </label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="video/*"
+                className={styles.fileInputHidden}
+                onChange={handleVideoChange}
+              />
 
-          {/* Rating (out of 5 stars) */}
-          <div className={styles.formGroup}>
-            <label className={styles.label}>
-              Rating <span className={styles.required}>*</span>
-            </label>
-            <div className={styles.starRatingContainer}>
-              {[1, 2, 3, 4, 5].map((star) => (
+              {!videoFile ? (
                 <button
-                  key={star}
                   type="button"
-                  className={`${styles.starBtn} ${
-                    star <= (hoverRating || form.rating) ? styles.starActive : ""
-                  }`}
-                  onClick={() => setForm((f) => ({ ...f, rating: star }))}
-                  onMouseEnter={() => setHoverRating(star)}
-                  onMouseLeave={() => setHoverRating(0)}
+                  className={styles.uploadBox}
+                  onClick={() => fileInputRef.current?.click()}
                 >
-                  <FaStar />
+                  <FaVideo className={styles.uploadIcon} />
+                  <span>Click to attach video interview (MP4, MOV up to 50MB)</span>
                 </button>
-              ))}
-              <span className={styles.ratingText}>
-                {form.rating > 0 ? `${form.rating} / 5 Stars` : "Select Rating"}
-              </span>
+              ) : (
+                <div className={styles.filePreviewCard}>
+                  <div className={styles.filePreviewInfo}>
+                    <FaVideo className={styles.fileIcon} />
+                    <span className={styles.fileName}>{videoFile.name}</span>
+                    <span className={styles.fileSize}>
+                      ({(videoFile.size / (1024 * 1024)).toFixed(1)} MB)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.removeFileBtn}
+                    onClick={() => setVideoFile(null)}
+                    title="Remove video"
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className={styles.submitBtn}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <div className={styles.btnLoadingState}>
-                <div className={styles.spinner} /> Submitting...
+            <div 
+              className={styles.ratingCardGroup}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.85rem",
+                padding: "1.25rem 1.5rem",
+                borderRadius: "1.25rem",
+                background: "linear-gradient(145deg, #ffffff, #f8fafc)",
+                border: (hoverRating || form.rating) > 0 ? "2px solid #f59e0b" : "2px solid #e2e8f0",
+                boxShadow: (hoverRating || form.rating) > 0 
+                  ? "0 10px 25px -5px rgba(245, 158, 11, 0.25), 0 8px 10px -6px rgba(245, 158, 11, 0.1)" 
+                  : "0 4px 12px rgba(0, 0, 0, 0.03)",
+                transition: "all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)"
+              }}
+            >
+              <label className={styles.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span>
+                  How Right Was This Choice? <span className={styles.required}>*</span>
+                </span>
+                {(hoverRating || form.rating) > 0 ? (
+                  <span style={{
+                    fontSize: "0.85rem",
+                    fontWeight: 800,
+                    color: "#d97706",
+                    backgroundColor: "#fef3c7",
+                    padding: "0.2rem 0.65rem",
+                    borderRadius: "1rem"
+                  }}>
+                    {hoverRating || form.rating} / 5
+                  </span>
+                ) : (
+                  <span style={{
+                    fontSize: "0.85rem",
+                    fontWeight: 700,
+                    color: "#94a3b8",
+                    backgroundColor: "#f1f5f9",
+                    padding: "0.2rem 0.65rem",
+                    borderRadius: "1rem"
+                  }}>
+                    0 / 5
+                  </span>
+                )}
+              </label>
+
+              <div 
+                className={styles.starRatingContainer} 
+                onMouseLeave={() => setHoverRating(0)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem", background: "transparent", border: "none", padding: 0 }}
+              >
+                <div className={styles.starsWrapper} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const activeValue = hoverRating !== 0 ? hoverRating : (form.rating || 0);
+                    const isActive = star <= activeValue;
+                    const isHovered = hoverRating === star;
+
+                    return (
+                      <button
+                        key={star}
+                        type="button"
+                        className={`${styles.starBtn} ${isActive ? styles.starActive : ""}`}
+                        onClick={() => setForm((f) => ({ ...f, rating: star }))}
+                        onMouseEnter={() => setHoverRating(star)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "0.25rem",
+                          fontSize: "2.2rem",
+                          color: isActive ? "#f59e0b" : "#cbd5e1",
+                          filter: isActive ? "drop-shadow(0 0 10px rgba(245, 158, 11, 0.7))" : "none",
+                          transform: isHovered ? "scale(1.35) rotate(-8deg)" : isActive ? "scale(1.1)" : "scale(1)",
+                          transition: "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease, filter 0.2s ease",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          outline: "none"
+                        }}
+                      >
+                        <FaStar style={{ pointerEvents: "none" }} />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <span 
+                  className={styles.ratingText}
+                  style={{
+                    fontSize: "0.88rem",
+                    fontWeight: 700,
+                    padding: "0.45rem 0.95rem",
+                    borderRadius: "2rem",
+                    background: (hoverRating || form.rating) > 0 
+                      ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" 
+                      : "#f1f5f9",
+                    color: (hoverRating || form.rating) > 0 ? "#ffffff" : "#94a3b8",
+                    boxShadow: (hoverRating || form.rating) > 0 ? "0 4px 12px rgba(245, 158, 11, 0.35)" : "none",
+                    transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)"
+                  }}
+                >
+                  {(hoverRating || form.rating) === 1 && "Needs Course Correction 🧭"}
+                  {(hoverRating || form.rating) === 2 && "Getting There... 💡"}
+                  {(hoverRating || form.rating) === 3 && "Solid Choice! 👍"}
+                  {(hoverRating || form.rating) === 4 && "Wise Move! ⚡"}
+                  {(hoverRating || form.rating) === 5 && "The Best Choice Ever! 🏆"}
+                  {!(hoverRating || form.rating) && "Select Your Choice"}
+                </span>
               </div>
-            ) : (
-              <>
-                <FaPaperPlane className={styles.btnIcon} /> Submit Feedback
-              </>
-            )}
-          </button>
-        </form>
-      </div>
+            </div>
+
+            <button
+              type="submit"
+              className={styles.submitBtn}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <div className={styles.btnLoadingState}>
+                  <div className={styles.spinner} />
+                  <span>{uploadStatus || "Submitting..."}</span>
+                </div>
+              ) : (
+                <>
+                  <FaPaperPlane className={styles.btnIcon} /> Submit Feedback
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
