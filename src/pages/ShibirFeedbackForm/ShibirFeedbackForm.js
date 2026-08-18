@@ -8,7 +8,7 @@ import {
   FaTrash,
   FaUserCheck,
 } from "react-icons/fa6";
-import { supabase } from "../../supabaseClient";
+import { feedback as feedbackApi } from "../../apiClient";
 import styles from "./ShibirFeedbackForm.module.css";
 
 // LOCAL ASSETS
@@ -153,7 +153,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     };
   }, []);
 
-  // Fetch attendees from Supabase when Country and Center are selected
+  // Fetch attendees from the API when Country and Center are selected
   useEffect(() => {
     async function fetchAttendees() {
       if (!form.country || !form.center) {
@@ -163,13 +163,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
 
       setLoadingAttendees(true);
       try {
-        const { data, error } = await supabase
-          .from("attendees")
-          .select("full_name, category")
-          .eq("country", form.country)
-          .eq("center", form.center);
-
-        if (error) throw error;
+        const { data } = await feedbackApi.attendees(form.country, form.center);
         setAttendeeList(data || []);
       } catch (err) {
         console.error("Error fetching attendees:", err);
@@ -271,43 +265,25 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     setSubmitting(true);
 
     try {
-      let publicVideoUrl = "";
+      if (videoFile) setUploadStatus("Uploading video...");
 
-      // Supabase is used ONLY for uploading videos
-      if (videoFile) {
-        setUploadStatus("Uploading video to Supabase Storage...");
+      const fields = {
+        full_name: form.fullName,
+        country:   form.country,
+        center:    form.center,
+        category:  form.category,
+        response:  form.response,
+        rating:    form.rating,
+        region:    form.country,
+      };
 
-        const fileExt = videoFile.name.split(".").pop();
-        const fileName = `${form.country}_${form.center}_${Date.now()}.${fileExt}`;
-        const filePath = `interviews/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("shibir-videos")
-          .upload(filePath, videoFile, {
-            cacheControl: "3600",
-            upsert: false,
-          });
-
-        if (uploadError) {
-          throw new Error("Supabase video upload failed: " + uploadError.message);
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from("shibir-videos")
-          .getPublicUrl(filePath);
-
-        publicVideoUrl = publicUrlData.publicUrl;
-      }
-
-      // Text feedback storage removed from Supabase table insert entirely.
-      // Video URL (if uploaded) is handled. You can integrate your alternate text storage/webhook here if needed.
-      console.log("Submitted Data (No Supabase Database Insert):", { ...form, video_url: publicVideoUrl });
+      await feedbackApi.create(fields, videoFile || null);
 
       localStorage.setItem("shibir_last_submission", Date.now().toString());
 
       setSubmitting(false);
       setSubmitted(true);
-      if (onSubmitSuccess) onSubmitSuccess({ ...form, video_url: publicVideoUrl });
+      if (onSubmitSuccess) onSubmitSuccess({ ...form });
     } catch (err) {
       console.error("Submission error:", err);
       alert("Failed to submit feedback: " + err.message);
