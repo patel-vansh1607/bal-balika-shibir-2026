@@ -424,14 +424,26 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
           </div>
         </div>
       )}
-      {submitted ? (
+   {submitted ? (
         <div className={styles.card}>
           <div className={styles.successState}>
             <div className={styles.successIcon}>
               <FaStar />
             </div>
-            <h2>Thank You!</h2>
-            <p>Your feedback has been submitted successfully.</p>
+
+            {/* ONLY show Thank You and Submit Another once uploads are completely done or finished */}
+            {((!videoUploadStatus || videoUploadStatus === "done" || videoUploadStatus === "failed") &&
+              (!photoUploadStatus || photoUploadStatus === "done" || photoUploadStatus === "failed")) ? (
+              <>
+                <h2>Thank You!</h2>
+                <p>Your feedback has been submitted successfully.</p>
+              </>
+            ) : (
+              <>
+                <h2>Processing Your Submission...</h2>
+                <p>Please wait while your files are being uploaded. Do not close this page.</p>
+              </>
+            )}
 
             {videoUploadStatus && (
               <div className={styles.videoUploadStatus}>
@@ -448,7 +460,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 )}
                 {videoUploadStatus === "done" && (
                   <div className={styles.videoUploadDone}>
-                    <FaCircleCheck /> Video uploaded successfully
+                    ✓ Review uploaded successfully
                   </div>
                 )}
                 {videoUploadStatus === "failed" && (
@@ -465,7 +477,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 {photoUploadStatus === "uploading" && (
                   <>
                     <div className={styles.progressLabel}>
-                      <span>Uploading {pendingPhotoFiles.current.length} photo{pendingPhotoFiles.current.length !== 1 ? "s" : ""}...</span>
+                      <span>Uploading {pendingPhotoFiles.current?.length || 0} photo(s)...</span>
                       <span>{photoUploadProgress}%</span>
                     </div>
                     <div className={styles.progressBar}>
@@ -475,7 +487,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 )}
                 {photoUploadStatus === "done" && (
                   <div className={styles.videoUploadDone}>
-                    <FaCircleCheck /> Photos uploaded successfully
+                    ✓ Review uploaded successfully
                   </div>
                 )}
                 {photoUploadStatus === "failed" && (
@@ -487,9 +499,13 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
               </div>
             )}
 
-            <button className={styles.submitBtn} onClick={handleReset} style={{ marginTop: "20px" }}>
-              Submit Another Response
-            </button>
+            {/* ONLY show the reset button once file uploads are fully done, failed, or inactive */}
+            {((!videoUploadStatus || videoUploadStatus === "done" || videoUploadStatus === "failed") &&
+              (!photoUploadStatus || photoUploadStatus === "done" || photoUploadStatus === "failed")) && (
+              <button className={styles.submitBtn} onClick={handleReset} style={{ marginTop: "20px" }}>
+                Submit Another Response
+              </button>
+            )}
           </div>
         </div>
       ) : (
