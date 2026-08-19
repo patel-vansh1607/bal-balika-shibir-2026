@@ -434,7 +434,7 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                           >
                             <img
                               src={fid ? `https://lh3.googleusercontent.com/d/${fid}=w300` : url}
-                              alt={`Photo ${i + 1}`}
+                              alt={`Submission ${i + 1}`}
                               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                               onError={e => { e.target.src = url; }}
                             />
