@@ -8,7 +8,6 @@ import {
   FaCalendar, 
   FaLocationDot, 
   FaUser, 
-  FaGlobe, 
   FaBuilding 
 } from "react-icons/fa6";
 import { feedback as feedbackApi } from "../../apiClient";
@@ -29,6 +28,7 @@ export default function ShibirFeedbackDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchSingleFeedback();
   }, [id]);
@@ -36,8 +36,6 @@ export default function ShibirFeedbackDetail() {
   const fetchSingleFeedback = async () => {
     setLoading(true);
     try {
-      // Assuming your apiClient supports getting a single item or we filter from list
-      // If feedbackApi.get exists, use that. Otherwise, we fallback to listing and finding.
       if (typeof feedbackApi.get === 'function') {
         const { data } = await feedbackApi.get(id);
         setRecord(data);
@@ -84,15 +82,12 @@ export default function ShibirFeedbackDetail() {
   return (
     <div className={styles.wrapper}>
       <div className={styles.container}>
-        {/* Top Navigation Bar */}
         <div className={styles.navBar}>
           <button className={styles.backBtn} onClick={() => navigate(-1)}>
             <FaArrowLeft /> Back to Feedback List
           </button>
-          {/* <span className={styles.recordIdBadge}>ID: {record.id}</span> */}
         </div>
 
-        {/* Main Header Card */}
         <div className={styles.headerCard}>
           <div className={styles.userInfoGroup}>
             <div className={styles.avatarPlaceholder}>
@@ -108,32 +103,22 @@ export default function ShibirFeedbackDetail() {
             </div>
           </div>
 
-<div className={styles.ratingBox}>
+          <div className={styles.ratingBox}>
             <div className={styles.ratingStars}>
               {[...Array(5)].map((_, i) => (
-                <FaStar
-                  key={i}
-                  style={{
-                    color: i < Number(record.rating || 0) ? "#f59e0b" : "#cbd5e1",
-                    fontSize: "20px",
-                  }}
-                />
+                <FaStar key={i} style={{ color: i < Number(record.rating || 0) ? "#f59e0b" : "#cbd5e1", fontSize: "20px" }} />
               ))}
             </div>
             <span className={styles.ratingNumber}>{Number(record.rating || 0).toFixed(1)} / 5.0 Stars</span>
             <span className={styles.dateSubmitted}>
               <FaCalendar /> Submitted on {new Date(record.created_at).toLocaleDateString("en-US", {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
+                month: "long", day: "numeric", year: "numeric",
               })}
             </span>
           </div>
         </div>
 
-        {/* Content Grid: Feedback & Video */}
         <div className={styles.contentGrid}>
-          {/* Full Feedback Section */}
           <div className={styles.cardSection}>
             <h3>Full Feedback Response</h3>
             <div className={styles.feedbackBody}>
@@ -145,26 +130,16 @@ export default function ShibirFeedbackDetail() {
             </div>
           </div>
 
-          {/* Video Interview Section */}
           <div className={styles.cardSection}>
             <div className={styles.videoSectionHeader}>
               <h3>Video Interview</h3>
               {record.video_url && driveFileId && (
                 <div className={styles.videoActions}>
-                  <a
-                    href={`https://drive.google.com/uc?export=download&id=${driveFileId}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={styles.downloadBtn}
-                  >
+                  <a href={`https://drive.google.com/uc?export=download&id=${driveFileId}`}
+                    target="_blank" rel="noreferrer" className={styles.downloadBtn}>
                     <FaDownload /> Download Video
                   </a>
-                  <a
-                    href={record.video_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={styles.openDriveBtn}
-                  >
+                  <a href={record.video_url} target="_blank" rel="noreferrer" className={styles.openDriveBtn}>
                     Open in Drive
                   </a>
                 </div>
