@@ -1,943 +1,395 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   FaStar,
-  FaChevronDown,
   FaMagnifyingGlass,
-  FaPaperPlane,
   FaVideo,
   FaTrash,
-  FaUserCheck,
-  FaImage,
   FaXmark,
-  FaCircleCheck,
+  FaChevronDown,
+  FaFilter,
+  FaLock,
+  FaDownload,
 } from "react-icons/fa6";
 import { feedback as feedbackApi } from "../../apiClient";
-import styles from "./ShibirFeedbackForm.module.css";
+import styles from "./ShibirFeedbackDisplay.module.css";
 
 // LOCAL ASSETS
 import logo from "../../assets/images/Making the Right Choices - Logo_ColorScalable.svg";
-import rightchampion from "../../assets/images/Trophy Design-01.png";
 
-const regionDataset = {
-  Kenya: [
-    "Nairobi", "Mombasa", "Kisumu", "Nakuru", "Eldoret", "Thika", "Malindi",
-    "Kericho", "Kakamega", "Nyeri", "Machakos", "Meru", "Kitale", "Garissa",
-    "Voi", "Naivasha", "Narok", "Embu", "Lamu", "Nanyuki", "Athi River",
-    "Nyahururu", "Bomet", "Busia", "Homabay", "Kisii", "Bungoma"
-  ],
-  Tanzania: [
-    "Akshardham", "Dar es Salaam", "Arusha", "Mwanza", "Zanzibar City",
-    "Dodoma", "Moshi", "Tanga", "Morogoro", "Mbeya", "Iringa", "Kigoma",
-    "Songea", "Tabora", "Musoma", "Shinyanga", "Sumbawanga", "Lindi", "Singida", "Bukoba"
-  ],
-  Uganda: [
-    "Kampala", "Entebbe", "Jinja", "Rwanda", "Mbarara", "Gulu", "Mbale",
-    "Masaka", "Arua", "Lira", "Fort Portal", "Kabale", "Tororo", "Soroti",
-    "Mukono", "Hoima", "Kasese", "Busia", "Iganga", "Wakiso", "Mityana",
-    "Mubende", "Luwero", "Kyenjojo", "Masindi", "Kitgum"
-  ],
-  Zambia: [
-    "Lusaka", "Kitwe", "Ndola", "Livingstone", "Kabwe", "Chingola", "Mufulira",
-    "Luanshya", "Kasama", "Chipata", "Chinsali", "Mansa", "Solwezi", "Mongu",
-    "Mazabuka", "Monze", "Choma", "Kapiri Mposhi"
-  ],
-  Malawi: [
-    "Lilongwe", "Blantyre", "Mzuzu", "Zomba", "Kasungu", "Mangochi", "Karonga",
-    "Salima", "Nkhotakota", "Liwonde", "Balaka", "Luchenza", "Dedza", "Mchinji",
-    "Chikwawa", "Nsanje", "Rumphi"
-  ],
-  Botswana: [
-    "Gaborone", "Francistown", "Molepolole", "Maun", "Mogoditshane", "Serowe",
-    "Selebi-Phikwe", "Kanye", "Lobatse", "Palapye", "Mahalapye", "Mochudi",
-    "Ghanzi", "Kasane", "Orapa", "Jwaneng", "Sowa"
-  ],
-  "South Africa": [
-    "Benoni", "Cape Town", "Germiston", "Laudium", "Lenasia", "Louis Trichardt",
-    "Mayfair", "Mogwase", "Rustenburg", "Tzaneen", "Northriding", "Durban"
-  ]
+// Extract Google Drive file ID from a view URL
+const getDriveFileId = (url) => {
+  if (!url) return null;
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
 };
 
-const COUNTRIES = Object.keys(regionDataset);
+// Helper function to strip region prefixes (e.g., "_3xl_South", "3xl_North")
+const cleanRegion = (rawRegion) => {
+  if (!rawRegion || typeof rawRegion !== "string") return "";
+  
+  const sanitized = rawRegion.trim().replace(/^(_?\d*[a-zA-Z0-9]+_|_)/, "");
+  
+  if (!sanitized) return rawRegion.trim();
+  return sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
+};
 
-export default function ShibirFeedbackForm({ onSubmitSuccess }) {
-  // Splash & Stinger Animation States
-  const [showStinger, setShowStinger] = useState(true);
-  const [isMorphing, setIsMorphing] = useState(false);
+export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
+  const [feedbackList, setFeedbackList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const [form, setForm] = useState({
-    category: "Balak/Balika", // Toggle state: "Balak/Balika" or "Karyakar"
-    country: "",
-    center: "",
-    fullName: "",
-    response: "",
-    rating: 0,
-  });
+  const isGlobalScope = !regionScope || regionScope.toLowerCase() === "all";
 
-  const [attendeeList, setAttendeeList] = useState([]);
-  const [loadingAttendees, setLoadingAttendees] = useState(false);
+  // Region & Country & Rating Filters
+  const cleanScope = isGlobalScope ? "ALL" : cleanRegion(regionScope);
+  const [selectedRegion, setSelectedRegion] = useState(cleanScope || "ALL");
+  const [countryFilter, setCountryFilter] = useState("ALL");
+  const [ratingFilter, setRatingFilter] = useState("ALL");
+  const [activeVideoUrl, setActiveVideoUrl] = useState(null);
 
-  const [photoFiles, setPhotoFiles] = useState([]);
-  const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
-  const [videoFile, setVideoFile] = useState(null);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  // Is region locked by parent prop?
+  const isRegionLocked = !isGlobalScope;
 
-  const [videoUploadStatus, setVideoUploadStatus] = useState(null);
-  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
-  const [videoUploadError, setVideoUploadError] = useState("");
-  const [photoUploadStatus, setPhotoUploadStatus] = useState(null);
-  const [photoUploadProgress, setPhotoUploadProgress] = useState(0);
-  const [photoUploadError, setPhotoUploadError] = useState("");
-  const [pendingRecordId, setPendingRecordId] = useState(null);
-  const pendingVideoFile = useRef(null);
-  const pendingPhotoFiles = useRef([]);
-
-  const [countrySearch, setCountrySearch] = useState("");
-  const [showCountryList, setShowCountryList] = useState(false);
-  const [centerSearch, setCenterSearch] = useState("");
-  const [showCenterList, setShowCenterList] = useState(false);
-  const [nameSearch, setNameSearch] = useState("");
-  const [showNameList, setShowNameList] = useState(false);
-
-  const countryRef = useRef(null);
-  const centerRef = useRef(null);
-  const nameRef = useRef(null);
-  const photoInputRef = useRef(null);
-  const videoInputRef = useRef(null);
-  const audioRef = useRef(null);
-
-  // Create/revoke object URLs for photo previews
+  // Sync region state if prop changes
   useEffect(() => {
-    const urls = photoFiles.map((f) => URL.createObjectURL(f));
-    setPhotoPreviewUrls(urls);
-    return () => urls.forEach((u) => URL.revokeObjectURL(u));
-  }, [photoFiles]);
+    setSelectedRegion(isGlobalScope ? "ALL" : (cleanRegion(regionScope) || "ALL"));
+  }, [regionScope, isGlobalScope]);
 
-  // Background Audio Autoplay & Smooth Visibility Fade Handler
   useEffect(() => {
-    const audioEl = audioRef.current;
-    if (audioEl) {
-      audioEl.volume = 0.5;
-      const playPromise = audioEl.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.log("Autoplay prevented by browser. Audio will start on user interaction:", err);
-          const handleFirstInteraction = () => {
-            if (audioRef.current) audioRef.current.play();
-            document.removeEventListener("click", handleFirstInteraction);
-            document.removeEventListener("touchstart", handleFirstInteraction);
-          };
-          document.addEventListener("click", handleFirstInteraction);
-          document.addEventListener("touchstart", handleFirstInteraction);
-        });
-      }
-    }
-
-    const handleVisibilityChange = () => {
-      if (!audioRef.current) return;
-      if (document.hidden) {
-        let vol = audioRef.current.volume;
-        const fadeInterval = setInterval(() => {
-          if (vol > 0.05) {
-            vol -= 0.05;
-            try { audioRef.current.volume = Math.max(0, vol); } catch (e) {}
-          } else {
-            clearInterval(fadeInterval);
-            audioRef.current.pause();
-          }
-        }, 30);
-      } else {
-        audioRef.current.volume = 0.5;
-        audioRef.current.play().catch(() => {});
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
+    fetchFeedback();
   }, []);
 
-  // Stinger Timer & Logo Morph Sequence
-  useEffect(() => {
-    const morphTimer = setTimeout(() => {
-      setIsMorphing(true);
-    }, 2000);
+  const fetchFeedback = async () => {
+    setLoading(true);
+    try {
+      const { data } = await feedbackApi.list();
 
-    const removeTimer = setTimeout(() => {
-      setShowStinger(false);
-    }, 2800);
+      const formattedData = (data || []).map(item => ({
+        ...item,
+        normalizedRegion: cleanRegion(item.region || item.zone || item.area || "")
+      }));
 
-    return () => {
-      clearTimeout(morphTimer);
-      clearTimeout(removeTimer);
-    };
-  }, []);
-
-  // Fetch attendees from the API when Country and Center are selected
-  useEffect(() => {
-    async function fetchAttendees() {
-      if (!form.country || !form.center) {
-        setAttendeeList([]);
-        return;
-      }
-
-      setLoadingAttendees(true);
-      try {
-        const { data } = await feedbackApi.attendees(form.country, form.center);
-        setAttendeeList(data || []);
-      } catch (err) {
-        console.error("Error fetching attendees:", err);
-        setAttendeeList([]);
-      } finally {
-        setLoadingAttendees(false);
-      }
+      setFeedbackList(formattedData);
+    } catch (err) {
+      console.error("Error fetching feedback:", err);
+      alert("Failed to load feedback records: " + err.message);
+    } finally {
+      setLoading(false);
     }
-
-    fetchAttendees();
-  }, [form.country, form.center]);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (countryRef.current && !countryRef.current.contains(event.target)) {
-        setShowCountryList(false);
-      }
-      if (centerRef.current && !centerRef.current.contains(event.target)) {
-        setShowCenterList(false);
-      }
-      if (nameRef.current && !nameRef.current.contains(event.target)) {
-        setShowNameList(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const availableCenters = form.country ? regionDataset[form.country] || [] : [];
-
-  const filteredCountries = COUNTRIES.filter((c) =>
-    c.toLowerCase().includes(countrySearch.toLowerCase())
-  );
-
-  const filteredCenters = availableCenters.filter((c) =>
-    c.toLowerCase().includes(centerSearch.toLowerCase())
-  );
-
-  // Filter attendees based on selected toggle category (Balak/Balika vs Karyakar) and search text
-  const filteredAttendees = attendeeList.filter((item) => {
-    const matchesCategory = item.category?.toLowerCase() === form.category.toLowerCase();
-    const matchesSearch = item.full_name?.toLowerCase().includes(nameSearch.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  const handleCountrySelect = (country) => {
-    setForm((f) => ({ ...f, country, center: "", fullName: "" }));
-    setCountrySearch(country);
-    setCenterSearch("");
-    setNameSearch("");
-    setShowCountryList(false);
   };
 
-  const handleCenterSelect = (center) => {
-    setForm((f) => ({ ...f, center, fullName: "" }));
-    setCenterSearch(center);
-    setNameSearch("");
-    setShowCenterList(false);
-  };
-
-  const handleNameSelect = (fullName) => {
-    setForm((f) => ({ ...f, fullName }));
-    setNameSearch(fullName);
-    setShowNameList(false);
-  };
-
-  const handlePhotosChange = (e) => {
-    const newFiles = Array.from(e.target.files);
-    e.target.value = "";
-    const valid = newFiles.filter((f) => {
-      if (!f.type.startsWith("image/")) { alert(`${f.name} is not an image.`); return false; }
-      if (f.size > 20 * 1024 * 1024) { alert(`${f.name} exceeds 20MB limit.`); return false; }
-      return true;
-    });
-    setPhotoFiles((prev) => [...prev, ...valid]);
-  };
-
-  const handleRemovePhoto = (idx) => {
-    setPhotoFiles((prev) => prev.filter((_, i) => i !== idx));
-  };
-
-  const handleVideoChange = (e) => {
-    const file = e.target.files[0];
-    e.target.value = "";
-    if (!file) return;
-    if (file.size > 100 * 1024 * 1024) { alert("Video must be under 100MB."); return; }
-    setVideoFile(file);
-  };
-
-  const startVideoUpload = (recordId, file) => {
-    setVideoUploadStatus("uploading");
-    setVideoUploadProgress(0);
-    setVideoUploadError("");
-    feedbackApi.uploadVideoWithProgress(recordId, file, (pct) => {
-      setVideoUploadProgress(pct);
-    }).then(() => {
-      setVideoUploadStatus("done");
-      setVideoUploadProgress(100);
-    }).catch((err) => {
-      setVideoUploadStatus("failed");
-      setVideoUploadError(err.message);
-    });
-  };
-
-  const startPhotoUpload = (recordId, files) => {
-    setPhotoUploadStatus("uploading");
-    setPhotoUploadProgress(0);
-    setPhotoUploadError("");
-    feedbackApi.uploadPhotos(recordId, files, (pct) => {
-      setPhotoUploadProgress(pct);
-    }).then(() => {
-      setPhotoUploadStatus("done");
-      setPhotoUploadProgress(100);
-    }).catch((err) => {
-      setPhotoUploadStatus("failed");
-      setPhotoUploadError(err.message);
-    });
-  };
-
-  const handleRetryVideoUpload = () => {
-    if (!pendingRecordId || !pendingVideoFile.current) return;
-    startVideoUpload(pendingRecordId, pendingVideoFile.current);
-  };
-
-  const handleRetryPhotoUpload = () => {
-    if (!pendingRecordId || !pendingPhotoFiles.current.length) return;
-    startPhotoUpload(pendingRecordId, pendingPhotoFiles.current);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!form.country) return alert("Please select a country.");
-    if (!form.center) return alert("Please select a center.");
-    if (!form.fullName.trim()) return alert("Please select or enter full name.");
-    if (!form.response.trim()) return alert("Please write your response/feedback.");
-    if (form.rating === 0) return alert("Please select a star rating.");
-    if (!videoFile && photoFiles.length === 0) return alert("Please attach at least one photo or video.");
-
-    setSubmitting(true);
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this response?")) return;
 
     try {
-      const fields = {
-        full_name: form.fullName,
-        country:   form.country,
-        center:    form.center,
-        category:  form.category,
-        response:  form.response,
-        rating:    form.rating,
-        region:    form.country,
-      };
-
-      const result = await feedbackApi.create(fields);
-      const recordId = result?.data?.id;
-
-      setSubmitting(false);
-      setSubmitted(true);
-      if (onSubmitSuccess) onSubmitSuccess({ ...form });
-
-      if (recordId) {
-        setPendingRecordId(recordId);
-        if (videoFile) {
-          pendingVideoFile.current = videoFile;
-          startVideoUpload(recordId, videoFile);
-        }
-        if (photoFiles.length > 0) {
-          pendingPhotoFiles.current = photoFiles;
-          startPhotoUpload(recordId, photoFiles);
-        }
-      }
+      await feedbackApi.remove(id);
+      setFeedbackList((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
-      console.error("Submission error:", err);
-      alert("Failed to submit feedback: " + err.message);
-      setSubmitting(false);
-      setUploadStatus("");
+      console.error("Error deleting feedback:", err);
+      alert("Failed to delete record: " + err.message);
     }
   };
 
-  const handleReset = () => {
-    setForm({
-      category: "Balak/Balika",
-      country: "",
-      center: "",
-      fullName: "",
-      response: "",
-      rating: 0,
+  // Extract unique regions for the dropdown
+  const uniqueRegions = useMemo(() => {
+    const set = new Set();
+    feedbackList.forEach((item) => {
+      if (item.normalizedRegion) {
+        set.add(item.normalizedRegion);
+      }
     });
-    setPhotoFiles([]);
-    setVideoFile(null);
-    setCountrySearch("");
-    setCenterSearch("");
-    setNameSearch("");
-    setHoverRating(0);
-    setSubmitted(false);
-    setUploadStatus("");
-    setVideoUploadStatus(null);
-    setVideoUploadProgress(0);
-    setVideoUploadError("");
-    setPhotoUploadStatus(null);
-    setPhotoUploadProgress(0);
-    setPhotoUploadError("");
-    setPendingRecordId(null);
-    pendingVideoFile.current = null;
-    pendingPhotoFiles.current = [];
-  };
+    return Array.from(set).sort();
+  }, [feedbackList]);
+
+  // Unique country list for dropdown filter (based on region filter if applied)
+  const uniqueCountries = useMemo(() => {
+    const subset = selectedRegion === "ALL" 
+      ? feedbackList 
+      : feedbackList.filter(item => item.normalizedRegion?.toLowerCase() === selectedRegion.toLowerCase());
+    
+    return [...new Set(subset.map((item) => item.country).filter(Boolean))].sort();
+  }, [feedbackList, selectedRegion]);
+
+  // Filter Logic (Region + Country + Rating + Search)
+  const filteredData = feedbackList.filter((item) => {
+    const matchesRegion =
+      selectedRegion === "ALL" || 
+      item.normalizedRegion?.toLowerCase() === selectedRegion.toLowerCase();
+
+    const matchesSearch =
+      item.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.center?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.response?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesCountry =
+      countryFilter === "ALL" || item.country === countryFilter;
+
+    const matchesRating =
+      ratingFilter === "ALL" || item.rating === parseInt(ratingFilter, 10);
+
+    return matchesRegion && matchesSearch && matchesCountry && matchesRating;
+  });
+
+  // Calculate statistics based on filtered data (or global feedback list)
+  const totalSubmissions = filteredData.length;
+  const totalVideos = filteredData.filter((f) => f.video_url).length;
+  const avgRating =
+    totalSubmissions > 0
+      ? (
+          filteredData.reduce((acc, curr) => acc + (curr.rating || 0), 0) /
+          totalSubmissions
+        ).toFixed(1)
+      : "0.0";
 
   return (
     <div className={styles.wrapper}>
-      <audio
-        ref={audioRef}
-        src="https://res.cloudinary.com/dxgkcyfrl/video/upload/v1787062968/Theme_Song_Instrumental_flwmap.wav"
-        loop
-        preload="auto"
-      />
-
-      {showStinger && (
-        <div
-          className={`${styles.stingerContainer} ${
-            isMorphing ? styles.stingerFadeOut : ""
-          }`}
-        >
-          <div className={styles.stingerContent}>
+      <div className={styles.card}>
+        {/* Header & Region Filter Bar */}
+        <div className={styles.headerGroup} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+          <div className={styles.logoAndTitleInline}>
             <img
-              src={rightchampion}
+              src={logo}
               alt="Shibir Logo"
-              className={`${styles.stingerLogo} ${
-                isMorphing ? styles.stingerLogoMorph : ""
-              }`}
+              className={styles.logoInline}
             />
-            <h1
-              className={`${styles.stingerWelcomeText} ${
-                isMorphing ? styles.stingerTextFade : ""
-              }`}
-            >
-              Welcome, Right Choice Champion
-            </h1>
-            <div
-              className={`${styles.stingerSpinner} ${
-                isMorphing ? styles.stingerTextFade : ""
-              }`}
-            />
-          </div>
-        </div>
-      )}
-{submitted ? (
-        <div className={styles.card}>
-          <div className={styles.successState}>
-            <div className={styles.successIcon}>
-              <FaStar />
+            <div className={styles.titleTextGroup}>
+              <h2 className={styles.title}>Feedback Dashboard</h2>
+              <p className={styles.titleSubtext}>Bal-Balika Shibir, Africa - 2026</p>
             </div>
-            <h2>Thank You!</h2>
-            <p>Your feedback has been submitted successfully.</p>
-
-            {/* Video upload progress */}
-            {videoUploadStatus && (
-              <div className={styles.videoUploadStatus}>
-                {videoUploadStatus === "uploading" && (
-                  <>
-                    <div className={styles.progressLabel}>
-                      <span>Uploading video...</span>
-                      <span>{videoUploadProgress}%</span>
-                    </div>
-                    <div className={styles.progressBar}>
-                      <div className={styles.progressFill} style={{ width: `${videoUploadProgress}%` }} />
-                    </div>
-                  </>
-                )}
-                {videoUploadStatus === "done" && (
-                  <div className={styles.videoUploadDone}>
-                    <FaCircleCheck /> Video uploaded successfully
-                  </div>
-                )}
-                {videoUploadStatus === "failed" && (
-                  <div className={styles.videoUploadFailed}>
-                    <span className={styles.videoUploadFailedMsg}>Video upload failed: {videoUploadError}</span>
-                    <button className={styles.retryBtn} onClick={handleRetryVideoUpload}>Retry Video</button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Photo upload progress */}
-            {photoUploadStatus && (
-              <div className={styles.videoUploadStatus}>
-                {photoUploadStatus === "uploading" && (
-                  <>
-                    <div className={styles.progressLabel}>
-                      <span>Uploading {pendingPhotoFiles.current.length} photo{pendingPhotoFiles.current.length !== 1 ? "s" : ""}...</span>
-                      <span>{photoUploadProgress}%</span>
-                    </div>
-                    <div className={styles.progressBar}>
-                      <div className={styles.progressFill} style={{ width: `${photoUploadProgress}%` }} />
-                    </div>
-                  </>
-                )}
-                {photoUploadStatus === "done" && (
-                  <div className={styles.videoUploadDone}>
-                    <FaCircleCheck /> Photos uploaded successfully
-                  </div>
-                )}
-                {photoUploadStatus === "failed" && (
-                  <div className={styles.videoUploadFailed}>
-                    <span className={styles.videoUploadFailedMsg}>Photo upload failed: {photoUploadError}</span>
-                    <button className={styles.retryBtn} onClick={handleRetryPhotoUpload}>Retry Photos</button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <button className={styles.submitBtn} onClick={handleReset} style={{ marginTop: "20px" }}>
-              Submit Another Response
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className={styles.card}>
-          <div className={styles.headerGroup}>
-            <div className={styles.logoAndTitleInline}>
-              <img
-                src={logo}
-                alt="Shibir Logo"
-                className={`${styles.logoInline} ${
-                  !showStinger ? styles.logoHeaderVisible : styles.logoHeaderHidden
-                }`}
-              />
-              <div className={styles.titleTextGroup}>
-                <h2 className={styles.title}>Making the Right Choices</h2>
-                <p className={styles.titleSubtext}>Bal-Balika Shibir, Africa - 2026</p>
-              </div>
-            </div>
-            <p className={styles.subtitle}>HOW RIGHT WAS YOUR CHOICE?</p>
           </div>
 
-          <form onSubmit={handleSubmit} className={styles.formElement}>
-            {/* Category Toggle Switcher */}
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                I am a <span className={styles.required}>*</span>
-              </label>
-              <div style={{ display: "flex", gap: "1rem", marginTop: "0.25rem" }}>
-                {["Balak/Balika", "Karyakar"].map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setForm((f) => ({ ...f, category: cat, fullName: "" }))}
-                    style={{
-                      flex: 1,
-                      padding: "0.75rem",
-                      borderRadius: "0.75rem",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      border: form.category === cat ? "2px solid #f59e0b" : "2px solid #e2e8f0",
-                      background: form.category === cat ? "#fef3c7" : "#ffffff",
-                      color: form.category === cat ? "#d97706" : "#64748b",
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-  <hr className={styles.divider} />
-            <div className={styles.formRow}>
-              <div className={styles.formGroup} ref={countryRef}>
-                <label className={styles.label}>
-                  Country <span className={styles.required}>*</span>
-                </label>
-                <div className={styles.searchDropdownWrapper}>
-                  <div className={styles.inputWithIcon}>
-                    <FaMagnifyingGlass className={styles.searchFieldIcon} />
-                    <input
-                      type="text"
-                      className={styles.input}
-                      placeholder="Select Country..."
-                      value={countrySearch}
-                      onFocus={() => setShowCountryList(true)}
-                      onChange={(e) => {
-                        setCountrySearch(e.target.value);
-                        setShowCountryList(true);
-                      }}
-                    />
-                    <FaChevronDown
-                      className={`${styles.chevronIcon} ${
-                        showCountryList ? styles.rotateChevron : ""
-                      }`}
-                    />
-                  </div>
-                  {showCountryList && (
-                    <ul className={styles.dropdownResultsList}>
-                      {filteredCountries.length > 0 ? (
-                        filteredCountries.map((c) => (
-                          <li key={c} onClick={() => handleCountrySelect(c)}>
-                            {c}
-                          </li>
-                        ))
-                      ) : (
-                        <li className={styles.noResults}>No country found</li>
-                      )}
-                    </ul>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.formGroup} ref={centerRef}>
-                <label className={styles.label}>
-                  Center <span className={styles.required}>*</span>
-                </label>
-                <div className={styles.searchDropdownWrapper}>
-                  <div className={styles.inputWithIcon}>
-                    <FaMagnifyingGlass className={styles.searchFieldIcon} />
-                    <input
-                      type="text"
-                      className={styles.input}
-                      placeholder={
-                        form.country ? "Select Center..." : "Select Country First"
-                      }
-                      disabled={!form.country}
-                      value={centerSearch}
-                      onFocus={() => form.country && setShowCenterList(true)}
-                      onChange={(e) => {
-                        setCenterSearch(e.target.value);
-                        setShowCenterList(true);
-                      }}
-                    />
-                    <FaChevronDown
-                      className={`${styles.chevronIcon} ${
-                        showCenterList ? styles.rotateChevron : ""
-                      }`}
-                    />
-                  </div>
-                  {showCenterList && availableCenters.length > 0 && (
-                    <ul className={styles.dropdownResultsList}>
-                      {filteredCenters.length > 0 ? (
-                        filteredCenters.map((c) => (
-                          <li key={c} onClick={() => handleCenterSelect(c)}>
-                            {c}
-                          </li>
-                        ))
-                      ) : (
-                        <li className={styles.noResults}>No center found</li>
-                      )}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            </div>
-  <hr className={styles.divider} />
-            {/* Pulled Attendee Name Dropdown */}
-            <div className={styles.formGroup} ref={nameRef}>
-              <label className={styles.label}>
-                {form.category} Full Name <span className={styles.required}>*</span>
-              </label>
-              <div className={styles.searchDropdownWrapper}>
-                <div className={styles.inputWithIcon}>
-                  <FaUserCheck className={styles.searchFieldIcon} />
-                  <input
-                    type="text"
-                    className={styles.input}
-                    placeholder={
-                      !form.center
-                        ? "Select Country & Center First..."
-                        : loadingAttendees
-                        ? "Loading attendees..."
-                        : `Select your name from ${form.center}...`
-                    }
-                    disabled={!form.center || loadingAttendees}
-                    value={nameSearch}
-                    onFocus={() => form.center && setShowNameList(true)}
-                    onChange={(e) => {
-                      setNameSearch(e.target.value);
-                      setShowNameList(true);
-                    }}
-                  />
-                  <FaChevronDown
-                    className={`${styles.chevronIcon} ${
-                      showNameList ? styles.rotateChevron : ""
-                    }`}
-                  />
-                </div>
-                {showNameList && (
-                  <ul className={styles.dropdownResultsList}>
-                    {filteredAttendees.length > 0 ? (
-                      filteredAttendees.map((att, idx) => (
-                        <li
-                          key={idx}
-                          onClick={() => handleNameSelect(att.full_name)}
-                        >
-                          {att.full_name}
-                        </li>
-                      ))
-                    ) : (
-                      <li className={styles.noResults}>
-                        {loadingAttendees
-                          ? "Loading..."
-                          : "No attendee found for this center/category"}
-                      </li>
-                    )}
-                  </ul>
-                )}
-              </div>
-            </div>
-  <hr className={styles.divider} />
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                My Shibir Story & Learnings <span className={styles.required}>*</span>
-              </label>
-              <div className={styles.guideBox}>
-    <ul className={styles.guideList}>
-      <li>What was your absolute favorite moment, activity, or game at the Shibir?</li>
-      <li>What is the most valuable lesson, value, or advice you've carried back home?</li>
-      <li>How did this Shibir help you grow, make new friends, or learn something new?</li>
-      <li>If you had to describe your Shibir experience, what would it be?</li>
-    </ul>
-  </div>
-              <textarea
-                className={styles.textarea}
-                rows={4}
-                placeholder="Share your favourite moments, coolest activities, and what you learned from the Shibir!..."
-                value={form.response}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, response: e.target.value }))
-                }
-              />
-            </div>
-  <hr className={styles.divider} />
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                Photos &amp; Video <span className={styles.required}>*</span>
-                <span className={styles.optionalTag}> — at least one required</span>
-              </label>
-
-              <div className={styles.guideBox}>
-                <ul className={styles.guideList}>
-                  <li>Upload photos from the Shibir — photobooth, group shots, notes, artwork.</li>
-                  <li>Record a quick 30–60 second video sharing your favorite highlight!</li>
-                </ul>
-              </div>
-
-              {/* Hidden file inputs */}
-              <input type="file" ref={photoInputRef} accept="image/*" multiple className={styles.fileInputHidden} onChange={handlePhotosChange} />
-              <input type="file" ref={videoInputRef} accept="video/*" className={styles.fileInputHidden} onChange={handleVideoChange} />
-
-              {/* Add buttons */}
-              <div className={styles.mediaButtons}>
-                <button type="button" className={styles.mediaAddBtn} onClick={() => photoInputRef.current?.click()}>
-                  <FaImage /> Add Photos
-                </button>
-                <button type="button" className={`${styles.mediaAddBtn} ${videoFile ? styles.mediaAddBtnActive : ""}`} onClick={() => videoInputRef.current?.click()}>
-                  <FaVideo /> {videoFile ? "Change Video" : "Add Video"}
-                </button>
-              </div>
-
-              {/* Photo preview grid */}
-              {photoPreviewUrls.length > 0 && (
-                <div className={styles.photoGrid}>
-                  {photoPreviewUrls.map((url, i) => (
-                    <div key={i} className={styles.photoThumb}>
-                      <img src={url} alt={`Submission ${i + 1}`} className={styles.photoThumbImg} />
-                      <button type="button" className={styles.removeThumbBtn} onClick={() => handleRemovePhoto(i)} title="Remove">
-                        <FaXmark />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Video preview */}
-              {videoFile && (
-                <div className={styles.filePreviewCard}>
-                  <div className={styles.filePreviewInfo}>
-                    <FaVideo className={styles.fileIcon} />
-                    <span className={styles.fileName}>{videoFile.name}</span>
-                    <span className={styles.fileSize}>({(videoFile.size / (1024 * 1024)).toFixed(1)} MB)</span>
-                  </div>
-                  <button type="button" className={styles.removeFileBtn} onClick={() => setVideoFile(null)} title="Remove video">
-                    <FaTrash />
-                  </button>
-                </div>
-              )}
-
-              {!videoFile && photoFiles.length === 0 && (
-                <p className={styles.mediaHint}>Add at least one photo or video to continue.</p>
-              )}
-            </div>
-  <hr className={styles.divider} />
-            <div
-              className={styles.ratingCardGroup}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.85rem",
-                padding: "1.25rem 1.5rem",
-                borderRadius: "1.25rem",
-                background: "linear-gradient(145deg, #ffffff, #f8fafc)",
-                border:
-                  (hoverRating || form.rating) > 0
-                    ? "2px solid #f59e0b"
-                    : "2px solid #e2e8f0",
-                boxShadow:
-                  (hoverRating || form.rating) > 0
-                    ? "0 10px 25px -5px rgba(245, 158, 11, 0.25), 0 8px 10px -6px rgba(245, 158, 11, 0.1)"
-                    : "0 4px 12px rgba(0, 0, 0, 0.03)",
-                transition: "all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
-              }}
-            >
-              <label
-                className={styles.label}
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
-              >
-                <span>
-                  How Right Was This Choice? <span className={styles.required}>*</span>
-                </span>
-                {(hoverRating || form.rating) > 0 ? (
-                  <span
-                    style={{
-                      fontSize: "0.85rem",
-                      fontWeight: 800,
-                      color: "#d97706",
-                      backgroundColor: "#fef3c7",
-                      padding: "0.2rem 0.65rem",
-                      borderRadius: "1rem",
-                    }}
-                  >
-                    {hoverRating || form.rating} / 5
-                  </span>
-                ) : (
-                  <span
-                    style={{
-                      fontSize: "0.85rem",
-                      fontWeight: 700,
-                      color: "#94a3b8",
-                      backgroundColor: "#f1f5f9",
-                      padding: "0.2rem 0.65rem",
-                      borderRadius: "1rem",
-                    }}
-                  >
-                    0 / 5
-                  </span>
-                )}
-              </label>
-
-              <div
-                className={styles.starRatingContainer}
-                onMouseLeave={() => setHoverRating(0)}
+          {/* Region Filter / Scope Selector */}
+          {!isRegionLocked ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#fff", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
+              <FaFilter style={{ color: "#5f6368", fontSize: "14px" }} />
+              <span style={{ fontSize: "14px", fontWeight: "600", color: "#3c4043" }}>Region:</span>
+              <select
+                value={selectedRegion}
+                onChange={(e) => {
+                  setSelectedRegion(e.target.value);
+                  setCountryFilter("ALL"); // Reset country filter on region change
+                }}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: "0.75rem",
-                  background: "transparent",
                   border: "none",
-                  padding: 0,
+                  outline: "none",
+                  background: "transparent",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#1a73e8",
+                  cursor: "pointer"
                 }}
               >
-                <div
-                  className={styles.starsWrapper}
-                  style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
-                >
-                  {[1, 2, 3, 4, 5].map((star) => {
-                    const activeValue =
-                      hoverRating !== 0 ? hoverRating : form.rating || 0;
-                    const isActive = star <= activeValue;
-                    const isHovered = hoverRating === star;
+                <option value="ALL">All Regions</option>
+                {uniqueRegions.map((reg) => (
+                  <option key={reg} value={reg}>
+                    {reg}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f1f3f4", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
+              <FaLock style={{ color: "#5f6368", fontSize: "13px" }} />
+              <span style={{ fontSize: "14px", fontWeight: "600", color: "#3c4043" }}>
+                Region Locked: <span style={{ color: "#1a73e8" }}>{selectedRegion}</span>
+              </span>
+            </div>
+          )}
+        </div>
 
-                    return (
-                      <button
-                        key={star}
-                        type="button"
-                        className={`${styles.starBtn} ${
-                          isActive ? styles.starActive : ""
-                        }`}
-                        onClick={() => setForm((f) => ({ ...f, rating: star }))}
-                        onMouseEnter={() => setHoverRating(star)}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: "0.25rem",
-                          fontSize: "2.2rem",
-                          color: isActive ? "#f59e0b" : "#cbd5e1",
-                          filter: isActive
-                            ? "drop-shadow(0 0 10px rgba(245, 158, 11, 0.7))"
-                            : "none",
-                          transform: isHovered
-                            ? "scale(1.35) rotate(-8deg)"
-                            : isActive
-                            ? "scale(1.1)"
-                            : "scale(1)",
-                          transition:
-                            "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease, filter 0.2s ease",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          outline: "none",
-                        }}
-                      >
-                        <FaStar style={{ pointerEvents: "none" }} />
-                      </button>
-                    );
-                  })}
-                </div>
+        {/* Stats Section */}
+        <div className={styles.statsRow}>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Total Responses</div>
+            <div className={styles.statValue}>{totalSubmissions}</div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Average Rating</div>
+            <div className={styles.statValue}>{avgRating} / 5.0</div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Videos Uploaded</div>
+            <div className={styles.statValue}>{totalVideos}</div>
+          </div>
+        </div>
 
-                <span
-                  className={styles.ratingText}
-                  style={{
-                    fontSize: "0.88rem",
-                    fontWeight: 700,
-                    padding: "0.45rem 0.95rem",
-                    borderRadius: "2rem",
-                    background:
-                      (hoverRating || form.rating) > 0
-                        ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
-                        : "#f1f5f9",
-                    color:
-                      (hoverRating || form.rating) > 0 ? "#ffffff" : "#94a3b8",
-                    boxShadow:
-                      (hoverRating || form.rating) > 0
-                        ? "0 4px 12px rgba(245, 158, 11, 0.35)"
-                        : "none",
-                    transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                  }}
+        {/* Search & Filter Controls */}
+        <div className={styles.controlsBar}>
+          <div className={styles.searchBox}>
+            <div className={styles.inputWithIcon} style={{ width: "100%" }}>
+              <FaMagnifyingGlass className={styles.searchFieldIcon} />
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="Search by name, center, or feedback..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className={styles.filterWrapper}>
+            <select
+              className={styles.filterSelect}
+              value={countryFilter}
+              onChange={(e) => setCountryFilter(e.target.value)}
+            >
+              <option value="ALL">All Countries</option>
+              {uniqueCountries.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <FaChevronDown className={styles.selectChevron} />
+          </div>
+
+          <div className={styles.filterWrapper}>
+            <select
+              className={styles.filterSelect}
+              value={ratingFilter}
+              onChange={(e) => setRatingFilter(e.target.value)}
+            >
+              <option value="ALL">All Ratings</option>
+              <option value="5">5 Stars</option>
+              <option value="4">4 Stars</option>
+              <option value="3">3 Stars</option>
+              <option value="2">2 Stars</option>
+              <option value="1">1 Star</option>
+            </select>
+            <FaChevronDown className={styles.selectChevron} />
+          </div>
+        </div>
+
+        {/* Table Section */}
+        <div className={styles.tableContainer}>
+          {loading ? (
+            <div className={styles.loadingContainer}>
+              <div className={styles.spinner} />
+              <p>Loading feedback data...</p>
+            </div>
+          ) : filteredData.length === 0 ? (
+            <div className={styles.emptyState}>
+              <p>No feedback entries found matching your criteria.</p>
+            </div>
+          ) : (
+            <div className={styles.tableResponsiveWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Rating</th>
+                    <th>Feedback</th>
+                    <th>Video Interview</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredData.map((item) => (
+                    <tr key={item.id}>
+                      <td>
+                        {new Date(item.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td>
+                        <strong>{item.full_name}</strong>
+                      </td>
+                      <td>
+                        <div className={styles.centerName}>{item.center}</div>
+                        <span className={styles.badge}>{item.country}</span>
+                      </td>
+                      <td>
+                        <div className={styles.ratingStars}>
+                          {[...Array(5)].map((_, i) => (
+                            <FaStar
+                              key={i}
+                              style={{
+                                color: i < item.rating ? "#f59e0b" : "#cbd5e1",
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.responseText}>{item.response}</div>
+                      </td>
+                      <td>
+                        {item.video_url ? (
+                          <button
+                            className={styles.videoLinkBtn}
+                            onClick={() => setActiveVideoUrl(item.video_url)}
+                          >
+                            <FaVideo /> Play Video
+                          </button>
+                        ) : (
+                          <span className={styles.noVideoText}>No Video</span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDelete(item.id)}
+                          title="Delete entry"
+                        >
+                          <FaTrash />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Video Preview Modal */}
+      {activeVideoUrl && (
+        <div className={styles.modalOverlay} onClick={() => setActiveVideoUrl(null)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Video Interview</h3>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <a
+                  href={`https://drive.google.com/uc?export=download&id=${getDriveFileId(activeVideoUrl)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.downloadBtn}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {(hoverRating || form.rating) === 1 && "Needs Course Correction 🧭"}
-                  {(hoverRating || form.rating) === 2 && "Getting There... 💡"}
-                  {(hoverRating || form.rating) === 3 && "Solid Choice! 👍"}
-                  {(hoverRating || form.rating) === 4 && "Wise Move! ⚡"}
-                  {(hoverRating || form.rating) === 5 && "The Best Choice Ever! 🏆"}
-                  {!(hoverRating || form.rating) && "Select Your Choice"}
-                </span>
+                  <FaDownload /> Download
+                </a>
+                <a
+                  href={activeVideoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.openDriveBtn}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Open in Drive
+                </a>
+                <button
+                  className={styles.closeModalBtn}
+                  onClick={() => setActiveVideoUrl(null)}
+                >
+                  <FaXmark />
+                </button>
               </div>
             </div>
-
-            <button
-              type="submit"
-              className={styles.submitBtn}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <div className={styles.btnLoadingState}>
-                  <div className={styles.spinner} />
-                  <span>{uploadStatus || "Submitting..."}</span>
-                </div>
-              ) : (
-                <>
-                  <FaPaperPlane className={styles.btnIcon} /> Submit Feedback
-                </>
-              )}
-            </button>
-          </form>
+            <iframe
+              src={`https://drive.google.com/file/d/${getDriveFileId(activeVideoUrl)}/preview`}
+              className={styles.videoPlayer}
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              title="Video Interview"
+              style={{ border: "none" }}
+            />
+          </div>
         </div>
       )}
     </div>
