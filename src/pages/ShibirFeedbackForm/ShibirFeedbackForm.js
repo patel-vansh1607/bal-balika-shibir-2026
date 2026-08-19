@@ -28,31 +28,31 @@ const regionDataset = {
     "Dodoma", "Moshi", "Tanga", "Morogoro", "Mbeya", "Iringa", "Kigoma",
     "Songea", "Tabora", "Musoma", "Shinyanga", "Sumbawanga", "Lindi", "Singida", "Bukoba"
   ],
-  Uganda: [
-    "Kampala", "Entebbe", "Jinja", "Rwanda", "Mbarara", "Gulu", "Mbale",
-    "Masaka", "Arua", "Lira", "Fort Portal", "Kabale", "Tororo", "Soroti",
-    "Mukono", "Hoima", "Kasese", "Busia", "Iganga", "Wakiso", "Mityana",
-    "Mubende", "Luwero", "Kyenjojo", "Masindi", "Kitgum"
-  ],
-  Zambia: [
-    "Lusaka", "Kitwe", "Ndola", "Livingstone", "Kabwe", "Chingola", "Mufulira",
-    "Luanshya", "Kasama", "Chipata", "Chinsali", "Mansa", "Solwezi", "Mongu",
-    "Mazabuka", "Monze", "Choma", "Kapiri Mposhi"
-  ],
-  Malawi: [
-    "Lilongwe", "Blantyre", "Mzuzu", "Zomba", "Kasungu", "Mangochi", "Karonga",
-    "Salima", "Nkhotakota", "Liwonde", "Balaka", "Luchenza", "Dedza", "Mchinji",
-    "Chikwawa", "Nsanje", "Rumphi"
-  ],
-  Botswana: [
-    "Gaborone", "Francistown", "Molepolole", "Maun", "Mogoditshane", "Serowe",
-    "Selebi-Phikwe", "Kanye", "Lobatse", "Palapye", "Mahalapye", "Mochudi",
-    "Ghanzi", "Kasane", "Orapa", "Jwaneng", "Sowa"
-  ],
-  "South Africa": [
-    "Benoni", "Cape Town", "Germiston", "Laudium", "Lenasia", "Louis Trichardt",
-    "Mayfair", "Mogwase", "Rustenburg", "Tzaneen", "Northriding", "Durban"
-  ]
+  // Uganda: [
+  //   "Kampala", "Entebbe", "Jinja", "Rwanda", "Mbarara", "Gulu", "Mbale",
+  //   "Masaka", "Arua", "Lira", "Fort Portal", "Kabale", "Tororo", "Soroti",
+  //   "Mukono", "Hoima", "Kasese", "Busia", "Iganga", "Wakiso", "Mityana",
+  //   "Mubende", "Luwero", "Kyenjojo", "Masindi", "Kitgum"
+  // ],
+  // Zambia: [
+  //   "Lusaka", "Kitwe", "Ndola", "Livingstone", "Kabwe", "Chingola", "Mufulira",
+  //   "Luanshya", "Kasama", "Chipata", "Chinsali", "Mansa", "Solwezi", "Mongu",
+  //   "Mazabuka", "Monze", "Choma", "Kapiri Mposhi"
+  // ],
+  // Malawi: [
+  //   "Lilongwe", "Blantyre", "Mzuzu", "Zomba", "Kasungu", "Mangochi", "Karonga",
+  //   "Salima", "Nkhotakota", "Liwonde", "Balaka", "Luchenza", "Dedza", "Mchinji",
+  //   "Chikwawa", "Nsanje", "Rumphi"
+  // ],
+  // Botswana: [
+  //   "Gaborone", "Francistown", "Molepolole", "Maun", "Mogoditshane", "Serowe",
+  //   "Selebi-Phikwe", "Kanye", "Lobatse", "Palapye", "Mahalapye", "Mochudi",
+  //   "Ghanzi", "Kasane", "Orapa", "Jwaneng", "Sowa"
+  // ],
+  // "South Africa": [
+  //   "Benoni", "Cape Town", "Germiston", "Laudium", "Lenasia", "Louis Trichardt",
+  //   "Mayfair", "Mogwase", "Rustenburg", "Tzaneen", "Northriding", "Durban"
+  // ]
 };
 
 const COUNTRIES = Object.keys(regionDataset);
