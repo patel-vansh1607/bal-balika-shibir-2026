@@ -24,7 +24,7 @@ const regionDataset = {
     "Nyahururu", "Bomet", "Busia", "Homabay", "Kisii", "Bungoma"
   ],
   Tanzania: [
-    "Akshardham", "Dar es Salaam", "Arusha", "Mwanza", "Zanzibar City",
+   "Dar es Salaam", "Arusha", "Mwanza", "Zanzibar City",
     "Dodoma", "Moshi", "Tanga", "Morogoro", "Mbeya", "Iringa", "Kigoma",
     "Songea", "Tabora", "Musoma", "Shinyanga", "Sumbawanga", "Lindi", "Singida", "Bukoba"
   ],
@@ -79,7 +79,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   const [submitting, setSubmitting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
   const [submitted, setSubmitted] = useState(false);
-
+const [uploadProgress, setUploadProgress] = useState(0);
   const [countrySearch, setCountrySearch] = useState("");
   const [showCountryList, setShowCountryList] = useState(false);
   const [centerSearch, setCenterSearch] = useState("");
@@ -418,7 +418,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 <p className={styles.titleSubtext}>Bal-Balika Shibir, Africa - 2026</p>
               </div>
             </div>
-            <p className={styles.subtitle}>How was your Choice?</p>
+            <p className={styles.subtitle}>Feedback Forum</p>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.formElement}>
@@ -595,6 +595,17 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
               <label className={styles.label}>
                 My Shibir Story & Learnings <span className={styles.required}>*</span>
               </label>
+
+              {/* Guide / Sample Questions Box */}
+              <div className={styles.guideBox}>
+                {/* <p className={styles.guideTitle}>💡 What to share in your story:</p> */}
+                <ul className={styles.guideList}>
+                  <li>What was your absolute favorite moment or activity at the Shibir?</li>
+                  <li>What is the most valuable lesson or takeaway you learned?</li>
+                  <li>How has this Shibir experience inspired you moving forward?</li>
+                </ul>
+              </div>
+
               <textarea
                 className={styles.textarea}
                 rows={4}
@@ -606,14 +617,25 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
               />
             </div>
 
-            <div className={styles.formGroup}>
+          <div className={styles.formGroup}>
               <label className={styles.label}>
-                Video Interview <span className={styles.optionalTag}>(Optional)</span>
+                Video / Photo Interview <span className={styles.optionalTag}>(Optional)</span>
               </label>
+              
+              <div className={styles.guideBox}>
+                <ul className={styles.guideList}>
+                  <li>What was your absolute favorite moment, activity, or game at the Shibir?</li>
+                  <li>What is the most valuable lesson, value, or advice you are taking back home?</li>
+                  <li>How did this Shibir help you grow, make new friends, or learn something new?</li>
+                  <li>If you had to describe your Shibir experience in one sentence or word, what would it be?</li>
+                  <li>How did you keep your Shibir Smruti? Share Photos/Videos!</li>
+                </ul>
+              </div>
+
               <input
                 type="file"
                 ref={fileInputRef}
-                accept="video/*"
+                accept="video/*,image/*"
                 className={styles.fileInputHidden}
                 onChange={handleVideoChange}
               />
@@ -625,7 +647,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <FaVideo className={styles.uploadIcon} />
-                  <span>Click to attach video interview (MP4, MOV up to 50MB)</span>
+                  <span>Click to attach video or photo (Max 200MB)</span>
                 </button>
               ) : (
                 <div className={styles.filePreviewCard}>
@@ -640,14 +662,26 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                     type="button"
                     className={styles.removeFileBtn}
                     onClick={() => setVideoFile(null)}
-                    title="Remove video"
+                    title="Remove file"
+                    disabled={submitting}
                   >
                     <FaTrash />
                   </button>
                 </div>
               )}
-            </div>
 
+              {submitting && uploadProgress > 0 && (
+                <div className={styles.progressContainer}>
+                  <div className={styles.progressBarWrapper}>
+                    <div 
+                      className={styles.progressBarFill} 
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <span className={styles.progressText}>{uploadStatus}</span>
+                </div>
+              )}
+            </div>
             <div
               className={styles.ratingCardGroup}
               style={{
@@ -673,7 +707,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
               >
                 <span>
-                  How Right Was This Choice? <span className={styles.required}>*</span>
+                  Rate the Shibir <span className={styles.required}>*</span>
                 </span>
                 {(hoverRating || form.rating) > 0 ? (
                   <span

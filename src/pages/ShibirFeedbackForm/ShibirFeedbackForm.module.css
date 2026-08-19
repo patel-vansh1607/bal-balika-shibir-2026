@@ -9,7 +9,7 @@
 
 .wrapper {
   min-height: 100vh;
-  background-color: #fcfbfa;
+  background-color: #e2f0fb;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -143,6 +143,7 @@
 .subtitle {
   font-size: 35px;
   color: #e78524;
+  text-decoration: underline;
   margin: 0;
   font-weight: 500;
   line-height: 1.5;
@@ -582,5 +583,120 @@
     width: 100%;
     text-align: center;
     margin-left: 0 !important;
+  }
+}
+/* Container & Form Group */
+.formGroup {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+/* Guide / Sample Questions Box */
+.guideBox {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+}
+
+.guideTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 6px 0;
+}
+
+.guideList {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.guideList li {
+  margin-bottom: 3px;
+}
+
+/* Textarea Styling */
+.textarea {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: #0f172a;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* ==========================================
+   RESPONSIVENESS (Media Queries)
+   ========================================== */
+
+/* Tablets and small laptops (max-width: 768px) */
+@media screen and (max-width: 768px) {
+  .guideBox {
+    padding: 10px 14px;
+  }
+  
+  .guideList {
+    font-size: 0.78rem;
+  }
+
+  .textarea {
+    font-size: 0.875rem;
+    padding: 10px 12px;
+  }
+}
+
+/* Mobile phones (max-width: 480px) */
+@media screen and (max-width: 480px) {
+  .formGroup {
+    margin-bottom: 16px;
+  }
+
+  .label {
+    font-size: 0.875rem;
+  }
+
+  .guideTitle {
+    font-size: 0.8125rem;
+  }
+
+  .guideList {
+    padding-left: 14px;
+    font-size: 0.75rem;
+  }
+
+  .textarea {
+    rows: 5; /* Expands rows slightly on smaller viewports for easier mobile typing */
   }
 }
