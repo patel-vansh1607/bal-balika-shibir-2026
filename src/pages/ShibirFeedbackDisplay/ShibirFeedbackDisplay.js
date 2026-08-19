@@ -8,12 +8,20 @@ import {
   FaChevronDown,
   FaFilter,
   FaLock,
+  FaDownload,
 } from "react-icons/fa6";
 import { feedback as feedbackApi } from "../../apiClient";
 import styles from "./ShibirFeedbackDisplay.module.css";
 
 // LOCAL ASSETS
 import logo from "../../assets/images/Making the Right Choices - Logo_ColorScalable.svg";
+
+// Extract Google Drive file ID from a view URL
+const getDriveFileId = (url) => {
+  if (!url) return null;
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+};
 
 // Helper function to strip region prefixes (e.g., "_3xl_South", "3xl_North")
 const cleanRegion = (rawRegion) => {
@@ -346,18 +354,40 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3>Video Interview</h3>
-              <button
-                className={styles.closeModalBtn}
-                onClick={() => setActiveVideoUrl(null)}
-              >
-                <FaXmark />
-              </button>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <a
+                  href={`https://drive.google.com/uc?export=download&id=${getDriveFileId(activeVideoUrl)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.downloadBtn}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <FaDownload /> Download
+                </a>
+                <a
+                  href={activeVideoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.openDriveBtn}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Open in Drive
+                </a>
+                <button
+                  className={styles.closeModalBtn}
+                  onClick={() => setActiveVideoUrl(null)}
+                >
+                  <FaXmark />
+                </button>
+              </div>
             </div>
-            <video
-              src={activeVideoUrl}
-              controls
-              autoPlay
+            <iframe
+              src={`https://drive.google.com/file/d/${getDriveFileId(activeVideoUrl)}/preview`}
               className={styles.videoPlayer}
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              title="Video Interview"
+              style={{ border: "none" }}
             />
           </div>
         </div>
