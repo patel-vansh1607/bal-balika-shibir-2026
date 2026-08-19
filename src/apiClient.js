@@ -186,6 +186,29 @@ export const feedback = {
     return apiFetch('POST', `/feedback/${id}/video`, fd, true);
   },
 
+  // Public — upload multiple photos for an existing record (uses XHR with progress)
+  uploadPhotos: (id, photoFiles, onProgress) => {
+    return new Promise((resolve, reject) => {
+      const token = getToken();
+      const fd = new FormData();
+      photoFiles.forEach((f) => fd.append('photos[]', f));
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      });
+      xhr.addEventListener('load', () => {
+        let data;
+        try { data = JSON.parse(xhr.responseText); } catch { data = {}; }
+        if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+        else reject(new Error(data.error || `Upload failed (${xhr.status})`));
+      });
+      xhr.addEventListener('error', () => reject(new Error('Network error during photo upload')));
+      xhr.open('POST', `${API_BASE}/feedback/${id}/photos`);
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(fd);
+    });
+  },
+
   // Public — upload video with progress callback (uses XHR)
   uploadVideoWithProgress: (id, videoFile, onProgress) => {
     return new Promise((resolve, reject) => {
