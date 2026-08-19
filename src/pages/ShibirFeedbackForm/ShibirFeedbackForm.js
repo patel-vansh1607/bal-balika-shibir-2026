@@ -14,7 +14,6 @@ import {
 import { feedback as feedbackApi } from "../../apiClient";
 import styles from "./ShibirFeedbackForm.module.css";
 
-// LOCAL ASSETS
 import logo from "../../assets/images/Making the Right Choices - Logo_ColorScalable.svg";
 import rightchampion from "../../assets/images/Trophy Design-01.png";
 
@@ -60,12 +59,11 @@ const regionDataset = {
 const COUNTRIES = Object.keys(regionDataset);
 
 export default function ShibirFeedbackForm({ onSubmitSuccess }) {
-  // Splash & Stinger Animation States
   const [showStinger, setShowStinger] = useState(true);
   const [isMorphing, setIsMorphing] = useState(false);
 
   const [form, setForm] = useState({
-    category: "Balak/Balika", // Toggle state: "Balak/Balika" or "Karyakar"
+    category: "Balak/Balika",
     country: "",
     center: "",
     fullName: "",
@@ -79,7 +77,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   const [photoFiles, setPhotoFiles] = useState([]);
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
   const [videoFile, setVideoFile] = useState(null);
-  const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   const [hoverRating, setHoverRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
@@ -109,22 +106,12 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   const videoInputRef = useRef(null);
   const audioRef = useRef(null);
 
-  // Create/revoke object URLs for photo previews
   useEffect(() => {
     const urls = photoFiles.map((f) => URL.createObjectURL(f));
     setPhotoPreviewUrls(urls);
     return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [photoFiles]);
 
-  // Create/revoke object URL for video preview
-  useEffect(() => {
-    if (!videoFile) { setVideoPreviewUrl(null); return; }
-    const url = URL.createObjectURL(videoFile);
-    setVideoPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [videoFile]);
-
-  // Background Audio Autoplay & Smooth Visibility Fade Handler
   useEffect(() => {
     const audioEl = audioRef.current;
     if (audioEl) {
@@ -169,7 +156,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     };
   }, []);
 
-  // Stinger Timer & Logo Morph Sequence
   useEffect(() => {
     const morphTimer = setTimeout(() => {
       setIsMorphing(true);
@@ -185,7 +171,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     };
   }, []);
 
-  // Fetch attendees from the API when Country and Center are selected
   useEffect(() => {
     async function fetchAttendees() {
       if (!form.country || !form.center) {
@@ -234,7 +219,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     c.toLowerCase().includes(centerSearch.toLowerCase())
   );
 
-  // Filter attendees based on selected toggle category (Balak/Balika vs Karyakar) and search text
   const filteredAttendees = attendeeList.filter((item) => {
     const matchesCategory = item.category?.toLowerCase() === form.category.toLowerCase();
     const matchesSearch = item.full_name?.toLowerCase().includes(nameSearch.toLowerCase());
@@ -440,7 +424,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
           </div>
         </div>
       )}
-{submitted ? (
+      {submitted ? (
         <div className={styles.card}>
           <div className={styles.successState}>
             <div className={styles.successIcon}>
@@ -449,7 +433,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
             <h2>Thank You!</h2>
             <p>Your feedback has been submitted successfully.</p>
 
-            {/* Video upload progress */}
             {videoUploadStatus && (
               <div className={styles.videoUploadStatus}>
                 {videoUploadStatus === "uploading" && (
@@ -477,7 +460,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
               </div>
             )}
 
-            {/* Photo upload progress */}
             {photoUploadStatus && (
               <div className={styles.videoUploadStatus}>
                 {photoUploadStatus === "uploading" && (
@@ -530,7 +512,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
           </div>
 
           <form onSubmit={handleSubmit} className={styles.formElement}>
-            {/* Category Toggle Switcher */}
             <div className={styles.formGroup}>
               <label className={styles.label}>
                 I am a <span className={styles.required}>*</span>
@@ -558,7 +539,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 ))}
               </div>
             </div>
-  <hr className={styles.divider} />
+            <hr className={styles.divider} />
             <div className={styles.formRow}>
               <div className={styles.formGroup} ref={countryRef}>
                 <label className={styles.label}>
@@ -643,8 +624,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 </div>
               </div>
             </div>
-  <hr className={styles.divider} />
-            {/* Pulled Attendee Name Dropdown */}
+            <hr className={styles.divider} />
             <div className={styles.formGroup} ref={nameRef}>
               <label className={styles.label}>
                 {form.category} Full Name <span className={styles.required}>*</span>
@@ -698,19 +678,19 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 )}
               </div>
             </div>
-  <hr className={styles.divider} />
+            <hr className={styles.divider} />
             <div className={styles.formGroup}>
               <label className={styles.label}>
-                My Shibir Story & Learnings <span className={styles.required}>*</span>
+                My Shibir Story &amp; Learnings <span className={styles.required}>*</span>
               </label>
               <div className={styles.guideBox}>
-    <ul className={styles.guideList}>
-      <li>What was your absolute favorite moment, activity, or game at the Shibir?</li>
-      <li>What is the most valuable lesson, value, or advice you've carried back home?</li>
-      <li>How did this Shibir help you grow, make new friends, or learn something new?</li>
-      <li>If you had to describe your Shibir experience, what would it be?</li>
-    </ul>
-  </div>
+                <ul className={styles.guideList}>
+                  <li>What was your absolute favorite moment, activity, or game at the Shibir?</li>
+                  <li>What is the most valuable lesson, value, or advice you've carried back home?</li>
+                  <li>How did this Shibir help you grow, make new friends, or learn something new?</li>
+                  <li>If you had to describe your Shibir experience, what would it be?</li>
+                </ul>
+              </div>
               <textarea
                 className={styles.textarea}
                 rows={4}
@@ -721,7 +701,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 }
               />
             </div>
-  <hr className={styles.divider} />
+            <hr className={styles.divider} />
             <div className={styles.formGroup}>
               <label className={styles.label}>
                 Photos &amp; Video <span className={styles.required}>*</span>
@@ -735,11 +715,9 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 </ul>
               </div>
 
-              {/* Hidden file inputs */}
               <input type="file" ref={photoInputRef} accept="image/*" multiple className={styles.fileInputHidden} onChange={handlePhotosChange} />
               <input type="file" ref={videoInputRef} accept="video/*" className={styles.fileInputHidden} onChange={handleVideoChange} />
 
-              {/* Add buttons */}
               <div className={styles.mediaButtons}>
                 <button type="button" className={styles.mediaAddBtn} onClick={() => photoInputRef.current?.click()}>
                   <FaImage /> Add Photos
@@ -749,12 +727,11 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 </button>
               </div>
 
-              {/* Photo preview grid */}
               {photoPreviewUrls.length > 0 && (
                 <div className={styles.photoGrid}>
                   {photoPreviewUrls.map((url, i) => (
                     <div key={i} className={styles.photoThumb}>
-                      <img src={url} alt={`Photo ${i + 1}`} className={styles.photoThumbImg} />
+                      <img src={url} alt={`Submission ${i + 1}`} className={styles.photoThumbImg} />
                       <button type="button" className={styles.removeThumbBtn} onClick={() => handleRemovePhoto(i)} title="Remove">
                         <FaXmark />
                       </button>
@@ -763,7 +740,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 </div>
               )}
 
-              {/* Video preview */}
               {videoFile && (
                 <div className={styles.filePreviewCard}>
                   <div className={styles.filePreviewInfo}>
@@ -781,7 +757,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 <p className={styles.mediaHint}>Add at least one photo or video to continue.</p>
               )}
             </div>
-  <hr className={styles.divider} />
+            <hr className={styles.divider} />
             <div
               className={styles.ratingCardGroup}
               style={{
