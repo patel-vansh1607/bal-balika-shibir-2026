@@ -330,6 +330,7 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                           <span className={styles.noVideoText}>No Video</span>
                         )}
                       </td>
+                      
                       <td>
                         <button
                           className={styles.deleteBtn}

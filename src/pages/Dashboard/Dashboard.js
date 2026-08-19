@@ -298,6 +298,8 @@ if (path.startsWith("/dashboard/manual-scanner/")) return "Manual Attendance";
 if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
     if (path.startsWith("/dashboard/accommodation/metrics")) return "Accommodation Metrics";
     if (path.startsWith("/dashboard/accommodation")) return "Accommodation";
+        if (path.startsWith("/dashboard/feedback")) return "Feedback";
+
 
     if (path.startsWith("/dashboard/session/attendance"))
       return "Sessions Attendance";
@@ -470,12 +472,14 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
                 >
                   <FaChartBar className={styles.iconMargin} /> Overview Metrics
                 </button>
+                 {(userRole === "master_admin" && userRole === "super_admin") && (
                 <button
                   onClick={() => handleNavigation("/dashboard/feedback")}
                   className={`${styles.navLink} ${location.pathname === "/dashboard/feedback" ? styles.navLinkActive : ""}`}
                 >
                   <FaChartBar className={styles.iconMargin} /> Feedback Data
                 </button>
+                )}
             {userRole && userRole !== "operator" && (
               <>
                
@@ -749,10 +753,10 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
                 <GateLogsPage regionScope={regionScope} />
               }
             />
-            <Route
+              <Route
               path="feedback"
               element={
-                <ShibirFeedbackDisplay regionScope={regionScope} />
+                userRole === "master_admin" && userRole === "super_admin" ? <ShibirFeedbackDisplay regionScope={regionScope} /> : <NotFound />
               }
             />
             <Route

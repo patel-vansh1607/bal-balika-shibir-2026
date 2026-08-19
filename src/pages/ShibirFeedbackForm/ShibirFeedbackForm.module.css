@@ -656,3 +656,36 @@
     margin-left: 0 !important;
   }
 }
+.guideBox {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.85rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.5rem;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.01);
+}
+
+.guideList {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.guideList li {
+  font-size: 0.85rem;
+  color: #475569;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.guideList li::marker {
+  color: #f59e0b;
+}
+.divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e78524, transparent);
+  margin: 0.5rem 0;
+}

@@ -465,7 +465,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 ))}
               </div>
             </div>
-
+  <hr className={styles.divider} />
             <div className={styles.formRow}>
               <div className={styles.formGroup} ref={countryRef}>
                 <label className={styles.label}>
@@ -550,7 +550,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 </div>
               </div>
             </div>
-
+  <hr className={styles.divider} />
             {/* Pulled Attendee Name Dropdown */}
             <div className={styles.formGroup} ref={nameRef}>
               <label className={styles.label}>
@@ -605,11 +605,19 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 )}
               </div>
             </div>
-
+  <hr className={styles.divider} />
             <div className={styles.formGroup}>
               <label className={styles.label}>
                 My Shibir Story & Learnings <span className={styles.required}>*</span>
               </label>
+              <div className={styles.guideBox}>
+    <ul className={styles.guideList}>
+      <li>What was your absolute favorite moment, activity, or game at the Shibir?</li>
+      <li>What is the most valuable lesson, value, or advice you are taking back home?</li>
+      <li>How did this Shibir help you grow, make new friends, or learn something new?</li>
+      <li>If you had to describe your Shibir experience in one sentence or word, what would it be?</li>
+    </ul>
+  </div>
               <textarea
                 className={styles.textarea}
                 rows={4}
@@ -620,11 +628,19 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 }
               />
             </div>
-
+  <hr className={styles.divider} />
             <div className={styles.formGroup}>
               <label className={styles.label}>
                 Video Interview <span className={styles.optionalTag}>(Optional)</span>
               </label>
+<div className={styles.guideBox}>
+    <ul className={styles.guideList}>
+      <li>Record or upload a quick 30–60 second video sharing your favorite highlight or a quick message!</li>
+      <li>Would you be comfortable sharing a short on-camera reflection about what this Shibir meant to you?</li>
+      <li>How did you keep your Shibir Smruti? Share your favorite photos or video clips!</li>
+    </ul>
+  </div>
+
               <input
                 type="file"
                 ref={fileInputRef}
@@ -640,7 +656,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <FaVideo className={styles.uploadIcon} />
-                  <span>Click to attach video interview (MP4, MOV up to 100MB)</span>
+                  <span>Click to attach video interview (MP4, JPG up to 100MB)</span>
                 </button>
               ) : (
                 <div className={styles.filePreviewCard}>
@@ -662,7 +678,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 </div>
               )}
             </div>
-
+  <hr className={styles.divider} />
             <div
               className={styles.ratingCardGroup}
               style={{

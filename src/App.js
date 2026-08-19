@@ -1,7 +1,7 @@
 // src/App.js
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'; // Added Navigate
-import { Toaster } from 'react-hot-toast'; // 1. Import Toaster
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Maintenance from './pages/MaintenancePage/MaintenancePage';
 import ProtectedRoute from './pages/ProtectedRoute/ProtectedRoute';
 import Login from './pages/Login/Login';
@@ -11,6 +11,37 @@ import SelectRegion from './pages/SelectRegion/SelectRegion';
 import NotFound from './pages/NotFound/NotFound';
 import HomeRoute from './pages/HomeRoute/HomeRoute';
 import ShibirFeedbackForm from './pages/ShibirFeedbackForm/ShibirFeedbackForm';
+
+// Helper component placed directly inside App.js to handle browser tab titles
+function DocumentTitleManager() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const titles = {
+      '/': 'Home | Portal',
+      '/admin': 'Admin Login | Portal',
+      '/dashboard': 'Dashboard | Portal',
+      '/register': 'Public Registration | Portal',
+      '/feedback': 'Feedback Form | Portal',
+      '/select-region': 'Select Region | Portal',
+      '/_v1_node_106_health_10548': 'Redirecting...',
+    };
+
+    let currentTitle = 'Portal';
+    
+    if (titles[location.pathname]) {
+      currentTitle = titles[location.pathname];
+    } else if (location.pathname.startsWith('/dashboard')) {
+      currentTitle = 'Dashboard | Portal';
+    } else {
+      currentTitle = 'Page Not Found | Portal';
+    }
+
+    document.title = currentTitle;
+  }, [location]);
+
+  return null;
+}
 
 export default function App() {
   const [isMaintenance, setIsMaintenance] = useState(false);
@@ -25,7 +56,9 @@ export default function App() {
 
   return (
     <Router>
-      {/* 2. Add Toaster here. This makes it available globally. */}
+      {/* Manages browser tab titles right next to the favicon */}
+      <DocumentTitleManager />
+
       <Toaster 
         position="top-right" 
         reverseOrder={false}
@@ -40,13 +73,11 @@ export default function App() {
       <Routes>
         <Route path='/' element={<HomeRoute />}/>
         
-        {/* Redirect secretly/legacy URL to /admin */}
         <Route 
           path="/_v1_node_106_health_10548" 
           element={<Navigate to="/admin" replace />} 
         />
 
-        {/* Change /admin element from NotFound to Login if that is where users should log in */}
         <Route path="/admin" element={<Login />} />
 
         <Route 
@@ -59,7 +90,6 @@ export default function App() {
         />
         <Route path="/register" element={<PublicRegister />} />
         <Route path="/feedback" element={<ShibirFeedbackForm />} />
-
         <Route path="/select-region" element={<SelectRegion />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
