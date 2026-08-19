@@ -433,7 +433,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 <p className={styles.titleSubtext}>Bal-Balika Shibir, Africa - 2026</p>
               </div>
             </div>
-            <p className={styles.subtitle}>How was your Choice?</p>
+            <p className={styles.subtitle}>HOW RIGHT WAS YOUR CHOICE?</p>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.formElement}>
@@ -615,7 +615,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
       <li>What was your absolute favorite moment, activity, or game at the Shibir?</li>
       <li>What is the most valuable lesson, value, or advice you are taking back home?</li>
       <li>How did this Shibir help you grow, make new friends, or learn something new?</li>
-      <li>If you had to describe your Shibir experience in one sentence or word, what would it be?</li>
+      <li>If you had to describe your Shibir experience, what would it be?</li>
     </ul>
   </div>
               <textarea
