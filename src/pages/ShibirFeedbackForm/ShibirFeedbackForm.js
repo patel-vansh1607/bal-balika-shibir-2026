@@ -9,7 +9,6 @@ import {
   FaUserCheck,
   FaImage,
   FaXmark,
-  FaCircleCheck,
 } from "react-icons/fa6";
 import { feedback as feedbackApi } from "../../apiClient";
 import styles from "./ShibirFeedbackForm.module.css";
