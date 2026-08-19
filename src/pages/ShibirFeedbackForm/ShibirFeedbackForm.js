@@ -9,7 +9,6 @@ import {
   FaUserCheck,
 } from "react-icons/fa6";
 import { feedback as feedbackApi } from "../../apiClient";
-import { supabase } from "../../supabaseClient";
 import styles from "./ShibirFeedbackForm.module.css";
 
 // LOCAL ASSETS
@@ -24,35 +23,35 @@ const regionDataset = {
     "Nyahururu", "Bomet", "Busia", "Homabay", "Kisii", "Bungoma"
   ],
   Tanzania: [
-   "Dar es Salaam", "Arusha", "Mwanza", "Zanzibar City",
+    "Akshardham", "Dar es Salaam", "Arusha", "Mwanza", "Zanzibar City",
     "Dodoma", "Moshi", "Tanga", "Morogoro", "Mbeya", "Iringa", "Kigoma",
     "Songea", "Tabora", "Musoma", "Shinyanga", "Sumbawanga", "Lindi", "Singida", "Bukoba"
   ],
-  // Uganda: [
-  //   "Kampala", "Entebbe", "Jinja", "Rwanda", "Mbarara", "Gulu", "Mbale",
-  //   "Masaka", "Arua", "Lira", "Fort Portal", "Kabale", "Tororo", "Soroti",
-  //   "Mukono", "Hoima", "Kasese", "Busia", "Iganga", "Wakiso", "Mityana",
-  //   "Mubende", "Luwero", "Kyenjojo", "Masindi", "Kitgum"
-  // ],
-  // Zambia: [
-  //   "Lusaka", "Kitwe", "Ndola", "Livingstone", "Kabwe", "Chingola", "Mufulira",
-  //   "Luanshya", "Kasama", "Chipata", "Chinsali", "Mansa", "Solwezi", "Mongu",
-  //   "Mazabuka", "Monze", "Choma", "Kapiri Mposhi"
-  // ],
-  // Malawi: [
-  //   "Lilongwe", "Blantyre", "Mzuzu", "Zomba", "Kasungu", "Mangochi", "Karonga",
-  //   "Salima", "Nkhotakota", "Liwonde", "Balaka", "Luchenza", "Dedza", "Mchinji",
-  //   "Chikwawa", "Nsanje", "Rumphi"
-  // ],
-  // Botswana: [
-  //   "Gaborone", "Francistown", "Molepolole", "Maun", "Mogoditshane", "Serowe",
-  //   "Selebi-Phikwe", "Kanye", "Lobatse", "Palapye", "Mahalapye", "Mochudi",
-  //   "Ghanzi", "Kasane", "Orapa", "Jwaneng", "Sowa"
-  // ],
-  // "South Africa": [
-  //   "Benoni", "Cape Town", "Germiston", "Laudium", "Lenasia", "Louis Trichardt",
-  //   "Mayfair", "Mogwase", "Rustenburg", "Tzaneen", "Northriding", "Durban"
-  // ]
+  Uganda: [
+    "Kampala", "Entebbe", "Jinja", "Rwanda", "Mbarara", "Gulu", "Mbale",
+    "Masaka", "Arua", "Lira", "Fort Portal", "Kabale", "Tororo", "Soroti",
+    "Mukono", "Hoima", "Kasese", "Busia", "Iganga", "Wakiso", "Mityana",
+    "Mubende", "Luwero", "Kyenjojo", "Masindi", "Kitgum"
+  ],
+  Zambia: [
+    "Lusaka", "Kitwe", "Ndola", "Livingstone", "Kabwe", "Chingola", "Mufulira",
+    "Luanshya", "Kasama", "Chipata", "Chinsali", "Mansa", "Solwezi", "Mongu",
+    "Mazabuka", "Monze", "Choma", "Kapiri Mposhi"
+  ],
+  Malawi: [
+    "Lilongwe", "Blantyre", "Mzuzu", "Zomba", "Kasungu", "Mangochi", "Karonga",
+    "Salima", "Nkhotakota", "Liwonde", "Balaka", "Luchenza", "Dedza", "Mchinji",
+    "Chikwawa", "Nsanje", "Rumphi"
+  ],
+  Botswana: [
+    "Gaborone", "Francistown", "Molepolole", "Maun", "Mogoditshane", "Serowe",
+    "Selebi-Phikwe", "Kanye", "Lobatse", "Palapye", "Mahalapye", "Mochudi",
+    "Ghanzi", "Kasane", "Orapa", "Jwaneng", "Sowa"
+  ],
+  "South Africa": [
+    "Benoni", "Cape Town", "Germiston", "Laudium", "Lenasia", "Louis Trichardt",
+    "Mayfair", "Mogwase", "Rustenburg", "Tzaneen", "Northriding", "Durban"
+  ]
 };
 
 const COUNTRIES = Object.keys(regionDataset);
@@ -79,7 +78,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   const [submitting, setSubmitting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
   const [submitted, setSubmitted] = useState(false);
-const [uploadProgress] = useState(0);
+
   const [countrySearch, setCountrySearch] = useState("");
   const [showCountryList, setShowCountryList] = useState(false);
   const [centerSearch, setCenterSearch] = useState("");
@@ -203,6 +202,7 @@ const [uploadProgress] = useState(0);
     c.toLowerCase().includes(centerSearch.toLowerCase())
   );
 
+  // Filter attendees based on selected toggle category (Balak/Balika vs Karyakar) and search text
   const filteredAttendees = attendeeList.filter((item) => {
     const matchesCategory = item.category?.toLowerCase() === form.category.toLowerCase();
     const matchesSearch = item.full_name?.toLowerCase().includes(nameSearch.toLowerCase());
@@ -234,8 +234,8 @@ const [uploadProgress] = useState(0);
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 50 * 1024 * 1024) {
-      alert("Video file size must be less than 50MB.");
+    if (file.size > 100 * 1024 * 1024) {
+      alert("Video file size must be less than 100MB.");
       return;
     }
 
@@ -252,59 +252,20 @@ const [uploadProgress] = useState(0);
     if (form.rating === 0) return alert("Please select a star rating.");
 
     const lastSubmissionTime = localStorage.getItem("shibir_last_submission");
-    const COOLDOWN_PERIOD = 10 * 1000;
+    const COOLDOWN_PERIOD = 24 * 60 * 60 * 1000;
 
     if (
       lastSubmissionTime &&
       Date.now() - parseInt(lastSubmissionTime, 10) < COOLDOWN_PERIOD
     ) {
-      alert("Please wait 10 seconds before submitting again.");
+      alert("You have already submitted feedback recently. Please wait before submitting again.");
       return;
     }
 
     setSubmitting(true);
 
     try {
-      let uploadedVideoUrl = null;
-
-      // Upload video file directly to Supabase storage bucket ('feedback_videos') if attached
-      if (videoFile) {
-        setUploadStatus("Uploading video to Supabase...");
-        const fileExt = videoFile.name.split(".").pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-        const filePath = `${form.country}/${form.center}/${fileName}`;
-
-        let uploadError = null;
-        let bucketName = "feedback_videos";
-
-        // Attempt upload to 'feedback_videos'
-        let res = await supabase.storage.from(bucketName).upload(filePath, videoFile);
-        uploadError = res.error;
-
-        // Fallback check if bucket doesn't exist or has a different name
-        if (uploadError && uploadError.message?.toLowerCase().includes("bucket not found")) {
-          // Try alternative common bucket name or public
-          bucketName = "public";
-          let resFallback = await supabase.storage.from(bucketName).upload(filePath, videoFile);
-          if (resFallback.error) {
-            // If fallback also fails, throw original or fallback error
-            throw new Error(`Video upload failed: Bucket 'feedback_videos' not found. Please create the 'feedback_videos' storage bucket in your Supabase dashboard and make it public.`);
-          }
-          uploadError = null;
-        }
-
-        if (uploadError) {
-          throw new Error("Video upload failed: " + uploadError.message);
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from(bucketName)
-          .getPublicUrl(filePath);
-
-        uploadedVideoUrl = publicUrlData?.publicUrl || null;
-      }
-
-      setUploadStatus("Submitting feedback...");
+      if (videoFile) setUploadStatus("Uploading video...");
 
       const fields = {
         full_name: form.fullName,
@@ -314,10 +275,9 @@ const [uploadProgress] = useState(0);
         response:  form.response,
         rating:    form.rating,
         region:    form.country,
-        video_url: uploadedVideoUrl,
       };
 
-      await feedbackApi.create(fields, null);
+      await feedbackApi.create(fields, videoFile || null);
 
       localStorage.setItem("shibir_last_submission", Date.now().toString());
 
@@ -418,7 +378,7 @@ const [uploadProgress] = useState(0);
                 <p className={styles.titleSubtext}>Bal-Balika Shibir, Africa - 2026</p>
               </div>
             </div>
-            <p className={styles.subtitle}>Feedback Forum</p>
+            <p className={styles.subtitle}>How was your Choice?</p>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.formElement}>
@@ -595,17 +555,6 @@ const [uploadProgress] = useState(0);
               <label className={styles.label}>
                 My Shibir Story & Learnings <span className={styles.required}>*</span>
               </label>
-
-              {/* Guide / Sample Questions Box */}
-              <div className={styles.guideBox}>
-                {/* <p className={styles.guideTitle}>💡 What to share in your story:</p> */}
-                <ul className={styles.guideList}>
-                  <li>What was your absolute favorite moment or activity at the Shibir?</li>
-                  <li>What is the most valuable lesson or takeaway you learned?</li>
-                  <li>How has this Shibir experience inspired you moving forward?</li>
-                </ul>
-              </div>
-
               <textarea
                 className={styles.textarea}
                 rows={4}
@@ -617,25 +566,14 @@ const [uploadProgress] = useState(0);
               />
             </div>
 
-          <div className={styles.formGroup}>
+            <div className={styles.formGroup}>
               <label className={styles.label}>
-                Video / Photo Interview <span className={styles.optionalTag}>(Optional)</span>
+                Video Interview <span className={styles.optionalTag}>(Optional)</span>
               </label>
-              
-              <div className={styles.guideBox}>
-                <ul className={styles.guideList}>
-                  <li>What was your absolute favorite moment, activity, or game at the Shibir?</li>
-                  <li>What is the most valuable lesson, value, or advice you are taking back home?</li>
-                  <li>How did this Shibir help you grow, make new friends, or learn something new?</li>
-                  <li>If you had to describe your Shibir experience in one sentence or word, what would it be?</li>
-                  <li>How did you keep your Shibir Smruti? Share Photos/Videos!</li>
-                </ul>
-              </div>
-
               <input
                 type="file"
                 ref={fileInputRef}
-                accept="video/*,image/*"
+                accept="video/*"
                 className={styles.fileInputHidden}
                 onChange={handleVideoChange}
               />
@@ -647,7 +585,7 @@ const [uploadProgress] = useState(0);
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <FaVideo className={styles.uploadIcon} />
-                  <span>Click to attach video or photo (Max 200MB)</span>
+                  <span>Click to attach video interview (MP4, MOV up to 100MB)</span>
                 </button>
               ) : (
                 <div className={styles.filePreviewCard}>
@@ -662,26 +600,14 @@ const [uploadProgress] = useState(0);
                     type="button"
                     className={styles.removeFileBtn}
                     onClick={() => setVideoFile(null)}
-                    title="Remove file"
-                    disabled={submitting}
+                    title="Remove video"
                   >
                     <FaTrash />
                   </button>
                 </div>
               )}
-
-              {submitting && uploadProgress > 0 && (
-                <div className={styles.progressContainer}>
-                  <div className={styles.progressBarWrapper}>
-                    <div 
-                      className={styles.progressBarFill} 
-                      style={{ width: `${uploadProgress}%` }}
-                    />
-                  </div>
-                  <span className={styles.progressText}>{uploadStatus}</span>
-                </div>
-              )}
             </div>
+
             <div
               className={styles.ratingCardGroup}
               style={{
@@ -707,7 +633,7 @@ const [uploadProgress] = useState(0);
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
               >
                 <span>
-                  Rate the Shibir <span className={styles.required}>*</span>
+                  How Right Was This Choice? <span className={styles.required}>*</span>
                 </span>
                 {(hoverRating || form.rating) > 0 ? (
                   <span
