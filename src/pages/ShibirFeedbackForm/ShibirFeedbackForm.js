@@ -79,6 +79,12 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   const [uploadStatus, setUploadStatus] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
+  const [videoUploadStatus, setVideoUploadStatus] = useState(null); // null | 'uploading' | 'done' | 'failed'
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
+  const [videoUploadError, setVideoUploadError] = useState("");
+  const [pendingRecordId, setPendingRecordId] = useState(null);
+  const pendingVideoFile = useRef(null);
+
   const [countrySearch, setCountrySearch] = useState("");
   const [showCountryList, setShowCountryList] = useState(false);
   const [centerSearch, setCenterSearch] = useState("");
@@ -242,6 +248,26 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     setVideoFile(file);
   };
 
+  const startVideoUpload = (recordId, file) => {
+    setVideoUploadStatus("uploading");
+    setVideoUploadProgress(0);
+    setVideoUploadError("");
+    feedbackApi.uploadVideoWithProgress(recordId, file, (pct) => {
+      setVideoUploadProgress(pct);
+    }).then(() => {
+      setVideoUploadStatus("done");
+      setVideoUploadProgress(100);
+    }).catch((err) => {
+      setVideoUploadStatus("failed");
+      setVideoUploadError(err.message);
+    });
+  };
+
+  const handleRetryVideoUpload = () => {
+    if (!pendingRecordId || !pendingVideoFile.current) return;
+    startVideoUpload(pendingRecordId, pendingVideoFile.current);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -251,21 +277,9 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     if (!form.response.trim()) return alert("Please write your response/feedback.");
     if (form.rating === 0) return alert("Please select a star rating.");
 
-    const lastSubmissionTime = localStorage.getItem("shibir_last_submission");
-    const COOLDOWN_PERIOD = 24 * 60 * 60 * 1000;
-
-    if (
-      lastSubmissionTime &&
-      Date.now() - parseInt(lastSubmissionTime, 10) < COOLDOWN_PERIOD
-    ) {
-      alert("You have already submitted feedback recently. Please wait before submitting again.");
-      return;
-    }
-
     setSubmitting(true);
 
     try {
-      // Step 1: submit text fields as JSON → always succeeds immediately
       const fields = {
         full_name: form.fullName,
         country:   form.country,
@@ -279,26 +293,15 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
       const result = await feedbackApi.create(fields);
       const recordId = result?.data?.id;
 
-      // Step 2: upload video as a separate FormData request using the new record's ID
-      if (videoFile && recordId) {
-        setUploadStatus("Uploading video to Drive...");
-        try {
-          await feedbackApi.uploadVideo(recordId, videoFile);
-        } catch (videoErr) {
-          console.error("Video upload failed:", videoErr);
-          alert(
-            "Your feedback was saved!\n\nHowever, the video upload failed: " +
-            videoErr.message +
-            "\n\nYour response is recorded — only the video is missing."
-          );
-        }
-      }
-
-      localStorage.setItem("shibir_last_submission", Date.now().toString());
-
       setSubmitting(false);
       setSubmitted(true);
       if (onSubmitSuccess) onSubmitSuccess({ ...form });
+
+      if (videoFile && recordId) {
+        setPendingRecordId(recordId);
+        pendingVideoFile.current = videoFile;
+        startVideoUpload(recordId, videoFile);
+      }
     } catch (err) {
       console.error("Submission error:", err);
       alert("Failed to submit feedback: " + err.message);
@@ -323,6 +326,11 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     setHoverRating(0);
     setSubmitted(false);
     setUploadStatus("");
+    setVideoUploadStatus(null);
+    setVideoUploadProgress(0);
+    setVideoUploadError("");
+    setPendingRecordId(null);
+    pendingVideoFile.current = null;
   };
 
   return (
@@ -371,8 +379,40 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
               <FaStar />
             </div>
             <h2>Thank You!</h2>
-            <p>Your feedback and video interview have been submitted successfully.</p>
-            <button className={styles.submitBtn} onClick={handleReset}>
+            <p>Your feedback has been submitted successfully.</p>
+
+            {videoUploadStatus && (
+              <div className={styles.videoUploadStatus}>
+                {videoUploadStatus === "uploading" && (
+                  <>
+                    <div className={styles.progressLabel}>
+                      <span>Uploading video...</span>
+                      <span>{videoUploadProgress}%</span>
+                    </div>
+                    <div className={styles.progressBar}>
+                      <div className={styles.progressFill} style={{ width: `${videoUploadProgress}%` }} />
+                    </div>
+                  </>
+                )}
+                {videoUploadStatus === "done" && (
+                  <div className={styles.videoUploadDone}>
+                    ✓ Video uploaded successfully
+                  </div>
+                )}
+                {videoUploadStatus === "failed" && (
+                  <div className={styles.videoUploadFailed}>
+                    <span className={styles.videoUploadFailedMsg}>
+                      Video upload failed: {videoUploadError}
+                    </span>
+                    <button className={styles.retryBtn} onClick={handleRetryVideoUpload}>
+                      Retry Upload
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button className={styles.submitBtn} onClick={handleReset} style={{ marginTop: "20px" }}>
               Submit Another Response
             </button>
           </div>
