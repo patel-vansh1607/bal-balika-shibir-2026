@@ -176,15 +176,14 @@ export const feedback = {
   attendees: (country, center) =>
     apiFetch('GET', `/feedback/attendees?country=${encodeURIComponent(country)}&center=${encodeURIComponent(center)}`),
 
-  // Public — submit feedback; pass videoFile to send as multipart
-  create: (fields, videoFile = null) => {
-    if (videoFile) {
-      const fd = new FormData();
-      Object.entries(fields).forEach(([k, v]) => fd.append(k, String(v)));
-      fd.append('video', videoFile);
-      return apiFetch('POST', '/feedback', fd, true);
-    }
-    return apiFetch('POST', '/feedback', fields);
+  // Public — submit text fields as JSON, returns {data: {id, ...}}
+  create: (fields) => apiFetch('POST', '/feedback', fields),
+
+  // Public — upload video for an existing record (separate request)
+  uploadVideo: (id, videoFile) => {
+    const fd = new FormData();
+    fd.append('video', videoFile);
+    return apiFetch('POST', `/feedback/${id}/video`, fd, true);
   },
 
   // Auth required — delete a feedback entry
