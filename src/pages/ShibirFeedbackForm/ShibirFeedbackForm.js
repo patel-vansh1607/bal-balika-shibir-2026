@@ -79,7 +79,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   const [submitting, setSubmitting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
   const [submitted, setSubmitted] = useState(false);
-const [uploadProgress, setUploadProgress] = useState(0);
+const [uploadProgress] = useState(0);
   const [countrySearch, setCountrySearch] = useState("");
   const [showCountryList, setShowCountryList] = useState(false);
   const [centerSearch, setCenterSearch] = useState("");
