@@ -9,6 +9,7 @@ import {
   FaFilter,
   FaLock,
   FaDownload,
+  FaImage,
 } from "react-icons/fa6";
 import { feedback as feedbackApi } from "../../apiClient";
 import styles from "./ShibirFeedbackDisplay.module.css";
@@ -21,6 +22,15 @@ const getDriveFileId = (url) => {
   if (!url) return null;
   const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
   return m ? m[1] : null;
+};
+
+// Parse photo_urls JSON field from DB
+const parsePhotos = (raw) => {
+  if (!raw) return [];
+  try {
+    const p = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Array.isArray(p) ? p : [];
+  } catch { return []; }
 };
 
 // Helper function to strip region prefixes (e.g., "_3xl_South", "3xl_North")
@@ -45,7 +55,16 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
   const [selectedRegion, setSelectedRegion] = useState(cleanScope || "ALL");
   const [countryFilter, setCountryFilter] = useState("ALL");
   const [ratingFilter, setRatingFilter] = useState("ALL");
-  const [activeVideoUrl, setActiveVideoUrl] = useState(null);
+  const [activeMediaRecord, setActiveMediaRecord] = useState(null);
+  const [expandedRows, setExpandedRows] = useState(new Set());
+
+  const toggleExpand = (id) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   // Is region locked by parent prop?
   const isRegionLocked = !isGlobalScope;
@@ -282,7 +301,7 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                     <th>Location</th>
                     <th>Rating</th>
                     <th>Feedback</th>
-                    <th>Video Interview</th>
+                    <th>Media</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -315,20 +334,55 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                           ))}
                         </div>
                       </td>
-                      <td>
-                        <div className={styles.responseText}>{item.response}</div>
+                      <td
+                        onClick={() => toggleExpand(item.id)}
+                        title="Click to expand"
+                        style={{ cursor: 'pointer', maxWidth: '280px' }}
+                      >
+                        <div style={{
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-word',
+                          color: '#475569',
+                          lineHeight: '1.5',
+                          fontSize: '0.88rem',
+                          overflow: 'hidden',
+                          display: '-webkit-box',
+                          WebkitLineClamp: expandedRows.has(item.id) ? 'unset' : 3,
+                          WebkitBoxOrient: 'vertical',
+                        }}>
+                          {item.response}
+                        </div>
+                        {!expandedRows.has(item.id) && (item.response?.length ?? 0) > 120 && (
+                          <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 700, display: 'block', marginTop: '4px' }}>
+                            ▼ read more
+                          </span>
+                        )}
+                        {expandedRows.has(item.id) && (
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, display: 'block', marginTop: '4px' }}>
+                            ▲ collapse
+                          </span>
+                        )}
                       </td>
                       <td>
-                        {item.video_url ? (
-                          <button
-                            className={styles.videoLinkBtn}
-                            onClick={() => setActiveVideoUrl(item.video_url)}
-                          >
-                            <FaVideo /> Play Video
-                          </button>
-                        ) : (
-                          <span className={styles.noVideoText}>No Video</span>
-                        )}
+                        {(() => {
+                          const photos = parsePhotos(item.photo_urls);
+                          const hasVideo = !!item.video_url;
+                          if (!hasVideo && photos.length === 0) {
+                            return <span className={styles.noVideoText}>No Media</span>;
+                          }
+                          let label;
+                          if (hasVideo && photos.length === 0) label = 'Play Video';
+                          else if (!hasVideo) label = `${photos.length} Photo${photos.length > 1 ? 's' : ''}`;
+                          else label = `Video + ${photos.length} Photo${photos.length > 1 ? 's' : ''}`;
+                          return (
+                            <button
+                              className={styles.videoLinkBtn}
+                              onClick={() => setActiveMediaRecord(item)}
+                            >
+                              {hasVideo ? <FaVideo /> : <FaImage />} {label}
+                            </button>
+                          );
+                        })()}
                       </td>
                       <td>
                         <button
@@ -348,50 +402,78 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
         </div>
       </div>
 
-      {/* Video Preview Modal */}
-      {activeVideoUrl && (
-        <div className={styles.modalOverlay} onClick={() => setActiveVideoUrl(null)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Video Interview</h3>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <a
-                  href={`https://drive.google.com/uc?export=download&id=${getDriveFileId(activeVideoUrl)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={styles.downloadBtn}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <FaDownload /> Download
-                </a>
-                <a
-                  href={activeVideoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={styles.openDriveBtn}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Open in Drive
-                </a>
-                <button
-                  className={styles.closeModalBtn}
-                  onClick={() => setActiveVideoUrl(null)}
-                >
+      {/* Media Modal — photos + video */}
+      {activeMediaRecord && (() => {
+        const photos = parsePhotos(activeMediaRecord.photo_urls);
+        const driveId = getDriveFileId(activeMediaRecord.video_url);
+        return (
+          <div className={styles.modalOverlay} onClick={() => setActiveMediaRecord(null)}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '720px' }}>
+              <div className={styles.modalHeader}>
+                <h3>{activeMediaRecord.full_name}</h3>
+                <button className={styles.closeModalBtn} onClick={() => setActiveMediaRecord(null)}>
                   <FaXmark />
                 </button>
               </div>
+
+              <div style={{ overflowY: 'auto', maxHeight: '75vh' }}>
+                {/* Photos section */}
+                {photos.length > 0 && (
+                  <div style={{ padding: '1.25rem 1.5rem', borderBottom: driveId ? '2px solid #e2e8f0' : 'none' }}>
+                    <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Photos ({photos.length})
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.75rem' }}>
+                      {photos.map((url, i) => {
+                        const fid = getDriveFileId(url);
+                        return (
+                          <a key={i} href={url} target="_blank" rel="noreferrer"
+                            style={{ display: 'block', borderRadius: '0.75rem', overflow: 'hidden', border: '2px solid #e2e8f0', aspectRatio: '1 / 1', background: '#f8fafc', transition: 'border-color 0.2s' }}
+                            onMouseEnter={e => e.currentTarget.style.borderColor = '#f59e0b'}
+                            onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}
+                          >
+                            <img
+                              src={fid ? `https://lh3.googleusercontent.com/d/${fid}=w300` : url}
+                              alt={`Photo ${i + 1}`}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                              onError={e => { e.target.src = url; }}
+                            />
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Video section */}
+                {activeMediaRecord.video_url && driveId && (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', flex: 1 }}>
+                        Video
+                      </span>
+                      <a href={`https://drive.google.com/uc?export=download&id=${driveId}`} target="_blank" rel="noreferrer" className={styles.downloadBtn} onClick={e => e.stopPropagation()}>
+                        <FaDownload /> Download
+                      </a>
+                      <a href={activeMediaRecord.video_url} target="_blank" rel="noreferrer" className={styles.openDriveBtn} onClick={e => e.stopPropagation()}>
+                        Open in Drive
+                      </a>
+                    </div>
+                    <iframe
+                      src={`https://drive.google.com/file/d/${driveId}/preview`}
+                      className={styles.videoPlayer}
+                      allow="autoplay; encrypted-media"
+                      allowFullScreen
+                      title="Video Interview"
+                      style={{ border: 'none' }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-            <iframe
-              src={`https://drive.google.com/file/d/${getDriveFileId(activeVideoUrl)}/preview`}
-              className={styles.videoPlayer}
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-              title="Video Interview"
-              style={{ border: "none" }}
-            />
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
