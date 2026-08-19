@@ -265,8 +265,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     setSubmitting(true);
 
     try {
-      if (videoFile) setUploadStatus("Uploading video...");
-
+      // Step 1: submit text fields as JSON → always succeeds immediately
       const fields = {
         full_name: form.fullName,
         country:   form.country,
@@ -277,7 +276,23 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
         region:    form.country,
       };
 
-      await feedbackApi.create(fields, videoFile || null);
+      const result = await feedbackApi.create(fields);
+      const recordId = result?.data?.id;
+
+      // Step 2: upload video as a separate FormData request using the new record's ID
+      if (videoFile && recordId) {
+        setUploadStatus("Uploading video to Drive...");
+        try {
+          await feedbackApi.uploadVideo(recordId, videoFile);
+        } catch (videoErr) {
+          console.error("Video upload failed:", videoErr);
+          alert(
+            "Your feedback was saved!\n\nHowever, the video upload failed: " +
+            videoErr.message +
+            "\n\nYour response is recorded — only the video is missing."
+          );
+        }
+      }
 
       localStorage.setItem("shibir_last_submission", Date.now().toString());
 
