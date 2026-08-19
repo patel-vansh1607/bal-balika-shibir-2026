@@ -141,7 +141,7 @@
 }
 
 .subtitle {
-  font-size: 35px;
+  font-size: 29px;
   color: #e78524;
   margin: 0;
   font-weight: 500;
@@ -742,4 +742,70 @@
     text-align: center;
     margin-left: 0 !important;
   }
+}
+/* --- Guide Box Styling --- */
+.guideBox {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #f59e0b;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.guideList {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.guideList li {
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+/* --- Photo & Video Tip Chips Styling --- */
+.photoTipWrapper {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.photoTipTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #d97706;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.photoIdeaChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ideaChip {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  padding: 0.35rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.ideaChip:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #b45309;
+  transform: translateY(-1px);
 }

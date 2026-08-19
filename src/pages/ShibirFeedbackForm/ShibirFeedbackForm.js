@@ -679,22 +679,38 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
               </div>
             </div>
             <hr className={styles.divider} />
-            <div className={styles.formGroup}>
+          <div className={styles.formGroup}>
               <label className={styles.label}>
-                My Shibir Story &amp; Learnings <span className={styles.required}>*</span>
+                {form.category === "Balak/Balika" ? "My Shibir Story & Learnings" : "Karyakar Reflection & Experience"} <span className={styles.required}>*</span>
               </label>
-              <div className={styles.guideBox}>
-                <ul className={styles.guideList}>
-                  <li>What was your absolute favorite moment, activity, or game at the Shibir?</li>
-                  <li>What is the most valuable lesson, value, or advice you've carried back home?</li>
-                  <li>How did this Shibir help you grow, make new friends, or learn something new?</li>
-                  <li>If you had to describe your Shibir experience, what would it be?</li>
-                </ul>
-              </div>
+              
+              {form.category === "Balak/Balika" ? (
+                <div className={styles.guideBox}>
+                  <ul className={styles.guideList}>
+                    <li>What was your absolute favorite moment, activity, or game at the Shibir?</li>
+                    <li>What is the most valuable lesson, value, or advice you've carried back home?</li>
+                    <li>How did this Shibir help you grow, make new friends, or learn something new?</li>
+                    <li>If you had to describe your Shibir experience, what would it be?</li>
+                  </ul>
+                </div>
+              ) : (
+                <div className={styles.guideBox}>
+                  <ul className={styles.guideList}>
+                    <li>What experience from the shibir will help you plan your upcoming sabhas? </li>
+                    <li>What’s something that you’d wish to change in the shibir setup? </li>
+                    <li>What segment helped you as a karyakar the most to learn about the bal/balikas?</li>
+                  </ul>
+                </div>
+              )}
+
               <textarea
                 className={styles.textarea}
                 rows={4}
-                placeholder="Share your favourite moments, coolest activities, and what you learned from the Shibir!..."
+                placeholder={
+                  form.category === "Balak/Balika"
+                    ? "Share your favourite moments, coolest activities, and what you learned from the Shibir!..."
+                    : "Share your reflections on mentoring the children, organizing the Shibir, and your key takeaways..."
+                }
                 value={form.response}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, response: e.target.value }))
