@@ -13,7 +13,6 @@ import {
 import { feedback as feedbackApi } from "../../apiClient";
 import styles from "./ShibirFeedbackDetail.module.css";
 
-// Extract Google Drive file ID from a view URL
 const getDriveFileId = (url) => {
   if (!url) return null;
   const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -106,13 +105,21 @@ export default function ShibirFeedbackDetail() {
           <div className={styles.ratingBox}>
             <div className={styles.ratingStars}>
               {[...Array(5)].map((_, i) => (
-                <FaStar key={i} style={{ color: i < Number(record.rating || 0) ? "#f59e0b" : "#cbd5e1", fontSize: "20px" }} />
+                <FaStar
+                  key={i}
+                  style={{
+                    color: i < Number(record.rating || 0) ? "#f59e0b" : "#cbd5e1",
+                    fontSize: "20px",
+                  }}
+                />
               ))}
             </div>
             <span className={styles.ratingNumber}>{Number(record.rating || 0).toFixed(1)} / 5.0 Stars</span>
             <span className={styles.dateSubmitted}>
               <FaCalendar /> Submitted on {new Date(record.created_at).toLocaleDateString("en-US", {
-                month: "long", day: "numeric", year: "numeric",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
               })}
             </span>
           </div>
@@ -135,11 +142,20 @@ export default function ShibirFeedbackDetail() {
               <h3>Video Interview</h3>
               {record.video_url && driveFileId && (
                 <div className={styles.videoActions}>
-                  <a href={`https://drive.google.com/uc?export=download&id=${driveFileId}`}
-                    target="_blank" rel="noreferrer" className={styles.downloadBtn}>
+                  <a
+                    href={`https://drive.google.com/uc?export=download&id=${driveFileId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.downloadBtn}
+                  >
                     <FaDownload /> Download Video
                   </a>
-                  <a href={record.video_url} target="_blank" rel="noreferrer" className={styles.openDriveBtn}>
+                  <a
+                    href={record.video_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.openDriveBtn}
+                  >
                     Open in Drive
                   </a>
                 </div>
