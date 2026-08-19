@@ -152,10 +152,10 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
   // Calculate statistics based on filtered data (or global feedback list)
   const totalSubmissions = filteredData.length;
   const totalVideos = filteredData.filter((f) => f.video_url).length;
-  const avgRating =
+const avgRating =
     totalSubmissions > 0
       ? (
-          filteredData.reduce((acc, curr) => acc + (curr.rating || 0), 0) /
+          filteredData.reduce((acc, curr) => acc + Number(curr.rating || 0), 0) /
           totalSubmissions
         ).toFixed(1)
       : "0.0";
