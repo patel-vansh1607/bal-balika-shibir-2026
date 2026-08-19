@@ -689,3 +689,32 @@
   background: linear-gradient(90deg, transparent, #e78524, transparent);
   margin: 0.5rem 0;
 }
+.photoTipWrapper {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #dadce0;
+}
+
+.photoTipTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a73e8;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.photoIdeaChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ideaChip {
+  background: #ffffff;
+  border: 1px solid #dadce0;
+  color: #3c4043;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+}

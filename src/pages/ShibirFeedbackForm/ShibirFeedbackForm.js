@@ -638,17 +638,36 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
             </div>
   <hr className={styles.divider} />
             <div className={styles.formGroup}>
-              <label className={styles.label}>
-                Video Interview <span className={styles.optionalTag}>(Optional)</span>
-              </label>
-<div className={styles.guideBox}>
+  <label className={styles.label}>
+    Photo / Video <span className={styles.requiredStar}>*</span>
+  </label>
+  
+  <div className={styles.guideBox}>
     <ul className={styles.guideList}>
       <li>Record or upload a quick 30–60 second video sharing your favorite highlight or a quick message!</li>
       <li>Would you be comfortable sharing a short on-camera reflection about what this Shibir meant to you?</li>
       <li>How did you keep your Shibir Smruti? Share your favorite photos or video clips!</li>
     </ul>
+  </div>    
+  <div className={styles.photoTipWrapper}>
+      <span className={styles.photoTipTitle}> Not sure what photo to upload? Try one of these:</span>
+      <div className={styles.photoIdeaChips}>
+        <span className={styles.ideaChip}>Photo from the Shibir photobooth</span>
+        <span className={styles.ideaChip}>Your Shibir notes page</span>
+        <span className={styles.ideaChip}>Group photo with your friends</span>
+        <span className={styles.ideaChip}>Artworks from presentations you drew</span>
+      </div>
+    </div>
+    <div className={styles.photoTipWrapper}>
+  <span className={styles.photoTipTitle}>Not sure what to record in your video? Try one of these:</span>
+  <div className={styles.photoIdeaChips}>
+    <span className={styles.ideaChip}>Your favorite highlight or learning from Shibir</span>
+    <span className={styles.ideaChip}>A quick message thanking your satsang friends</span>
+    <span className={styles.ideaChip}>Describe how you will apply what you learned</span>
+    <span className={styles.ideaChip}>A short 30-second personal reflection</span>
   </div>
-
+</div>
+<br></br>
               <input
                 type="file"
                 ref={fileInputRef}
