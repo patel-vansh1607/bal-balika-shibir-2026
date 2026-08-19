@@ -46,7 +46,7 @@ export default function PublicRegister() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [tshirtSize, setTshirtSize] = useState("");
-  const closedRegions = ["Malawi", "Tanzania","Kenya", "Zambia", "Uganda", "South Africa", "Botswana"]; // Define your list of closed regions
+  const closedRegions = ["Malawi", "Tanzania","Kenya", "Zambia", "South Africa", "Botswana"]; // Define your list of closed regions
   const [formMode, setFormMode] = useState("form"); // "form" | "review"
 
   const phoneRef = useRef(null);
