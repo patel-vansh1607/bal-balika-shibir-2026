@@ -7,6 +7,9 @@ import {
   FaVideo,
   FaTrash,
   FaUserCheck,
+  FaImage,
+  FaXmark,
+  FaCircleCheck,
 } from "react-icons/fa6";
 import { feedback as feedbackApi } from "../../apiClient";
 import styles from "./ShibirFeedbackForm.module.css";
@@ -73,17 +76,24 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   const [attendeeList, setAttendeeList] = useState([]);
   const [loadingAttendees, setLoadingAttendees] = useState(false);
 
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
   const [videoFile, setVideoFile] = useState(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   const [hoverRating, setHoverRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const [videoUploadStatus, setVideoUploadStatus] = useState(null); // null | 'uploading' | 'done' | 'failed'
+  const [videoUploadStatus, setVideoUploadStatus] = useState(null);
   const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [videoUploadError, setVideoUploadError] = useState("");
+  const [photoUploadStatus, setPhotoUploadStatus] = useState(null);
+  const [photoUploadProgress, setPhotoUploadProgress] = useState(0);
+  const [photoUploadError, setPhotoUploadError] = useState("");
   const [pendingRecordId, setPendingRecordId] = useState(null);
   const pendingVideoFile = useRef(null);
+  const pendingPhotoFiles = useRef([]);
 
   const [countrySearch, setCountrySearch] = useState("");
   const [showCountryList, setShowCountryList] = useState(false);
@@ -95,8 +105,24 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   const countryRef = useRef(null);
   const centerRef = useRef(null);
   const nameRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const photoInputRef = useRef(null);
+  const videoInputRef = useRef(null);
   const audioRef = useRef(null);
+
+  // Create/revoke object URLs for photo previews
+  useEffect(() => {
+    const urls = photoFiles.map((f) => URL.createObjectURL(f));
+    setPhotoPreviewUrls(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [photoFiles]);
+
+  // Create/revoke object URL for video preview
+  useEffect(() => {
+    if (!videoFile) { setVideoPreviewUrl(null); return; }
+    const url = URL.createObjectURL(videoFile);
+    setVideoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [videoFile]);
 
   // Background Audio Autoplay & Smooth Visibility Fade Handler
   useEffect(() => {
@@ -236,15 +262,26 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     setShowNameList(false);
   };
 
+  const handlePhotosChange = (e) => {
+    const newFiles = Array.from(e.target.files);
+    e.target.value = "";
+    const valid = newFiles.filter((f) => {
+      if (!f.type.startsWith("image/")) { alert(`${f.name} is not an image.`); return false; }
+      if (f.size > 20 * 1024 * 1024) { alert(`${f.name} exceeds 20MB limit.`); return false; }
+      return true;
+    });
+    setPhotoFiles((prev) => [...prev, ...valid]);
+  };
+
+  const handleRemovePhoto = (idx) => {
+    setPhotoFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   const handleVideoChange = (e) => {
     const file = e.target.files[0];
+    e.target.value = "";
     if (!file) return;
-
-    if (file.size > 100 * 1024 * 1024) {
-      alert("Video file size must be less than 100MB.");
-      return;
-    }
-
+    if (file.size > 100 * 1024 * 1024) { alert("Video must be under 100MB."); return; }
     setVideoFile(file);
   };
 
@@ -263,9 +300,29 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     });
   };
 
+  const startPhotoUpload = (recordId, files) => {
+    setPhotoUploadStatus("uploading");
+    setPhotoUploadProgress(0);
+    setPhotoUploadError("");
+    feedbackApi.uploadPhotos(recordId, files, (pct) => {
+      setPhotoUploadProgress(pct);
+    }).then(() => {
+      setPhotoUploadStatus("done");
+      setPhotoUploadProgress(100);
+    }).catch((err) => {
+      setPhotoUploadStatus("failed");
+      setPhotoUploadError(err.message);
+    });
+  };
+
   const handleRetryVideoUpload = () => {
     if (!pendingRecordId || !pendingVideoFile.current) return;
     startVideoUpload(pendingRecordId, pendingVideoFile.current);
+  };
+
+  const handleRetryPhotoUpload = () => {
+    if (!pendingRecordId || !pendingPhotoFiles.current.length) return;
+    startPhotoUpload(pendingRecordId, pendingPhotoFiles.current);
   };
 
   const handleSubmit = async (e) => {
@@ -276,6 +333,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     if (!form.fullName.trim()) return alert("Please select or enter full name.");
     if (!form.response.trim()) return alert("Please write your response/feedback.");
     if (form.rating === 0) return alert("Please select a star rating.");
+    if (!videoFile && photoFiles.length === 0) return alert("Please attach at least one photo or video.");
 
     setSubmitting(true);
 
@@ -297,10 +355,16 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
       setSubmitted(true);
       if (onSubmitSuccess) onSubmitSuccess({ ...form });
 
-      if (videoFile && recordId) {
+      if (recordId) {
         setPendingRecordId(recordId);
-        pendingVideoFile.current = videoFile;
-        startVideoUpload(recordId, videoFile);
+        if (videoFile) {
+          pendingVideoFile.current = videoFile;
+          startVideoUpload(recordId, videoFile);
+        }
+        if (photoFiles.length > 0) {
+          pendingPhotoFiles.current = photoFiles;
+          startPhotoUpload(recordId, photoFiles);
+        }
       }
     } catch (err) {
       console.error("Submission error:", err);
@@ -319,6 +383,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
       response: "",
       rating: 0,
     });
+    setPhotoFiles([]);
     setVideoFile(null);
     setCountrySearch("");
     setCenterSearch("");
@@ -329,8 +394,12 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
     setVideoUploadStatus(null);
     setVideoUploadProgress(0);
     setVideoUploadError("");
+    setPhotoUploadStatus(null);
+    setPhotoUploadProgress(0);
+    setPhotoUploadError("");
     setPendingRecordId(null);
     pendingVideoFile.current = null;
+    pendingPhotoFiles.current = [];
   };
 
   return (
@@ -377,21 +446,16 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
             <div className={styles.successIcon}>
               <FaStar />
             </div>
-            
-            {/* Show "Thank You" message only when upload is NOT actively happening */}
-            {videoUploadStatus !== "uploading" && (
-              <>
-                <h2>Thank You!</h2>
-                <p>Your feedback has been submitted successfully.</p>
-              </>
-            )}
+            <h2>Thank You!</h2>
+            <p>Your feedback has been submitted successfully.</p>
 
+            {/* Video upload progress */}
             {videoUploadStatus && (
               <div className={styles.videoUploadStatus}>
                 {videoUploadStatus === "uploading" && (
                   <>
                     <div className={styles.progressLabel}>
-                      <span>Submitting Response...</span>
+                      <span>Uploading video...</span>
                       <span>{videoUploadProgress}%</span>
                     </div>
                     <div className={styles.progressBar}>
@@ -401,28 +465,49 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 )}
                 {videoUploadStatus === "done" && (
                   <div className={styles.videoUploadDone}>
-                    ✓ Response uploaded successfully
+                    <FaCircleCheck /> Video uploaded successfully
                   </div>
                 )}
                 {videoUploadStatus === "failed" && (
                   <div className={styles.videoUploadFailed}>
-                    <span className={styles.videoUploadFailedMsg}>
-                      Video upload failed: {videoUploadError}
-                    </span>
-                    <button className={styles.retryBtn} onClick={handleRetryVideoUpload}>
-                      Retry Upload
-                    </button>
+                    <span className={styles.videoUploadFailedMsg}>Video upload failed: {videoUploadError}</span>
+                    <button className={styles.retryBtn} onClick={handleRetryVideoUpload}>Retry Video</button>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Only show "Submit Another Response" when upload is NOT active */}
-            {videoUploadStatus !== "uploading" && (
-              <button className={styles.submitBtn} onClick={handleReset} style={{ marginTop: "20px" }}>
-                Submit Another Response
-              </button>
+            {/* Photo upload progress */}
+            {photoUploadStatus && (
+              <div className={styles.videoUploadStatus}>
+                {photoUploadStatus === "uploading" && (
+                  <>
+                    <div className={styles.progressLabel}>
+                      <span>Uploading {pendingPhotoFiles.current.length} photo{pendingPhotoFiles.current.length !== 1 ? "s" : ""}...</span>
+                      <span>{photoUploadProgress}%</span>
+                    </div>
+                    <div className={styles.progressBar}>
+                      <div className={styles.progressFill} style={{ width: `${photoUploadProgress}%` }} />
+                    </div>
+                  </>
+                )}
+                {photoUploadStatus === "done" && (
+                  <div className={styles.videoUploadDone}>
+                    <FaCircleCheck /> Photos uploaded successfully
+                  </div>
+                )}
+                {photoUploadStatus === "failed" && (
+                  <div className={styles.videoUploadFailed}>
+                    <span className={styles.videoUploadFailedMsg}>Photo upload failed: {photoUploadError}</span>
+                    <button className={styles.retryBtn} onClick={handleRetryPhotoUpload}>Retry Photos</button>
+                  </div>
+                )}
+              </div>
             )}
+
+            <button className={styles.submitBtn} onClick={handleReset} style={{ marginTop: "20px" }}>
+              Submit Another Response
+            </button>
           </div>
         </div>
       ) : (
@@ -638,71 +723,62 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
             </div>
   <hr className={styles.divider} />
             <div className={styles.formGroup}>
-  <label className={styles.label}>
-    Photo / Video <span className={styles.requiredStar}>*</span>
-  </label>
-  
-  <div className={styles.guideBox}>
-    <ul className={styles.guideList}>
-      <li>Record or upload a quick 30–60 second video sharing your favorite highlight or a quick message!</li>
-      <li>Would you be comfortable sharing a short on-camera reflection about what this Shibir meant to you?</li>
-      <li>How did you keep your Shibir Smruti? Share your favorite photos or video clips!</li>
-    </ul>
-  </div>    
-  <div className={styles.photoTipWrapper}>
-      <span className={styles.photoTipTitle}> Not sure what photo to upload? Try one of these:</span>
-      <div className={styles.photoIdeaChips}>
-        <span className={styles.ideaChip}>Photo from the Shibir photobooth</span>
-        <span className={styles.ideaChip}>Your Shibir notes page</span>
-        <span className={styles.ideaChip}>Group photo with your friends</span>
-        <span className={styles.ideaChip}>Artworks from presentations you drew</span>
-      </div>
-    </div>
-    <div className={styles.photoTipWrapper}>
-  <span className={styles.photoTipTitle}>Not sure what to record in your video? Try one of these:</span>
-  <div className={styles.photoIdeaChips}>
-    <span className={styles.ideaChip}>Your favorite highlight or learning from Shibir</span>
-    <span className={styles.ideaChip}>A quick message thanking your satsang friends</span>
-    <span className={styles.ideaChip}>Describe how you will apply what you learned</span>
-    <span className={styles.ideaChip}>A short 30-second personal reflection</span>
-  </div>
-</div>
-<br></br>
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="video/*"
-                className={styles.fileInputHidden}
-                onChange={handleVideoChange}
-              />
+              <label className={styles.label}>
+                Photos &amp; Video <span className={styles.required}>*</span>
+                <span className={styles.optionalTag}> — at least one required</span>
+              </label>
 
-              {!videoFile ? (
-                <button
-                  type="button"
-                  className={styles.uploadBox}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <FaVideo className={styles.uploadIcon} />
-                  <span>Click to attach video interview (MP4, JPG up to 100MB)</span>
+              <div className={styles.guideBox}>
+                <ul className={styles.guideList}>
+                  <li>Upload photos from the Shibir — photobooth, group shots, notes, artwork.</li>
+                  <li>Record a quick 30–60 second video sharing your favorite highlight!</li>
+                </ul>
+              </div>
+
+              {/* Hidden file inputs */}
+              <input type="file" ref={photoInputRef} accept="image/*" multiple className={styles.fileInputHidden} onChange={handlePhotosChange} />
+              <input type="file" ref={videoInputRef} accept="video/*" className={styles.fileInputHidden} onChange={handleVideoChange} />
+
+              {/* Add buttons */}
+              <div className={styles.mediaButtons}>
+                <button type="button" className={styles.mediaAddBtn} onClick={() => photoInputRef.current?.click()}>
+                  <FaImage /> Add Photos
                 </button>
-              ) : (
+                <button type="button" className={`${styles.mediaAddBtn} ${videoFile ? styles.mediaAddBtnActive : ""}`} onClick={() => videoInputRef.current?.click()}>
+                  <FaVideo /> {videoFile ? "Change Video" : "Add Video"}
+                </button>
+              </div>
+
+              {/* Photo preview grid */}
+              {photoPreviewUrls.length > 0 && (
+                <div className={styles.photoGrid}>
+                  {photoPreviewUrls.map((url, i) => (
+                    <div key={i} className={styles.photoThumb}>
+                      <img src={url} alt={`Photo ${i + 1}`} className={styles.photoThumbImg} />
+                      <button type="button" className={styles.removeThumbBtn} onClick={() => handleRemovePhoto(i)} title="Remove">
+                        <FaXmark />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Video preview */}
+              {videoFile && (
                 <div className={styles.filePreviewCard}>
                   <div className={styles.filePreviewInfo}>
                     <FaVideo className={styles.fileIcon} />
                     <span className={styles.fileName}>{videoFile.name}</span>
-                    <span className={styles.fileSize}>
-                      ({(videoFile.size / (1024 * 1024)).toFixed(1)} MB)
-                    </span>
+                    <span className={styles.fileSize}>({(videoFile.size / (1024 * 1024)).toFixed(1)} MB)</span>
                   </div>
-                  <button
-                    type="button"
-                    className={styles.removeFileBtn}
-                    onClick={() => setVideoFile(null)}
-                    title="Remove video"
-                  >
+                  <button type="button" className={styles.removeFileBtn} onClick={() => setVideoFile(null)} title="Remove video">
                     <FaTrash />
                   </button>
                 </div>
+              )}
+
+              {!videoFile && photoFiles.length === 0 && (
+                <p className={styles.mediaHint}>Add at least one photo or video to continue.</p>
               )}
             </div>
   <hr className={styles.divider} />
