@@ -725,7 +725,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 placeholder={
                   form.category === "Balak/Balika"
                     ? "Share your favourite moments, coolest activities, and what you learned from the Shibir!..."
-                    : "Share your reflections on mentoring the children, organizing the Shibir, and your key takeaways..."
+                    : "Share your reflections and key takeaways..."
                 }
                 value={form.response}
                 onChange={(e) =>
