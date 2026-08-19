@@ -53,6 +53,7 @@ import { FaBed } from "react-icons/fa6";
 import AccommodationMetrics from "../AccomodationMetrics/AccomodationMetrics";
 import GateLogsPage from "../GateLogsPage/GateLogsPage";
 import ShibirFeedbackDisplay from "../ShibirFeedbackDisplay/ShibirFeedbackDisplay";
+import ShibirFeedbackDetail from "../ShibirFeedbackDetail/ShibirFeedbackDetail";
 
 // ---------------------------------------------------------------------------
 // PRODUCTION TIMERS
@@ -472,7 +473,7 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
                 >
                   <FaChartBar className={styles.iconMargin} /> Overview Metrics
                 </button>
-                 {(userRole === "master_admin" && userRole === "super_admin") && (
+{(userRole === "master_admin" || userRole === "super_admin") && (
                 <button
                   onClick={() => handleNavigation("/dashboard/feedback")}
                   className={`${styles.navLink} ${location.pathname === "/dashboard/feedback" ? styles.navLinkActive : ""}`}
@@ -753,12 +754,24 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
                 <GateLogsPage regionScope={regionScope} />
               }
             />
-              <Route
-              path="feedback"
-              element={
-                userRole === "master_admin" && userRole === "super_admin" ? <ShibirFeedbackDisplay regionScope={regionScope} /> : <NotFound />
-              }
-            />
+          <Route
+      path="feedback"
+      element={
+        userRole === "master_admin" || userRole === "super_admin" 
+          ? <ShibirFeedbackDisplay regionScope={regionScope} /> 
+          : <NotFound />
+      }
+    />
+<Route
+  path="feedback/:id"
+  element={
+    (userRole === "master_admin" || userRole === "super_admin") ? (
+      <ShibirFeedbackDetail regionScope={regionScope} />
+    ) : (
+      <NotFound />
+    )
+  }
+/>
             <Route
               path="scanner"
               element={

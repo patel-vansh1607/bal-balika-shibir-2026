@@ -371,22 +371,27 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
           </div>
         </div>
       )}
-
-      {submitted ? (
+{submitted ? (
         <div className={styles.card}>
           <div className={styles.successState}>
             <div className={styles.successIcon}>
               <FaStar />
             </div>
-            <h2>Thank You!</h2>
-            <p>Your feedback has been submitted successfully.</p>
+            
+            {/* Show "Thank You" message only when upload is NOT actively happening */}
+            {videoUploadStatus !== "uploading" && (
+              <>
+                <h2>Thank You!</h2>
+                <p>Your feedback has been submitted successfully.</p>
+              </>
+            )}
 
             {videoUploadStatus && (
               <div className={styles.videoUploadStatus}>
                 {videoUploadStatus === "uploading" && (
                   <>
                     <div className={styles.progressLabel}>
-                      <span>Uploading video...</span>
+                      <span>Submitting Response...</span>
                       <span>{videoUploadProgress}%</span>
                     </div>
                     <div className={styles.progressBar}>
@@ -396,7 +401,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
                 )}
                 {videoUploadStatus === "done" && (
                   <div className={styles.videoUploadDone}>
-                    ✓ Video uploaded successfully
+                    ✓ Response uploaded successfully
                   </div>
                 )}
                 {videoUploadStatus === "failed" && (
@@ -412,9 +417,12 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
               </div>
             )}
 
-            <button className={styles.submitBtn} onClick={handleReset} style={{ marginTop: "20px" }}>
-              Submit Another Response
-            </button>
+            {/* Only show "Submit Another Response" when upload is NOT active */}
+            {videoUploadStatus !== "uploading" && (
+              <button className={styles.submitBtn} onClick={handleReset} style={{ marginTop: "20px" }}>
+                Submit Another Response
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -613,7 +621,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
               <div className={styles.guideBox}>
     <ul className={styles.guideList}>
       <li>What was your absolute favorite moment, activity, or game at the Shibir?</li>
-      <li>What is the most valuable lesson, value, or advice you are taking back home?</li>
+      <li>What is the most valuable lesson, value, or advice you've carried back home?</li>
       <li>How did this Shibir help you grow, make new friends, or learn something new?</li>
       <li>If you had to describe your Shibir experience, what would it be?</li>
     </ul>

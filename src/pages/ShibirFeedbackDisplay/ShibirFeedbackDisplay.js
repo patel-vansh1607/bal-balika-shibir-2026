@@ -12,7 +12,8 @@ import {
 } from "react-icons/fa6";
 import { feedback as feedbackApi } from "../../apiClient";
 import styles from "./ShibirFeedbackDisplay.module.css";
-
+import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 // LOCAL ASSETS
 import logo from "../../assets/images/Making the Right Choices - Logo_ColorScalable.svg";
 
@@ -46,6 +47,9 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
   const [countryFilter, setCountryFilter] = useState("ALL");
   const [ratingFilter, setRatingFilter] = useState("ALL");
   const [activeVideoUrl, setActiveVideoUrl] = useState(null);
+  const navigate = useNavigate();
+  const { userRole } = useAuth();
+  
 
   // Is region locked by parent prop?
   const isRegionLocked = !isGlobalScope;
@@ -133,10 +137,10 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
   // Calculate statistics based on filtered data (or global feedback list)
   const totalSubmissions = filteredData.length;
   const totalVideos = filteredData.filter((f) => f.video_url).length;
-  const avgRating =
+const avgRating =
     totalSubmissions > 0
       ? (
-          filteredData.reduce((acc, curr) => acc + (curr.rating || 0), 0) /
+          filteredData.reduce((acc, curr) => acc + Number(curr.rating || 0), 0) /
           totalSubmissions
         ).toFixed(1)
       : "0.0";
@@ -281,9 +285,10 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                     <th>Name</th>
                     <th>Location</th>
                     <th>Rating</th>
-                    <th>Feedback</th>
-                    <th>Video Interview</th>
-                    <th>Action</th>
+                    {/* <th>Feedback</th>
+                    <th>Video Interview</th> */}
+                    <th>View More</th>
+                    {userRole === 'master_admin' && (<th>Action</th> )}
                   </tr>
                 </thead>
                 <tbody>
@@ -315,8 +320,12 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                           ))}
                         </div>
                       </td>
-                      <td>
-                        <div className={styles.responseText}>{item.response}</div>
+                      {/* <td>
+                        <div className={styles.responseText}>
+                          {item.response && item.response.length > 50 
+                            ? `${item.response.substring(0, 50)}...` 
+                            : (item.response || "No feedback provided")}
+                        </div>
                       </td>
                       <td>
                         {item.video_url ? (
@@ -329,17 +338,30 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                         ) : (
                           <span className={styles.noVideoText}>No Video</span>
                         )}
-                      </td>
-                      
+                      </td> */}
+
+                      {/* View More Cell */}
                       <td>
                         <button
-                          className={styles.deleteBtn}
-                          onClick={() => handleDelete(item.id)}
-                          title="Delete entry"
+                          className={styles.viewDetailsBtn}
+                          onClick={() => navigate(`/dashboard/feedback/${item.id}`)}
+                          title="View full feedback details"
                         >
-                          <FaTrash />
+                          View More
                         </button>
                       </td>
+
+                      {userRole === 'master_admin' && (
+                        <td>
+                          <button
+                            className={styles.deleteBtn}
+                            onClick={() => handleDelete(item.id)}
+                            title="Delete entry"
+                          >
+                            <FaTrash />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
