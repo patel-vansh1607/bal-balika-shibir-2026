@@ -649,49 +649,24 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
       <li>How did you keep your Shibir Smruti? Share your favorite photos or video clips!</li>
     </ul>
   </div>    
-  {form.category === "Balak/Balika" ? (
-                <>
-                  <div className={styles.photoTipWrapper}>
-                    <span className={styles.photoTipTitle}>💡 Not sure what photo to upload? Try one of these:</span>
-                    <div className={styles.photoIdeaChips}>
-                      <span className={styles.ideaChip}>Photo from the Shibir photobooth</span>
-                      <span className={styles.ideaChip}>Your Shibir notes page</span>
-                      <span className={styles.ideaChip}>Group photo with your friends</span>
-                      <span className={styles.ideaChip}>Artworks from presentations you drew</span>
-                    </div>
-                  </div>
-                  <div className={styles.photoTipWrapper}>
-                    <span className={styles.photoTipTitle}>Not sure what to record in your video? Try one of these:</span>
-                    <div className={styles.photoIdeaChips}>
-                      <span className={styles.ideaChip}>Your favorite highlight or learning from Shibir</span>
-                      <span className={styles.ideaChip}>A quick message thanking your satsang friends</span>
-                      <span className={styles.ideaChip}>Describe how you will apply what you learned</span>
-                      <span className={styles.ideaChip}>A short 30-second personal reflection</span>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className={styles.photoTipWrapper}>
-                    <span className={styles.photoTipTitle}>💡 Karyakar Photo Ideas: Try one of these:</span>
-                    <div className={styles.photoIdeaChips}>
-                      <span className={styles.ideaChip}>Action shots of leading sabhas or group activities</span>
-                      <span className={styles.ideaChip}>Karyakar team coordination or meeting moments</span>
-                      <span className={styles.ideaChip}>Glimpses of venue setup or management</span>
-                      <span className={styles.ideaChip}>Candid moments with your assigned bal/balikas</span>
-                    </div>
-                  </div>
-                  <div className={styles.photoTipWrapper}>
-                    <span className={styles.photoTipTitle}>Karyakar Video Ideas: Try one of these:</span>
-                    <div className={styles.photoIdeaChips}>
-                      <span className={styles.ideaChip}>Reflections on managing and mentoring the kids</span>
-                      <span className={styles.ideaChip}>Key takeaways from organizing this Shibir</span>
-                      <span className={styles.ideaChip}>A message of appreciation for fellow karyakars</span>
-                      <span className={styles.ideaChip}>Vision and impact of the Shibir on the youth</span>
-                    </div>
-                  </div>
-                </>
-              )}
+  <div className={styles.photoTipWrapper}>
+      <span className={styles.photoTipTitle}> Not sure what photo to upload? Try one of these:</span>
+      <div className={styles.photoIdeaChips}>
+        <span className={styles.ideaChip}>Photo from the Shibir photobooth</span>
+        <span className={styles.ideaChip}>Your Shibir notes page</span>
+        <span className={styles.ideaChip}>Group photo with your friends</span>
+        <span className={styles.ideaChip}>Artworks from presentations you drew</span>
+      </div>
+    </div>
+    <div className={styles.photoTipWrapper}>
+  <span className={styles.photoTipTitle}>Not sure what to record in your video? Try one of these:</span>
+  <div className={styles.photoIdeaChips}>
+    <span className={styles.ideaChip}>Your favorite highlight or learning from Shibir</span>
+    <span className={styles.ideaChip}>A quick message thanking your satsang friends</span>
+    <span className={styles.ideaChip}>Describe how you will apply what you learned</span>
+    <span className={styles.ideaChip}>A short 30-second personal reflection</span>
+  </div>
+</div>
 <br></br>
               <input
                 type="file"
