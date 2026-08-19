@@ -285,6 +285,93 @@
   cursor: default !important;
 }
 
+/* Media add buttons */
+.mediaButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.mediaAddBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 2px dashed var(--border-light);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: #4a5568;
+  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.mediaAddBtn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.mediaAddBtnActive {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: #fff8f0;
+}
+
+/* Photo preview grid */
+.photoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+}
+
+.photoThumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.photoThumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.removeThumbBtn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.removeThumbBtn:hover {
+  background: rgba(220,38,38,0.85);
+}
+
+.mediaHint {
+  font-size: 0.8rem;
+  color: #e53e3e;
+  font-family: var(--font-sans);
+  margin: 4px 0 0;
+}
+
 /* Video Upload Box */
 .fileInputHidden {
   display: none;
@@ -655,66 +742,4 @@
     text-align: center;
     margin-left: 0 !important;
   }
-}
-.guideBox {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.85rem;
-  padding: 1rem 1.25rem;
-  margin-bottom: 0.5rem;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.01);
-}
-
-.guideList {
-  margin: 0;
-  padding-left: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.guideList li {
-  font-size: 0.85rem;
-  color: #475569;
-  line-height: 1.4;
-  font-weight: 500;
-}
-
-.guideList li::marker {
-  color: #f59e0b;
-}
-.divider {
-  border: none;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #e78524, transparent);
-  margin: 0.5rem 0;
-}
-.photoTipWrapper {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px dashed #dadce0;
-}
-
-.photoTipTitle {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1a73e8;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.photoIdeaChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.ideaChip {
-  background: #ffffff;
-  border: 1px solid #dadce0;
-  color: #3c4043;
-  padding: 4px 10px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
 }
