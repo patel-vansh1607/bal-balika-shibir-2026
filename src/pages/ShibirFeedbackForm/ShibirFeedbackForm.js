@@ -158,7 +158,7 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   useEffect(() => {
     const morphTimer = setTimeout(() => {
       setIsMorphing(true);
-    }, 2000);
+    }, 7000);
 
     const removeTimer = setTimeout(() => {
       setShowStinger(false);
@@ -297,7 +297,60 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
       setPhotoUploadError(err.message);
     });
   };
+// Background Audio Autoplay Handler across all browsers
+  useEffect(() => {
+    const audioEl = audioRef.current;
+    if (!audioEl) return;
 
+    audioEl.volume = 0.5;
+
+    // Try playing immediately on load
+    const playAudio = async () => {
+      try {
+        await audioEl.play();
+      } catch (err) {
+        console.log("Autoplay blocked by browser policy. Waiting for first interaction...");
+        
+        // Fallback: Play on the absolute first user interaction anywhere on the document
+        const triggerPlay = () => {
+          audioEl.play().catch((e) => console.log("Play failed on interaction:", e));
+          document.removeEventListener("click", triggerPlay);
+          document.removeEventListener("touchstart", triggerPlay);
+          document.removeEventListener("keydown", triggerPlay);
+        };
+
+        document.addEventListener("click", triggerPlay, { once: true });
+        document.addEventListener("touchstart", triggerPlay, { once: true });
+        document.addEventListener("keydown", triggerPlay, { once: true });
+      }
+    };
+
+    playAudio();
+
+    const handleVisibilityChange = () => {
+      if (!audioRef.current) return;
+      if (document.hidden) {
+        let vol = audioRef.current.volume;
+        const fadeInterval = setInterval(() => {
+          if (vol > 0.05) {
+            vol -= 0.05;
+            try { audioRef.current.volume = Math.max(0, vol); } catch (e) {}
+          } else {
+            clearInterval(fadeInterval);
+            audioRef.current.pause();
+          }
+        }, 30);
+      } else {
+        audioRef.current.volume = 0.5;
+        audioRef.current.play().catch(() => {});
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
   const handleRetryVideoUpload = () => {
     if (!pendingRecordId || !pendingVideoFile.current) return;
     startVideoUpload(pendingRecordId, pendingVideoFile.current);
