@@ -49,7 +49,7 @@ import KarayakarForm from "../KarayakarForm/KarayakarForm";
 import KarayakarList from "../KarayakarList/KarayakarList";
 import ManualScanner from "../ManualScanner/ManualScanner";
 import AccommodationManager from "../AccomodationManager/AccomodationManager";
-import { FaBed } from "react-icons/fa6";
+import { FaBed, FaComment } from "react-icons/fa6";
 import AccommodationMetrics from "../AccomodationMetrics/AccomodationMetrics";
 import GateLogsPage from "../GateLogsPage/GateLogsPage";
 import ShibirFeedbackDisplay from "../ShibirFeedbackDisplay/ShibirFeedbackDisplay";
@@ -184,7 +184,7 @@ export default function Dashboard() {
   }, [navigate, user]);
 
   // Calculate duplicate matching groups
-  const duplicateCount = useMemo(() => {
+const duplicateCount = useMemo(() => {
     if (!attendeesList || attendeesList.length === 0 || dataFetching) return 0;
 
     const groups = {};
@@ -198,10 +198,18 @@ export default function Dashboard() {
 
       if (!cleanName || cleanName.length < 3) return;
 
-      if (!groups[cleanName]) {
-        groups[cleanName] = [];
+      // Normalize region (fallback to country if region is blank)
+      const cleanRegion = (person.region || person.country || "unknown")
+        .trim()
+        .toLowerCase();
+
+      // Composite key so duplicates are only counted within the same region
+      const compositeKey = `${cleanRegion}___${cleanName}`;
+
+      if (!groups[compositeKey]) {
+        groups[compositeKey] = [];
       }
-      groups[cleanName].push(person);
+      groups[compositeKey].push(person);
     });
 
     const duplicateGroups = Object.values(groups).filter(
@@ -478,7 +486,7 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
                   onClick={() => handleNavigation("/dashboard/feedback")}
                   className={`${styles.navLink} ${location.pathname === "/dashboard/feedback" ? styles.navLinkActive : ""}`}
                 >
-                  <FaChartBar className={styles.iconMargin} /> Feedback Data
+                  <FaComment className={styles.iconMargin} /> Feedback Data
                 </button>
                 )}
             {userRole && userRole !== "operator" && (

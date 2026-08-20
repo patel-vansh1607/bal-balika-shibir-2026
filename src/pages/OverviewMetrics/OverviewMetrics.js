@@ -336,7 +336,7 @@ export default function OverviewMetrics({
 
   // Role Permissions
   const formattedRole = (userRole || "").toLowerCase();
-  const canViewMetrics = ["admin", "super_admin", "superadmin"].includes(formattedRole);
+  const canViewMetrics = ["admin", "super_admin", "master_admin"].includes(formattedRole);
   const isOperator = formattedRole === "operator";
 
   useEffect(() => {

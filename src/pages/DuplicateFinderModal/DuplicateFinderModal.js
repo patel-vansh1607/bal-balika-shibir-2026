@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobe, FaExclamationTriangle } from "react-icons/fa";
 
 export default function DuplicateFinderModal({ attendees }) {
-  // Group and find duplicates based on name only (normalizing spaces and cases)
+  // Group and find duplicates based on name AND region matching
   const duplicateSets = useMemo(() => {
     if (!attendees || attendees.length === 0) return [];
 
@@ -19,13 +19,21 @@ export default function DuplicateFinderModal({ attendees }) {
 
       if (!cleanName || cleanName.length < 3) return;
 
-      if (!groups[cleanName]) {
-        groups[cleanName] = [];
+      // Normalize region (fallback to country or general key if region is blank)
+      const cleanRegion = (person.region || person.country || "unknown")
+        .trim()
+        .toLowerCase();
+
+      // Create a composite key so duplicates are only grouped within the same region
+      const compositeKey = `${cleanRegion}___${cleanName}`;
+
+      if (!groups[compositeKey]) {
+        groups[compositeKey] = [];
       }
-      groups[cleanName].push(person);
+      groups[compositeKey].push(person);
     });
 
-    // Only return groups where the same name appears 2 or more times
+    // Only return groups where the same name appears 2 or more times within the same region
     return Object.values(groups).filter((group) => group.length > 1);
   }, [attendees]);
 
@@ -116,6 +124,7 @@ export default function DuplicateFinderModal({ attendees }) {
         <div>
           <h2 className="header-title">Duplicate Profiles</h2>
           <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: "#64748b" }}>
+            Checking for duplicate registrations within the same region.
           </p>
         </div>
         <span className="header-badge">
@@ -130,7 +139,7 @@ export default function DuplicateFinderModal({ attendees }) {
           <div>
             <div style={{ fontWeight: "700" }}>Attention Required</div>
             <div style={{ fontSize: "0.85rem", marginTop: "2px" }}>
-              Multiple registrations share identical normalized names. Resolve these collisions to keep data clean.
+              Multiple registrations share identical normalized names within the same region. Resolve these collisions to keep data clean.
             </div>
           </div>
         </div>
@@ -150,10 +159,10 @@ export default function DuplicateFinderModal({ attendees }) {
         >
           <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🎉</div>
           <h4 style={{ margin: "0 0 8px 0", color: "#0f172a", fontSize: "1.2rem" }}>
-            All Clear! No Duplicates Detected
+            All Clear! No Regional Duplicates Detected
           </h4>
           <p style={{ margin: 0, color: "#64748b", fontSize: "0.95rem" }}>
-            All active registrations contain completely unique names.
+            All active registrations have unique names within their respective regions.
           </p>
         </div>
       ) : (
@@ -185,7 +194,9 @@ export default function DuplicateFinderModal({ attendees }) {
                   gap: "8px",
                 }}
               >
-                <span style={{ wordBreak: "break-all" }}>👥 MATCH GROUP: "{group[0].name}"</span>
+                <span style={{ wordBreak: "break-all" }}>
+                  👥 MATCH GROUP: "{group[0].name}" ({group[0].region || group[0].country || "Unknown Region"})
+                </span>
                 <span
                   style={{
                     fontSize: "0.8rem",
