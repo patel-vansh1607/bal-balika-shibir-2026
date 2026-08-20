@@ -29,7 +29,8 @@
     "react-scripts": "^5.0.1",
     "recharts": "^3.9.2",
     "resend": "^6.17.2",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "xlsx": "^0.18.5"
   },
   "scripts": {
     "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider react-scripts start",

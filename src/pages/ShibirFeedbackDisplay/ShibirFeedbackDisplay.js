@@ -1,37 +1,20 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  FaStar,
   FaMagnifyingGlass,
-  FaVideo,
   FaTrash,
-  FaXmark,
   FaChevronDown,
   FaFilter,
   FaLock,
-  FaDownload,
-  FaImage,
+  FaEye,
+  FaFileCsv,
 } from "react-icons/fa6";
-import { feedback as feedbackApi } from "../../apiClient";
+import { feedback as feedbackApi, karayakars as karayakarsApi } from "../../apiClient";
 import styles from "./ShibirFeedbackDisplay.module.css";
+import { useAuth } from "../../context/AuthContext";
 
 // LOCAL ASSETS
 import logo from "../../assets/images/Making the Right Choices - Logo_ColorScalable.svg";
-
-// Extract Google Drive file ID from a view URL
-const getDriveFileId = (url) => {
-  if (!url) return null;
-  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  return m ? m[1] : null;
-};
-
-// Parse photo_urls JSON field from DB
-const parsePhotos = (raw) => {
-  if (!raw) return [];
-  try {
-    const p = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return Array.isArray(p) ? p : [];
-  } catch { return []; }
-};
 
 // Helper function to strip region prefixes (e.g., "_3xl_South", "3xl_North")
 const cleanRegion = (rawRegion) => {
@@ -43,50 +26,161 @@ const cleanRegion = (rawRegion) => {
   return sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
 };
 
+// Distinct solid/dark theme color scheme for country badges
+const getCountryBadgeStyle = (countryName) => {
+  if (!countryName) return { background: "#334155", color: "#ffffff" };
+  
+  const colorSchemes = [
+    { bg: "#0f172a", text: "#f8fafc" },
+    { bg: "#1e3a8a", text: "#e0f2fe" },
+    { bg: "#14532d", text: "#dcfce7" },
+    { bg: "#581c87", text: "#fae8ff" },
+    { bg: "#7c2d12", text: "#ffedd5" },
+    { bg: "#831843", text: "#fce7f3" },
+    { bg: "#134e4a", text: "#ccfbf1" },
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < countryName.length; i++) {
+    hash = countryName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % colorSchemes.length;
+  return colorSchemes[index];
+};
+
 export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
+  const navigate = useNavigate();
   const [feedbackList, setFeedbackList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   const isGlobalScope = !regionScope || regionScope.toLowerCase() === "all";
 
-  // Region & Country & Rating Filters
+  // Region & Country & Division Filters
   const cleanScope = isGlobalScope ? "ALL" : cleanRegion(regionScope);
   const [selectedRegion, setSelectedRegion] = useState(cleanScope || "ALL");
   const [countryFilter, setCountryFilter] = useState("ALL");
-  const [ratingFilter, setRatingFilter] = useState("ALL");
-  const [activeMediaRecord, setActiveMediaRecord] = useState(null);
-  const [expandedRows, setExpandedRows] = useState(new Set());
-
-  const toggleExpand = (id) => {
-    setExpandedRows(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
-  // Is region locked by parent prop?
+  const [divisionFilter, setDivisionFilter] = useState("ALL");
+  
+  const { userRole } = useAuth();
   const isRegionLocked = !isGlobalScope;
 
-  // Sync region state if prop changes
   useEffect(() => {
     setSelectedRegion(isGlobalScope ? "ALL" : (cleanRegion(regionScope) || "ALL"));
   }, [regionScope, isGlobalScope]);
 
-  useEffect(() => {
-    fetchFeedback();
+  // Helper to determine if a Karyakar is female based on seva designations
+  const getIsFemaleKaryakar = (karyakar) => {
+    if (!karyakar.seva_designation) return false;
+    const designations =
+      typeof karyakar.seva_designation === "string"
+        ? karyakar.seva_designation.split(", ")
+        : Array.isArray(karyakar.seva_designation)
+        ? karyakar.seva_designation
+        : [];
+
+    return designations.some((role) => {
+      const r = role.toUpperCase().trim();
+      return (
+        r === "I-NC" ||
+        r === "I-NOC" ||
+        r === "I-RC" ||
+        r.includes("SHISHIKA") ||
+        r.includes("BALIKA") ||
+        r === "BST SANCHALIKA" ||
+        r === "BST SAH-SANCHALIKA" ||
+        r === "BST BALIKA IC" ||
+        r === "BALIKA SANSKAR SANCHALIKA" ||
+        r === "BALIKA SANSKAR SAH SANCHALIKA" ||
+        r === "BALIKA SANSKAR IC" ||
+        r === "IKST SANCHALIKA" ||
+        r === "I-ADMIN" ||
+        r === "I-IT TEAM" ||
+        r.includes("IKST")
+      );
+    });
+  };
+
+  // Pastel badge styles and labels for division
+  const getCategoryBadgeDetails = useCallback((item) => {
+    const cat = (item.category || item.type || "").toLowerCase();
+    const gender = (item.gender || item.sex || "").toLowerCase();
+    const designation = (item.seva_designation || "").toLowerCase();
+
+    // 1. Karyakar Check
+    if (cat.includes("karyakar") || designation) {
+      const isFemale = getIsFemaleKaryakar(item) || gender.includes("f") || gender.includes("female");
+      if (isFemale) {
+        return {
+          typeKey: "KARYAKAR_FEMALE",
+          label: "Karyakar (Female)",
+          style: { background: "#fce7f3", color: "#db2777", border: "1px solid #fbcfe8" }
+        };
+      } else {
+        return {
+          typeKey: "KARYAKAR_MALE",
+          label: "Karyakar (Male)",
+          style: { background: "#dbeafe", color: "#1d4ed8", border: "1px solid #bfdbfe" }
+        };
+      }
+    }
+
+    // 2. Balika Check
+    if (gender.includes("f") || gender.includes("female") || cat.includes("balika") || gender.includes("balika")) {
+      return {
+        typeKey: "BALIKA",
+        label: "Balika",
+        style: { background: "#fae8ff", color: "#a855f7", border: "1px solid #f5d0fe" }
+      };
+    }
+
+    // 3. Balak Check (Default fallback)
+    return {
+      typeKey: "BALAK",
+      label: "Balak",
+      style: { background: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd" }
+    };
   }, []);
 
-  const fetchFeedback = async () => {
+  const fetchFeedback = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await feedbackApi.list();
+      const [feedbackRes, membersRes] = await Promise.all([
+        feedbackApi.list(),
+        karayakarsApi.list ? karayakarsApi.list() : Promise.resolve({ data: [] })
+      ]);
 
-      const formattedData = (data || []).map(item => ({
-        ...item,
-        normalizedRegion: cleanRegion(item.region || item.zone || item.area || "")
-      }));
+      const rawFeedback = feedbackRes?.data || [];
+      const members = membersRes?.data || [];
+
+      const memberMap = new Map();
+      members.forEach((m) => {
+        if (m.full_name) {
+          const cleanName = m.full_name.trim().toLowerCase().replace(/\s+/g, ' ');
+          memberMap.set(cleanName, m);
+        }
+      });
+
+      const formattedData = rawFeedback.map(item => {
+        const itemCleanName = (item.full_name || "").trim().toLowerCase().replace(/\s+/g, ' ');
+        const matched = memberMap.get(itemCleanName) || {};
+
+        const tempItem = {
+          ...item,
+          gender: item.gender || matched.gender || matched.sex || "",
+          category: item.category || matched.category || matched.type || (matched.seva_designation ? "Karyakar" : ""),
+          seva_designation: item.seva_designation || matched.seva_designation || "",
+          normalizedRegion: cleanRegion(item.region || item.zone || item.area || matched.region || "")
+        };
+
+        const badgeInfo = getCategoryBadgeDetails(tempItem);
+
+        return {
+          ...tempItem,
+          divisionTypeKey: badgeInfo.typeKey,
+          divisionLabel: badgeInfo.label
+        };
+      });
 
       setFeedbackList(formattedData);
     } catch (err) {
@@ -95,7 +189,11 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getCategoryBadgeDetails]);
+
+  useEffect(() => {
+    fetchFeedback();
+  }, [fetchFeedback]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this response?")) return;
@@ -109,7 +207,6 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
     }
   };
 
-  // Extract unique regions for the dropdown
   const uniqueRegions = useMemo(() => {
     const set = new Set();
     feedbackList.forEach((item) => {
@@ -120,7 +217,6 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
     return Array.from(set).sort();
   }, [feedbackList]);
 
-  // Unique country list for dropdown filter (based on region filter if applied)
   const uniqueCountries = useMemo(() => {
     const subset = selectedRegion === "ALL" 
       ? feedbackList 
@@ -129,7 +225,6 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
     return [...new Set(subset.map((item) => item.country).filter(Boolean))].sort();
   }, [feedbackList, selectedRegion]);
 
-  // Filter Logic (Region + Country + Rating + Search)
   const filteredData = feedbackList.filter((item) => {
     const matchesRegion =
       selectedRegion === "ALL" || 
@@ -143,16 +238,59 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
     const matchesCountry =
       countryFilter === "ALL" || item.country === countryFilter;
 
-    const matchesRating =
-      ratingFilter === "ALL" || item.rating === parseInt(ratingFilter, 10);
+    const matchesDivision =
+      divisionFilter === "ALL" || item.divisionTypeKey === divisionFilter;
 
-    return matchesRegion && matchesSearch && matchesCountry && matchesRating;
+    return matchesRegion && matchesSearch && matchesCountry && matchesDivision;
   });
 
-  // Calculate statistics based on filtered data (or global feedback list)
+  // Export Filtered Data to CSV format
+  const handleExportCSV = () => {
+    if (filteredData.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+
+    const headers = [
+      "S/N",
+      "Submission Date",
+      "Full Name",
+      "Division",
+      "Center",
+      "Country",
+      "Region",
+      "Rating (1-5)",
+      "Feedback Response"
+    ];
+
+    const rows = filteredData.map((item, idx) => [
+      idx + 1,
+      new Date(item.created_at).toLocaleDateString(),
+      `"${(item.full_name || "").replace(/"/g, '""')}"`,
+      `"${(item.divisionLabel || "").replace(/"/g, '""')}"`,
+      `"${(item.center || "").replace(/"/g, '""')}"`,
+      `"${(item.country || "").replace(/"/g, '""')}"`,
+      `"${(item.normalizedRegion || "").replace(/"/g, '""')}"`,
+      item.rating || "",
+      `"${(item.response || "").replace(/"/g, '""').replace(/\n/g, " ")}"`
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    
+    const filePrefix = selectedRegion !== "ALL" ? selectedRegion : "All_Regions";
+    link.setAttribute("download", `Shibir_Feedback_${filePrefix}_2026.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const totalSubmissions = filteredData.length;
-  const totalVideos = filteredData.filter((f) => f.video_url).length;
-const avgRating =
+  const avgRating =
     totalSubmissions > 0
       ? (
           filteredData.reduce((acc, curr) => acc + Number(curr.rating || 0), 0) /
@@ -163,7 +301,6 @@ const avgRating =
   return (
     <div className={styles.wrapper}>
       <div className={styles.card}>
-        {/* Header & Region Filter Bar */}
         <div className={styles.headerGroup} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div className={styles.logoAndTitleInline}>
             <img
@@ -177,46 +314,68 @@ const avgRating =
             </div>
           </div>
 
-          {/* Region Filter / Scope Selector */}
-          {!isRegionLocked ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#fff", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
-              <FaFilter style={{ color: "#5f6368", fontSize: "14px" }} />
-              <span style={{ fontSize: "14px", fontWeight: "600", color: "#3c4043" }}>Region:</span>
-              <select
-                value={selectedRegion}
-                onChange={(e) => {
-                  setSelectedRegion(e.target.value);
-                  setCountryFilter("ALL"); // Reset country filter on region change
-                }}
-                style={{
-                  border: "none",
-                  outline: "none",
-                  background: "transparent",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "#1a73e8",
-                  cursor: "pointer"
-                }}
-              >
-                <option value="ALL">All Regions</option>
-                {uniqueRegions.map((reg) => (
-                  <option key={reg} value={reg}>
-                    {reg}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f1f3f4", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
-              <FaLock style={{ color: "#5f6368", fontSize: "13px" }} />
-              <span style={{ fontSize: "14px", fontWeight: "600", color: "#3c4043" }}>
-                Region Locked: <span style={{ color: "#1a73e8" }}>{selectedRegion}</span>
-              </span>
-            </div>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <button
+              onClick={handleExportCSV}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                background: "#0284c7",
+                color: "#ffffff",
+                border: "none",
+                padding: "9px 16px",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "600",
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                transition: "background 0.2s"
+              }}
+              title="Download current table list as CSV file"
+            >
+              <FaFileCsv style={{ fontSize: "16px" }} /> Export to CSV
+            </button>
+
+            {!isRegionLocked ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#fff", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
+                <FaFilter style={{ color: "#5f6368", fontSize: "14px" }} />
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#3c4043" }}>Region:</span>
+                <select
+                  value={selectedRegion}
+                  onChange={(e) => {
+                    setSelectedRegion(e.target.value);
+                    setCountryFilter("ALL");
+                  }}
+                  style={{
+                    border: "none",
+                    outline: "none",
+                    background: "transparent",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#1a73e8",
+                    cursor: "pointer"
+                  }}
+                >
+                  <option value="ALL">All Regions</option>
+                  {uniqueRegions.map((reg) => (
+                    <option key={reg} value={reg}>
+                      {reg}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f1f3f4", padding: "8px 14px", border: "1px solid #dadce0", borderRadius: "8px" }}>
+                <FaLock style={{ color: "#5f6368", fontSize: "13px" }} />
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#3c4043" }}>
+                  Region Locked: <span style={{ color: "#1a73e8" }}>{selectedRegion}</span>
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Stats Section */}
         <div className={styles.statsRow}>
           <div className={styles.statCard}>
             <div className={styles.statLabel}>Total Responses</div>
@@ -226,13 +385,8 @@ const avgRating =
             <div className={styles.statLabel}>Average Rating</div>
             <div className={styles.statValue}>{avgRating} / 5.0</div>
           </div>
-          <div className={styles.statCard}>
-            <div className={styles.statLabel}>Videos Uploaded</div>
-            <div className={styles.statValue}>{totalVideos}</div>
-          </div>
         </div>
 
-        {/* Search & Filter Controls */}
         <div className={styles.controlsBar}>
           <div className={styles.searchBox}>
             <div className={styles.inputWithIcon} style={{ width: "100%" }}>
@@ -250,6 +404,21 @@ const avgRating =
           <div className={styles.filterWrapper}>
             <select
               className={styles.filterSelect}
+              value={divisionFilter}
+              onChange={(e) => setDivisionFilter(e.target.value)}
+            >
+              <option value="ALL">All Divisions</option>
+              <option value="BALAK">Balak</option>
+              <option value="BALIKA">Balika</option>
+              <option value="KARYAKAR_MALE">Karyakar (Male)</option>
+              <option value="KARYAKAR_FEMALE">Karyakar (Female)</option>
+            </select>
+            <FaChevronDown className={styles.selectChevron} />
+          </div>
+
+          <div className={styles.filterWrapper}>
+            <select
+              className={styles.filterSelect}
               value={countryFilter}
               onChange={(e) => setCountryFilter(e.target.value)}
             >
@@ -262,25 +431,8 @@ const avgRating =
             </select>
             <FaChevronDown className={styles.selectChevron} />
           </div>
-
-          <div className={styles.filterWrapper}>
-            <select
-              className={styles.filterSelect}
-              value={ratingFilter}
-              onChange={(e) => setRatingFilter(e.target.value)}
-            >
-              <option value="ALL">All Ratings</option>
-              <option value="5">5 Stars</option>
-              <option value="4">4 Stars</option>
-              <option value="3">3 Stars</option>
-              <option value="2">2 Stars</option>
-              <option value="1">1 Star</option>
-            </select>
-            <FaChevronDown className={styles.selectChevron} />
-          </div>
         </div>
 
-        {/* Table Section */}
         <div className={styles.tableContainer}>
           {loading ? (
             <div className={styles.loadingContainer}>
@@ -299,181 +451,101 @@ const avgRating =
                     <th>Date</th>
                     <th>Name</th>
                     <th>Location</th>
-                    <th>Rating</th>
-                    <th>Feedback</th>
-                    <th>Media</th>
-                    <th>Action</th>
+                    <th>Division</th>
+                    <th style={{ textAlign: "center" }}>View More</th>
+                    {userRole === "master_admin" && <th style={{ textAlign: "center" }}>Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        {new Date(item.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </td>
-                      <td>
-                        <strong>{item.full_name}</strong>
-                      </td>
-                      <td>
-                        <div className={styles.centerName}>{item.center}</div>
-                        <span className={styles.badge}>{item.country}</span>
-                      </td>
-                      <td>
-                        <div className={styles.ratingStars}>
-                          {[...Array(5)].map((_, i) => (
-                            <FaStar
-                              key={i}
-                              style={{
-                                color: i < item.rating ? "#f59e0b" : "#cbd5e1",
-                              }}
-                            />
-                          ))}
-                        </div>
-                      </td>
-                      <td
-                        onClick={() => toggleExpand(item.id)}
-                        title="Click to expand"
-                        style={{ cursor: 'pointer', maxWidth: '280px' }}
-                      >
-                        <div style={{
-                          whiteSpace: 'normal',
-                          wordBreak: 'break-word',
-                          color: '#475569',
-                          lineHeight: '1.5',
-                          fontSize: '0.88rem',
-                          overflow: 'hidden',
-                          display: '-webkit-box',
-                          WebkitLineClamp: expandedRows.has(item.id) ? 'unset' : 3,
-                          WebkitBoxOrient: 'vertical',
-                        }}>
-                          {item.response}
-                        </div>
-                        {!expandedRows.has(item.id) && (item.response?.length ?? 0) > 120 && (
-                          <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 700, display: 'block', marginTop: '4px' }}>
-                            ▼ read more
+                  {filteredData.map((item) => {
+                    const badge = getCategoryBadgeDetails(item);
+                    const countryScheme = getCountryBadgeStyle(item.country);
+                    return (
+                      <tr key={item.id}>
+                        <td>
+                          {new Date(item.created_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </td>
+                        <td>
+                          <strong>{item.full_name}</strong>
+                        </td>
+                        <td>
+                          <div className={styles.centerName}>{item.center}</div>
+                          <span 
+                            style={{
+                              display: "inline-block",
+                              padding: "2px 8px",
+                              borderRadius: "12px",
+                              fontSize: "0.7rem",
+                              fontWeight: "700",
+                              marginTop: "4px",
+                              letterSpacing: "0.03em",
+                              backgroundColor: countryScheme.bg,
+                              color: countryScheme.text
+                            }}
+                          >
+                            {item.country || "N/A"}
                           </span>
-                        )}
-                        {expandedRows.has(item.id) && (
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, display: 'block', marginTop: '4px' }}>
-                            ▲ collapse
+                        </td>
+                        <td>
+                          <span 
+                            style={{
+                              display: "inline-block",
+                              padding: "4px 10px",
+                              borderRadius: "6px",
+                              fontSize: "0.78rem",
+                              fontWeight: "700",
+                              ...badge.style
+                            }}
+                          >
+                            {badge.label}
                           </span>
-                        )}
-                      </td>
-                      <td>
-                        {(() => {
-                          const photos = parsePhotos(item.photo_urls);
-                          const hasVideo = !!item.video_url;
-                          if (!hasVideo && photos.length === 0) {
-                            return <span className={styles.noVideoText}>No Media</span>;
-                          }
-                          let label;
-                          if (hasVideo && photos.length === 0) label = 'Play Video';
-                          else if (!hasVideo) label = `${photos.length} Photo${photos.length > 1 ? 's' : ''}`;
-                          else label = `Video + ${photos.length} Photo${photos.length > 1 ? 's' : ''}`;
-                          return (
+                        </td>
+                        <td style={{ textAlign: "center", verticalAlign: "middle" }}>
+                          <button
+                            onClick={() => navigate(`/dashboard/feedback/${item.id}`)}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              background: "#f0fdf4",
+                              color: "#15803d",
+                              border: "1px solid #bbf7d0",
+                              padding: "6px 12px",
+                              borderRadius: "6px",
+                              fontSize: "0.78rem",
+                              fontWeight: "700",
+                              cursor: "pointer",
+                              transition: "background 0.2s"
+                            }}
+                            title="View full submission details"
+                          >
+                            <FaEye /> View More
+                          </button>
+                        </td>
+                        {userRole === "master_admin" && (
+                          <td style={{ textAlign: "center", verticalAlign: "middle" }}>
                             <button
-                              className={styles.videoLinkBtn}
-                              onClick={() => setActiveMediaRecord(item)}
+                              className={styles.deleteBtn}
+                              onClick={() => handleDelete(item.id)}
+                              title="Delete entry"
                             >
-                              {hasVideo ? <FaVideo /> : <FaImage />} {label}
+                              <FaTrash />
                             </button>
-                          );
-                        })()}
-                      </td>
-                      <td>
-                        <button
-                          className={styles.deleteBtn}
-                          onClick={() => handleDelete(item.id)}
-                          title="Delete entry"
-                        >
-                          <FaTrash />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </div>
       </div>
-
-      {/* Media Modal — photos + video */}
-      {activeMediaRecord && (() => {
-        const photos = parsePhotos(activeMediaRecord.photo_urls);
-        const driveId = getDriveFileId(activeMediaRecord.video_url);
-        return (
-          <div className={styles.modalOverlay} onClick={() => setActiveMediaRecord(null)}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '720px' }}>
-              <div className={styles.modalHeader}>
-                <h3>{activeMediaRecord.full_name}</h3>
-                <button className={styles.closeModalBtn} onClick={() => setActiveMediaRecord(null)}>
-                  <FaXmark />
-                </button>
-              </div>
-
-              <div style={{ overflowY: 'auto', maxHeight: '75vh' }}>
-                {/* Photos section */}
-                {photos.length > 0 && (
-                  <div style={{ padding: '1.25rem 1.5rem', borderBottom: driveId ? '2px solid #e2e8f0' : 'none' }}>
-                    <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      Photos ({photos.length})
-                    </p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.75rem' }}>
-                      {photos.map((url, i) => {
-                        const fid = getDriveFileId(url);
-                        return (
-                          <a key={i} href={url} target="_blank" rel="noreferrer"
-                            style={{ display: 'block', borderRadius: '0.75rem', overflow: 'hidden', border: '2px solid #e2e8f0', aspectRatio: '1 / 1', background: '#f8fafc', transition: 'border-color 0.2s' }}
-                            onMouseEnter={e => e.currentTarget.style.borderColor = '#f59e0b'}
-                            onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}
-                          >
-                            <img
-                              src={fid ? `https://lh3.googleusercontent.com/d/${fid}=w300` : url}
-                              alt={`Submission ${i + 1}`}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                              onError={e => { e.target.src = url; }}
-                            />
-                          </a>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Video section */}
-                {activeMediaRecord.video_url && driveId && (
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', flex: 1 }}>
-                        Video
-                      </span>
-                      <a href={`https://drive.google.com/uc?export=download&id=${driveId}`} target="_blank" rel="noreferrer" className={styles.downloadBtn} onClick={e => e.stopPropagation()}>
-                        <FaDownload /> Download
-                      </a>
-                      <a href={activeMediaRecord.video_url} target="_blank" rel="noreferrer" className={styles.openDriveBtn} onClick={e => e.stopPropagation()}>
-                        Open in Drive
-                      </a>
-                    </div>
-                    <iframe
-                      src={`https://drive.google.com/file/d/${driveId}/preview`}
-                      className={styles.videoPlayer}
-                      allow="autoplay; encrypted-media"
-                      allowFullScreen
-                      title="Video Interview"
-                      style={{ border: 'none' }}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 }
