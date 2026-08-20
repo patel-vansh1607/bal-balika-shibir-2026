@@ -981,9 +981,7 @@ const getIsFemale = (karyakar) => {
           <table className={styles.dataTable}>
             <thead>
               <tr>
-                <th> No.</th>
                 <th>Member ID</th>
-                <th>QR Code</th>
                 <th>Profile</th>
                 <th>Full Name</th>
                 {showRegionColumn && <th>Region</th>}
@@ -1024,29 +1022,10 @@ const getIsFemale = (karyakar) => {
                       confirmDeleteId === k.id ? styles.rowWarningHighlight : ""
                     }
                   >
-                    <td className={styles.centerAlignCell}>{index + 1}</td>
                     <td
                       className={`${styles.centerAlignCell} ${styles.monospaceId}`}
                     >
                       {k.member_id || "—"}
-                    </td>
-                    <td className={styles.centerAlignCell}>
-                      {k.qr_code_url ? (
-                        <a
-                          href={k.qr_code_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          title={`QR for ${k.member_id}`}
-                        >
-                          <img
-                            src={k.qr_code_url}
-                            alt="QR"
-                            className={styles.qrThumbnail}
-                          />
-                        </a>
-                      ) : (
-                        <span className={styles.textHyphen}>—</span>
-                      )}
                     </td>
                     <td className={styles.centerAlignCell}>
                       <div className={styles.avatarFrame}>

@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   FaMagnifyingGlass,
   FaTrash,
@@ -8,8 +7,17 @@ import {
   FaLock,
   FaEye,
   FaFileCsv,
+  FaXmark,
+  FaStar,
+  FaVideo,
+  FaDownload,
+  FaCalendar,
+  FaLocationDot,
+  FaBuilding,
+  FaImage,
+  FaArrowUpRightFromSquare,
 } from "react-icons/fa6";
-import { feedback as feedbackApi, karayakars as karayakarsApi } from "../../apiClient";
+import { feedback as feedbackApi, karayakars as karayakarsApi, attendees as attendeesApi } from "../../apiClient";
 import styles from "./ShibirFeedbackDisplay.module.css";
 import { useAuth } from "../../context/AuthContext";
 
@@ -48,11 +56,234 @@ const getCountryBadgeStyle = (countryName) => {
   return colorSchemes[index];
 };
 
+const getDriveFileId = (url) => {
+  if (!url) return null;
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+};
+
+const parsePhotos = (raw) => {
+  if (!raw) return [];
+  try {
+    const p = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Array.isArray(p) ? p : [];
+  } catch { return []; }
+};
+
+// POPUP MODAL COMPONENT (FULL DETAILS VIEW)
+const FeedbackModal = ({ isOpen, onClose, data }) => {
+  if (!isOpen || !data) return null;
+
+  const driveFileId = getDriveFileId(data.video_url);
+  const photos = parsePhotos(data.photo_urls);
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalContentLarge} onClick={(e) => e.stopPropagation()}>
+        {/* Top Header Bar */}
+        <div className={styles.modalHeader}>
+          <h3>Details</h3>
+          <button onClick={onClose} className={styles.closeBtn}>
+            <FaXmark />
+          </button>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className={styles.modalBodyScrollable}>
+          {/* Header Card Profile Info */}
+          <div className={styles.modalHeaderCard}>
+            <div className={styles.userInfoGroup}>
+              <div className={styles.avatarPlaceholder}>
+                <img
+                  src="https://res.cloudinary.com/dxgkcyfrl/image/upload/v1782202338/MTRC_NEW_Color_c3d3z1.svg"
+                  alt="Submitter profile"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
+                />
+              </div>
+              <div>
+                <h2 className={styles.userName}>{data.full_name || "Anonymous Submitter"}</h2>
+                <div className={styles.metaSubRow}>
+                  <span><FaBuilding /> {data.center || "N/A"}</span>
+                  <span>•</span>
+                  <span><FaLocationDot /> {data.country || "N/A"}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.ratingBox}>
+              <div className={styles.ratingStars}>
+                {[...Array(5)].map((_, i) => (
+                  <FaStar
+                    key={i}
+                    style={{
+                      color: i < Number(data.rating || 0) ? "#f59e0b" : "#cbd5e1",
+                      fontSize: "18px",
+                    }}
+                  />
+                ))}
+              </div>
+              <span className={styles.ratingNumber}>{Number(data.rating || 0).toFixed(1)} / 5.0 Stars</span>
+              <span className={styles.dateSubmitted}>
+                <FaCalendar /> {new Date(data.created_at).toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </span>
+            </div>
+          </div>
+
+          {/* Full Feedback Response */}
+          <div className={styles.cardSection}>
+            <h3>Full Feedback Response</h3>
+            <div className={styles.feedbackBody}>
+              {data.response ? (
+                <p>{data.response}</p>
+              ) : (
+                <p className={styles.noDataText}>No text feedback provided.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Uploaded Photos Section */}
+          <div className={styles.cardSection}>
+            <div className={styles.videoSectionHeader}>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <FaImage /> Uploaded Photos ({photos.length})
+              </h3>
+            </div>
+
+            {photos.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
+                {photos.map((rawUrl, i) => {
+                  const pFileId = getDriveFileId(rawUrl);
+                  const previewUrl = pFileId ? `https://drive.google.com/file/d/${pFileId}/preview` : rawUrl;
+                  const originalDriveUrl = pFileId ? `https://drive.google.com/file/d/${pFileId}/view` : rawUrl;
+
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        background: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "10px",
+                        overflow: "hidden",
+                        padding: "12px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px"
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#334155" }}>
+                          Photo {i + 1} of {photos.length}
+                        </span>
+                        <a
+                          href={originalDriveUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            fontSize: "0.8rem",
+                            color: "#f59e0b",
+                            textDecoration: "none",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            fontWeight: "500"
+                          }}
+                        >
+                          <FaArrowUpRightFromSquare /> Open Original in Drive
+                        </a>
+                      </div>
+
+                      {pFileId ? (
+                        <div className={styles.videoWrapper} style={{ height: "350px" }}>
+                          <iframe
+                            src={previewUrl}
+                            className={styles.videoPlayer}
+                            allow="autoplay; encrypted-media"
+                            allowFullScreen
+                            title={`Submission item ${i + 1}`}
+                          />
+                        </div>
+                      ) : (
+                        <div style={{ width: "100%", background: "#0f172a", borderRadius: "8px", overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "250px" }}>
+                          <img
+                            src={rawUrl}
+                            alt={`Submission item ${i + 1}`}
+                            style={{ width: "100%", maxHeight: "400px", objectFit: "contain", display: "block" }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={styles.noVideoBox}>
+                <FaImage style={{ fontSize: "28px", color: "#9aa0a6", marginBottom: "6px" }} />
+                <p>No photos attached to this submission.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Video Interview Section */}
+          <div className={styles.cardSection}>
+            <div className={styles.videoSectionHeader}>
+              <h3>Video Interview</h3>
+              {data.video_url && driveFileId && (
+                <div className={styles.videoActions}>
+                  <a
+                    href={`https://drive.google.com/uc?export=download&id=${driveFileId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.downloadBtn}
+                  >
+                    <FaDownload /> Download Video
+                  </a>
+                  <a
+                    href={data.video_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.openDriveBtn}
+                  >
+                    Open in Drive
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {data.video_url && driveFileId ? (
+              <div className={styles.videoWrapper} style={{ height: "350px" }}>
+                <iframe
+                  src={`https://drive.google.com/file/d/${driveFileId}/preview`}
+                  className={styles.videoPlayer}
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                  title="Video Interview"
+                />
+              </div>
+            ) : (
+              <div className={styles.noVideoBox}>
+                <FaVideo style={{ fontSize: "28px", color: "#9aa0a6", marginBottom: "6px" }} />
+                <p>No video interview attached to this submission.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
-  const navigate = useNavigate();
   const [feedbackList, setFeedbackList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // MODAL STATE
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const isGlobalScope = !regionScope || regionScope.toLowerCase() === "all";
 
@@ -69,7 +300,6 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
     setSelectedRegion(isGlobalScope ? "ALL" : (cleanRegion(regionScope) || "ALL"));
   }, [regionScope, isGlobalScope]);
 
-  // Helper to determine if a Karyakar is female based on seva designations
   const getIsFemaleKaryakar = (karyakar) => {
     if (!karyakar.seva_designation) return false;
     const designations =
@@ -101,76 +331,69 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
     });
   };
 
-  // Pastel badge styles and labels for division
   const getCategoryBadgeDetails = useCallback((item) => {
     const cat = (item.category || item.type || "").toLowerCase();
     const gender = (item.gender || item.sex || "").toLowerCase();
     const designation = (item.seva_designation || "").toLowerCase();
 
-    // 1. Karyakar Check
     if (cat.includes("karyakar") || designation) {
-      const isFemale = getIsFemaleKaryakar(item) || gender.includes("f") || gender.includes("female");
-      if (isFemale) {
-        return {
-          typeKey: "KARYAKAR_FEMALE",
-          label: "Karyakar (Female)",
-          style: { background: "#fce7f3", color: "#db2777", border: "1px solid #fbcfe8" }
-        };
-      } else {
-        return {
-          typeKey: "KARYAKAR_MALE",
-          label: "Karyakar (Male)",
-          style: { background: "#dbeafe", color: "#1d4ed8", border: "1px solid #bfdbfe" }
-        };
-      }
+      const isFemale = getIsFemaleKaryakar(item) || gender.includes("balika") || gender.includes("f") || gender.includes("female");
+      return isFemale 
+        ? { typeKey: "KARYAKAR_FEMALE", label: "Karyakar (Female)" }
+        : { typeKey: "KARYAKAR_MALE", label: "Karyakar (Male)" };
     }
 
-    // 2. Balika Check
-    if (gender.includes("f") || gender.includes("female") || cat.includes("balika") || gender.includes("balika")) {
-      return {
-        typeKey: "BALIKA",
-        label: "Balika",
-        style: { background: "#fae8ff", color: "#a855f7", border: "1px solid #f5d0fe" }
-      };
+    if (gender.includes("balika") || gender === "f" || gender === "female") {
+      return { typeKey: "BALIKA", label: "Balika" };
     }
 
-    // 3. Balak Check (Default fallback)
-    return {
-      typeKey: "BALAK",
-      label: "Balak",
-      style: { background: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd" }
-    };
+    return { typeKey: "BALAK", label: "Balak" };
   }, []);
 
   const fetchFeedback = useCallback(async () => {
     setLoading(true);
     try {
-      const [feedbackRes, membersRes] = await Promise.all([
+      const [feedbackRes, membersRes, attendeesRes] = await Promise.all([
         feedbackApi.list(),
-        karayakarsApi.list ? karayakarsApi.list() : Promise.resolve({ data: [] })
+        karayakarsApi.list ? karayakarsApi.list() : Promise.resolve({ data: [] }),
+        attendeesApi?.list ? attendeesApi.list() : Promise.resolve({ data: [] })
       ]);
 
       const rawFeedback = feedbackRes?.data || [];
       const members = membersRes?.data || [];
+      const attendees = attendeesRes?.data || [];
 
       const memberMap = new Map();
       members.forEach((m) => {
-        if (m.full_name) {
-          const cleanName = m.full_name.trim().toLowerCase().replace(/\s+/g, ' ');
+        if (m.full_name || m.name) {
+          const cleanName = (m.full_name || m.name).trim().toLowerCase().replace(/\s+/g, ' ');
           memberMap.set(cleanName, m);
+        }
+      });
+
+      const attendeeMap = new Map();
+      attendees.forEach((a) => {
+        const attendeeName = a.full_name || a.name;
+        if (attendeeName) {
+          const cleanName = attendeeName.trim().toLowerCase().replace(/\s+/g, ' ');
+          attendeeMap.set(cleanName, {
+            ...a,
+            gender: a.gender || "Balak"
+          });
         }
       });
 
       const formattedData = rawFeedback.map(item => {
         const itemCleanName = (item.full_name || "").trim().toLowerCase().replace(/\s+/g, ' ');
-        const matched = memberMap.get(itemCleanName) || {};
+        const matchedMember = memberMap.get(itemCleanName) || {};
+        const matchedAttendee = attendeeMap.get(itemCleanName) || {};
 
         const tempItem = {
           ...item,
-          gender: item.gender || matched.gender || matched.sex || "",
-          category: item.category || matched.category || matched.type || (matched.seva_designation ? "Karyakar" : ""),
-          seva_designation: item.seva_designation || matched.seva_designation || "",
-          normalizedRegion: cleanRegion(item.region || item.zone || item.area || matched.region || "")
+          gender: item.gender || matchedAttendee.gender || matchedMember.gender || matchedAttendee.sex || matchedMember.sex || "",
+          category: item.category || matchedMember.category || matchedAttendee.category || matchedMember.type || matchedAttendee.type || (matchedMember.seva_designation ? "Karyakar" : ""),
+          seva_designation: item.seva_designation || matchedMember.seva_designation || "",
+          normalizedRegion: cleanRegion(item.region || item.zone || item.area || matchedAttendee.region || matchedMember.region || "")
         };
 
         const badgeInfo = getCategoryBadgeDetails(tempItem);
@@ -195,7 +418,8 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
     fetchFeedback();
   }, [fetchFeedback]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, e) => {
+    if (e) e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this response?")) return;
 
     try {
@@ -244,7 +468,6 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
     return matchesRegion && matchesSearch && matchesCountry && matchesDivision;
   });
 
-  // Export Filtered Data to CSV format
   const handleExportCSV = () => {
     if (filteredData.length === 0) {
       alert("No data available to export.");
@@ -300,6 +523,13 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
 
   return (
     <div className={styles.wrapper}>
+      {/* POPUP MODAL WITH FULL DETAILS */}
+      <FeedbackModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        data={selectedItem} 
+      />
+
       <div className={styles.card}>
         <div className={styles.headerGroup} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div className={styles.logoAndTitleInline}>
@@ -334,7 +564,7 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
               }}
               title="Download current table list as CSV file"
             >
-              <FaFileCsv style={{ fontSize: "16px" }} /> Export to CSV
+              <FileCsvIcon /> Export to CSV
             </button>
 
             {!isRegionLocked ? (
@@ -461,7 +691,15 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                     const badge = getCategoryBadgeDetails(item);
                     const countryScheme = getCountryBadgeStyle(item.country);
                     return (
-                      <tr key={item.id}>
+                      <tr 
+                        key={item.id} 
+                        onClick={() => {
+                          setSelectedItem(item);
+                          setIsModalOpen(true);
+                        }}
+                        style={{ cursor: "pointer" }}
+                        title="Click to view full submission details"
+                      >
                         <td>
                           {new Date(item.created_at).toLocaleDateString("en-US", {
                             month: "short",
@@ -492,13 +730,34 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                         </td>
                         <td>
                           <span 
+                            className={styles.badge}
                             style={{
                               display: "inline-block",
-                              padding: "4px 10px",
-                              borderRadius: "6px",
-                              fontSize: "0.78rem",
+                              padding: "4px 12px",
+                              borderRadius: "20px",
+                              fontSize: "12px",
                               fontWeight: "700",
-                              ...badge.style
+                              letterSpacing: "0.03em",
+                              ...(badge.typeKey === "BALIKA" && {
+                                backgroundColor: "#fae8ff",
+                                color: "#a855f7",
+                                border: "1px solid #f5d0fe"
+                              }),
+                              ...(badge.typeKey === "BALAK" && {
+                                backgroundColor: "#e0f2fe",
+                                color: "#0369a1",
+                                border: "1px solid #bae6fd"
+                              }),
+                              ...(badge.typeKey === "KARYAKAR_MALE" && {
+                                backgroundColor: "#dbeafe",
+                                color: "#1d4ed8",
+                                border: "1px solid #bfdbfe"
+                              }),
+                              ...(badge.typeKey === "KARYAKAR_FEMALE" && {
+                                backgroundColor: "#fce7f3",
+                                color: "#db2777",
+                                border: "1px solid #fbcfe8"
+                              })
                             }}
                           >
                             {badge.label}
@@ -506,7 +765,11 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                         </td>
                         <td style={{ textAlign: "center", verticalAlign: "middle" }}>
                           <button
-                            onClick={() => navigate(`/dashboard/feedback/${item.id}`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedItem(item);
+                              setIsModalOpen(true);
+                            }}
                             style={{
                               display: "inline-flex",
                               alignItems: "center",
@@ -521,7 +784,7 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                               cursor: "pointer",
                               transition: "background 0.2s"
                             }}
-                            title="View full submission details"
+                            title="View full submission details in a popup"
                           >
                             <FaEye /> View More
                           </button>
@@ -530,7 +793,7 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
                           <td style={{ textAlign: "center", verticalAlign: "middle" }}>
                             <button
                               className={styles.deleteBtn}
-                              onClick={() => handleDelete(item.id)}
+                              onClick={(e) => handleDelete(item.id, e)}
                               title="Delete entry"
                             >
                               <FaTrash />
@@ -548,4 +811,8 @@ export default function ShibirFeedbackDisplay({ regionScope = "all" }) {
       </div>
     </div>
   );
+}
+
+function FileCsvIcon() {
+  return <FaFileCsv style={{ fontSize: "16px" }} />;
 }

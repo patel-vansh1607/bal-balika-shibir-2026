@@ -224,15 +224,16 @@
     font-size: 13.5px;
   }
 }
-/* Grid Matrix Centered Table Layout */
+
 .tableContainer {
   width: 100%;
-  /* CRITICAL: Remove 'overflow: hidden' or 'auto' if possible, 
-     or ensure dropdowns have a higher z-index than the table */
-  overflow-x: visible; 
+  overflow-x: auto;
   overflow-y: visible;
   position: relative;
+  /* Ensures padding at the bottom so the last row's dropdown has room to open */
+  padding-bottom: 120px; 
 }
+
 
 .dataTable {
   width: 100%;
