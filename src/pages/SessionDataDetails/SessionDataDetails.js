@@ -8,6 +8,7 @@ import { sessions as sessionsApi, sessionLogs, attendees as attendeesApi } from 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import styles from "./SessionDataDetails.module.css";
+import { useAuth } from "../../context/AuthContext";
 
 const REGION_PREFIXES = {
   Kenya: "MTRC-KE-", Uganda: "MTRC-UG-",
@@ -50,9 +51,11 @@ export default function SessionDataDetails() {
   const navigate      = useNavigate();
   const location      = useLocation();
   const activeRegion  = location.state?.activeRegion || "All";
-
-  const userRole  = localStorage.getItem("user_role");
-  const canDelete = ["master_admin", "super_admin"].includes(userRole);
+  
+  // Restricted exclusively to master_admin
+  const { user, role, userRole } = useAuth();
+  const activeRole = userRole || role || user?.role || user?.userRole;
+  const canDelete = activeRole === "master_admin";
 
   const [logs, setLogs]               = useState([]);
   const [fullRoster, setFullRoster]   = useState([]);
@@ -132,7 +135,7 @@ export default function SessionDataDetails() {
       const doc       = new jsPDF();
       const timestamp = new Date().toLocaleDateString("en-KE", { timeZone: "Africa/Nairobi" });
 
-      doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(231, 133, 36);;
+      doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(231, 133, 36);
       doc.text("Attendance Report", 14, 22);
       doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(100, 100, 100);
       doc.text(`Region: ${isGlobal ? "Global African Network" : activeRegion}`, 14, 30);
@@ -200,7 +203,7 @@ export default function SessionDataDetails() {
         <div className={styles.headerRight}>
           <button onClick={exportToPDF} disabled={isExporting || fullRoster.length === 0} className={styles.pdfExportButton} style={{ backgroundColor: fullRoster.length === 0 ? "#cccccc" : "#e78524", cursor: fullRoster.length === 0 ? "not-allowed" : "pointer" }}>
             {isExporting ? <FaSpinner className={styles.spin} /> : <FaFileDownload />}
-            {isGlobal ? "Export Attendance Report" : "Export Attendance Report"}
+            Export Attendance Report
           </button>
         </div>
       </div>
@@ -215,7 +218,16 @@ export default function SessionDataDetails() {
         <h3 className={styles.sectionTitle} style={{ marginBottom:"20px",display:"flex",alignItems:"center",gap:"10px",color:"#137333" }}><FaHistory /> Present</h3>
         <div className={styles.tableResponsiveWrapper}>
           <table className={styles.matrixTable}>
-            <thead><tr><th>ID No</th><th>Full Name</th><th>Region</th><th>Center</th><th>Check-In</th>{canDelete && <th>Actions</th>}</tr></thead>
+            <thead>
+              <tr>
+                <th>ID No</th>
+                <th>Full Name</th>
+                <th>Region</th>
+                <th>Center</th>
+                <th>Check-In</th>
+                {canDelete && <th>Actions</th>}
+              </tr>
+            </thead>
             <tbody>
               {logs.length === 0 ? (
                 <tr><td colSpan={canDelete ? 6 : 5} className={styles.tableEmptyMessage}>No entry verification actions recorded yet.</td></tr>
