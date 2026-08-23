@@ -189,7 +189,86 @@ export default function SessionDataDetails() {
       setIsExporting(false);
     }
   };
+const exportToCSV = () => {
+  try {
+    setIsExporting(true);
+    const timestamp = new Date().toLocaleDateString("en-KE", { timeZone: "Africa/Nairobi" });
 
+    // 1. Build CSV Rows Arrays
+    let csvRows = [];
+
+    // Header metadata
+    csvRows.push(`"Attendance Report"`);
+    csvRows.push(`"Region:","${isGlobal ? "Global African Network" : activeRegion}"`);
+    csvRows.push(`"Session Title:","${sessionMeta?.title || "Session Activity Hub"}"`);
+    csvRows.push(`"Date Exported:","${timestamp}"`);
+    csvRows.push(`"Total Expected:",${expectedCount}`);
+    csvRows.push(`"Present:",${logs.length}`);
+    csvRows.push(`"Absent:",${absentList.length}`);
+    csvRows.push(""); // Empty row spacing
+
+    // 2. Present Attendance Section
+    csvRows.push(`"--- PRESENT ATTENDEES ---"`);
+    const presentHeaders = isGlobal 
+      ? ["ID No", "Full Name", "Region", "Center", "Check-In Time"] 
+      : ["ID No", "Full Name", "Center", "Check-In Time"];
+    csvRows.push(presentHeaders.map(h => `"${h}"`).join(","));
+
+    const sortedLogs = [...logs].sort((a, b) => 
+      isGlobal ? a.region.localeCompare(b.region) : a.center.localeCompare(b.center)
+    );
+
+    sortedLogs.forEach((log) => {
+      const row = isGlobal
+        ? [log.memberId, log.fullName, log.region, log.center, formatCheckInTime(log.created_at)]
+        : [log.memberId, log.fullName, log.center, formatCheckInTime(log.created_at)];
+      csvRows.push(row.map(val => `"${val || ""}"`).join(","));
+    });
+
+    csvRows.push(""); // Empty row spacing
+
+    // 3. Absent Attendance Section
+    csvRows.push(`"--- ABSENT ATTENDEES ---"`);
+    const absentHeaders = isGlobal 
+      ? ["ID No", "Full Name", "Region", "Center", "Status"] 
+      : ["ID No", "Full Name", "Center", "Status"];
+    csvRows.push(absentHeaders.map(h => `"${h}"`).join(","));
+
+    if (absentList.length === 0) {
+      csvRows.push(`"","All expected records successfully checked in.","",""`);
+    } else {
+      const sortedAbsent = [...absentList].sort((a, b) => 
+        isGlobal ? (a.region || "").localeCompare(b.region || "") : (a.center || "").localeCompare(b.center || "")
+      );
+
+      sortedAbsent.forEach((m) => {
+        const row = isGlobal
+          ? [m.member_id || "N/A", m.name || "Unknown", m.region || "N/A", m.center || "N/A", "ABSENT"]
+          : [m.member_id || "N/A", m.name || "Unknown", m.center || "N/A", "ABSENT"];
+        csvRows.push(row.map(val => `"${val || ""}"`).join(","));
+      });
+    }
+
+    // 4. Trigger CSV File Download
+    const csvString = csvRows.join("\n");
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    
+    const fileName = `${sessionMeta?.title || "Session"}_Attendance_${activeRegion.replace(/\s+/g, "_")}.csv`;
+    link.setAttribute("href", url);
+    link.setAttribute("download", fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+  } catch (err) {
+    console.error("CSV export error:", err);
+  } finally {
+    setIsExporting(false);
+  }
+};
   if (loading) return <div className={styles.loader}><FaSpinner className={styles.spin} /> Loading...</div>;
 
   return (
@@ -200,12 +279,27 @@ export default function SessionDataDetails() {
           <h1 className={styles.detailMainTitle}>{sessionMeta?.title || "Session Activity Hub"}</h1>
           <p className={styles.detailSubtitle}>Region: <strong>{isGlobal ? "Global African Network" : activeRegion}</strong></p>
         </div>
-        <div className={styles.headerRight}>
-          <button onClick={exportToPDF} disabled={isExporting || fullRoster.length === 0} className={styles.pdfExportButton} style={{ backgroundColor: fullRoster.length === 0 ? "#cccccc" : "#e78524", cursor: fullRoster.length === 0 ? "not-allowed" : "pointer" }}>
-            {isExporting ? <FaSpinner className={styles.spin} /> : <FaFileDownload />}
-            Export Attendance Report
-          </button>
-        </div>
+      <div className={styles.exportButtonsGroup} style={{ display: "flex", gap: "10px" }}>
+  <button 
+    onClick={exportToPDF} 
+    disabled={isExporting || fullRoster.length === 0} 
+    className={styles.pdfExportButton} 
+    style={{ backgroundColor: fullRoster.length === 0 ? "#cccccc" : "#e78524", cursor: fullRoster.length === 0 ? "not-allowed" : "pointer" }}
+  >
+    {isExporting ? <FaSpinner className={styles.spin} /> : <FaFileDownload />}
+    Export PDF Report
+  </button>
+
+  <button 
+    onClick={exportToCSV} 
+    disabled={isExporting || fullRoster.length === 0} 
+    className={styles.csvExportButton} 
+    style={{ backgroundColor: fullRoster.length === 0 ? "#cccccc" : "#197333", cursor: fullRoster.length === 0 ? "not-allowed" : "pointer", color: "#fff", border: "none", padding: "10px 16px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "8px", fontWeight: "600" }}
+  >
+    {isExporting ? <FaSpinner className={styles.spin} /> : <FaFileDownload />}
+    Export CSV Report
+  </button>
+</div>
       </div>
 
       <div className={styles.statsHorizontalGrid}>

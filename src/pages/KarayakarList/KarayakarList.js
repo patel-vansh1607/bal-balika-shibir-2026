@@ -772,7 +772,7 @@ const getIsFemale = (karyakar) => {
     }
   };
 
-  const handleExportCSV = () => {
+const handleExportCSV = () => {
     if (filteredList.length === 0) return;
 
     const headers = [
@@ -785,10 +785,13 @@ const getIsFemale = (karyakar) => {
       "Seva Designations",
       "T-Shirt Size",
       "Payment Status",
+      "Attendance", // Added Attendance Header
       ...(region.toLowerCase() === "kenya" ? ["Accommodation"] : []),
     ];
 
     const rows = filteredList.map((k, idx) => {
+      const isPresent = Number(k.is_present) === 1;
+      
       const rowData = [
         idx + 1,
         `"${k.member_id || ""}"`,
@@ -799,7 +802,9 @@ const getIsFemale = (karyakar) => {
         `"${k.seva_designation || "None"}"`,
         `"${k.tshirt_size || "N/A"}"`,
         Number(k.is_paid) === 1 ? "Paid" : "Unpaid",
+        `"${isPresent ? "Present" : "Absent"}"`, // Added Attendance Value
       ];
+      
       if (region.toLowerCase() === "kenya") {
         rowData.push(
           `"${k.accomodation || k.accommodation || "Not Assigned"}"`,
@@ -812,12 +817,14 @@ const getIsFemale = (karyakar) => {
       headers.join(","),
       ...rows.map((r) => r.join(",")),
     ].join("\n");
+    
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = `Karyakar_Report.csv`;
     link.click();
+    URL.revokeObjectURL(url);
   };
 
   const selectedSevaCount = editForm.sevaDesignation.length;
