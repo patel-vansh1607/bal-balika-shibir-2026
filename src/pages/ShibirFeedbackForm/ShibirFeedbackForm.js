@@ -39,11 +39,11 @@ const regionDataset = {
   //   "Luanshya", "Kasama", "Chipata", "Chinsali", "Mansa", "Solwezi", "Mongu",
   //   "Mazabuka", "Monze", "Choma", "Kapiri Mposhi"
   // ],
-  // Malawi: [
-  //   "Lilongwe", "Blantyre", "Mzuzu", "Zomba", "Kasungu", "Mangochi", "Karonga",
-  //   "Salima", "Nkhotakota", "Liwonde", "Balaka", "Luchenza", "Dedza", "Mchinji",
-  //   "Chikwawa", "Nsanje", "Rumphi"
-  // ],
+  Malawi: [
+    "Lilongwe", "Blantyre", "Mzuzu", "Zomba", "Kasungu", "Mangochi", "Karonga",
+    "Salima", "Nkhotakota", "Liwonde", "Balaka", "Luchenza", "Dedza", "Mchinji",
+    "Chikwawa", "Nsanje", "Rumphi"
+  ],
   // Botswana: [
   //   "Gaborone", "Francistown", "Molepolole", "Maun", "Mogoditshane", "Serowe",
   //   "Selebi-Phikwe", "Kanye", "Lobatse", "Palapye", "Mahalapye", "Mochudi",
