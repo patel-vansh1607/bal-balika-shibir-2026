@@ -93,7 +93,7 @@ export default function App() {
         <Route path="/register" element={<PublicRegister />} />
         <Route path="/feedback" element={<ShibirFeedbackForm />} />        
         <Route path="/feedback1" element={<UnsubmittedAttendees />} />
-        <Route path="/systemfeedback" element={<SystemFeedback />} />
+        <Route path="/system/feedback" element={<SystemFeedback />} />
         <Route path="/select-region" element={<SelectRegion />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
