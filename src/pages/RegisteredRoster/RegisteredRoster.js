@@ -773,6 +773,7 @@ const executeExport = (includeContact) => {
         "Age",
         "Country",
         "Center",
+        "Payment Status", // Added Payment Status header
       ];
       
       if (isKenya) {
@@ -797,6 +798,17 @@ const executeExport = (includeContact) => {
             row.region ||
             (regionScope !== "All" ? regionScope : "");
 
+          // Evaluate payment status dynamically from various potential row properties
+          let paymentLabel = "Unpaid";
+          const rawPaid = row.is_paid ?? row.paid ?? row.payment_status;
+          if (rawPaid === true || rawPaid === 1 || String(rawPaid).toLowerCase() === "true" || String(rawPaid).toLowerCase() === "paid") {
+            paymentLabel = "Paid";
+          } else if (rawPaid === 0 || String(rawPaid).toLowerCase() === "false" || String(rawPaid).toLowerCase() === "pending") {
+            paymentLabel = "Pending";
+          } else if (typeof rawPaid === "string" && rawPaid.trim() !== "") {
+            paymentLabel = rawPaid; // Fallback to raw string if it has text like "Completed"
+          }
+
           const baseFields = [
             `"${index + 1}"`,
             `"${finalId}"`,
@@ -805,6 +817,7 @@ const executeExport = (includeContact) => {
             `"${row.age || ""}"`,
             `"${attendeeCountry}"`,
             `"${row.center || ""}"`,
+            `"${paymentLabel}"`, // Added Payment Status value mapping
           ];
 
           // Conditionally add Room Allocation value ONLY if the report is for Kenya
@@ -862,7 +875,7 @@ const executeExport = (includeContact) => {
     } finally {
       setIsExporting(false);
     }
-  };  const downloadQRImg = async (memberId, userName, storedQrUrl) => {
+  }; const downloadQRImg = async (memberId, userName, storedQrUrl) => {
     // Set the specific member ID as the active loader
     setDownloadingId(memberId);
     try {
