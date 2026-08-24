@@ -25,7 +25,7 @@ function DocumentTitleManager() {
       '/feedback': 'Feedback Form | Portal',
       '/select-region': 'Select Region | Portal',
       '/_v1_node_106_health_10548': 'Redirecting...',
-      '/systemfeedback': 'System Feedback | Portal',
+      '/system/feedback': 'System Feedback | Portal',
     };
 
     let currentTitle = 'Portal';
