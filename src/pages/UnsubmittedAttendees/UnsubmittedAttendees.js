@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { FaMagnifyingGlass, FaEnvelope, FaDownload, FaUserXmark } from "react-icons/fa6";
+import { FaMagnifyingGlass, FaEnvelope, FaDownload, FaUserXmark, FaCheck } from "react-icons/fa6";
 import { feedback as feedbackApi } from "../../apiClient";
+import { supabase } from "../../supabaseClient"; // Make sure your supabase client is imported here
 import styles from "./UnsubmittedAttendees.module.css";
 
 const regionDataset = {
@@ -15,6 +16,11 @@ const regionDataset = {
     "Dodoma", "Moshi", "Tanga", "Morogoro", "Mbeya", "Iringa", "Kigoma",
     "Songea", "Tabora", "Musoma", "Shinyanga", "Sumbawanga", "Lindi", "Singida", "Bukoba"
   ],
+  Malawi: [
+    "Lilongwe", "Blantyre", "Mzuzu", "Zomba", "Kasungu", "Mangochi", "Karonga",
+    "Salima", "Nkhotakota", "Liwonde", "Balaka", "Luchenza", "Dedza", "Mchinji",
+    "Chikwawa", "Nsanje", "Rumphi"
+  ]
 };
 
 const COUNTRIES = Object.keys(regionDataset);
@@ -27,10 +33,16 @@ export default function UnsubmittedAttendees() {
   const [searchTerm, setSearchTerm] = useState("");
   const [copied, setCopied] = useState(false);
 
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [sentSet, setSentSet] = useState(new Set());
+  const [sending, setSending] = useState(false);
+
   useEffect(() => {
     async function fetchUnsubmitted() {
       if (!selectedCountry || !selectedCenter) {
         setUnsubmittedList([]);
+        setSelectedIds(new Set());
+        setSentSet(new Set());
         return;
       }
 
@@ -43,7 +55,6 @@ export default function UnsubmittedAttendees() {
 
         const allAttendees = attendeesRes.data || [];
 
-        // Build set of names that already submitted for this country+center
         const submitted = new Set(
           (feedbackRes.data || [])
             .filter(f => f.country === selectedCountry && f.center === selectedCenter)
@@ -55,6 +66,8 @@ export default function UnsubmittedAttendees() {
         );
 
         setUnsubmittedList(pending);
+        setSelectedIds(new Set());
+        setSentSet(new Set());
       } catch (err) {
         console.error("Error fetching unsubmitted attendees:", err);
         setUnsubmittedList([]);
@@ -73,8 +86,62 @@ export default function UnsubmittedAttendees() {
     item.parent_email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      const allUnsentIds = filteredList
+        .filter((item, idx) => !sentSet.has(item.id || idx) && item.parent_email)
+        .map((item, idx) => item.id || idx);
+      setSelectedIds(new Set(allUnsentIds));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleToggleSelect = (id) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setSelectedIds(next);
+  };
+const handleSendReminders = async () => {
+    if (selectedIds.size === 0) return alert("Please select at least one recipient with an email.");
+
+    setSending(true);
+    try {
+      const targets = filteredList.filter((item, idx) => selectedIds.has(item.id || idx));
+      
+      // Using Supabase client's built-in function invoker handles tokens automatically
+      const { data, error } = await supabase.functions.invoke("send-feedback-email", {
+        body: {
+          recipients: targets.map(t => ({
+            name: t.full_name,
+            email: t.parent_email,
+            center: t.center
+          }))
+        }
+      });
+
+      if (error) throw new Error(error.message || "Failed to send");
+
+      const newSent = new Set(sentSet);
+      selectedIds.forEach(id => newSent.add(id));
+      setSentSet(newSent);
+      setSelectedIds(new Set());
+      alert(`Successfully sent reminders to ${targets.length} parent(s)!`);
+    } catch (err) {
+      console.error("Error dispatching reminders:", err);
+      alert("Failed to send reminders: " + err.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
   const handleCopyEmails = () => {
     const emails = filteredList
+      .filter((item, idx) => !sentSet.has(item.id || idx))
       .map((item) => item.parent_email)
       .filter(Boolean)
       .join(", ");
@@ -92,13 +159,14 @@ export default function UnsubmittedAttendees() {
   const handleExportCSV = () => {
     if (filteredList.length === 0) return alert("No data to export.");
 
-    const headers = ["Full Name", "Category", "Country", "Center", "Parent Email"];
-    const rows = filteredList.map((i) => [
+    const headers = ["Full Name", "Category", "Country", "Center", "Parent Email", "Status"];
+    const rows = filteredList.map((i, idx) => [
       `"${i.full_name || ""}"`,
       `"${i.category || ""}"`,
       `"${i.country || selectedCountry}"`,
       `"${i.center || selectedCenter}"`,
       `"${i.parent_email || ""}"`,
+      `"${sentSet.has(i.id || idx) ? "Sent" : "Pending"}"`,
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
@@ -116,7 +184,7 @@ export default function UnsubmittedAttendees() {
       <div className={styles.card}>
         <div className={styles.header}>
           <h2>Pending Feedback Tracker</h2>
-          <p>View and manage attendees who haven't submitted their Shibir feedback yet.</p>
+          <p>View attendees who haven't submitted feedback and dispatch batch reminders via Resend.</p>
         </div>
 
         <div className={styles.filterRow}>
@@ -167,10 +235,17 @@ export default function UnsubmittedAttendees() {
             </div>
 
             <div className={styles.actionButtons}>
-              <button className={styles.secondaryBtn} onClick={handleCopyEmails}>
-                <FaEnvelope /> {copied ? "Emails Copied!" : "Copy Parent Emails"}
+              <button 
+                className={styles.primaryBtn} 
+                onClick={handleSendReminders}
+                disabled={selectedIds.size === 0 || sending}
+              >
+                <FaEnvelope /> {sending ? "Sending..." : `Send Reminders (${selectedIds.size})`}
               </button>
-              <button className={styles.primaryBtn} onClick={handleExportCSV}>
+              <button className={styles.secondaryBtn} onClick={handleCopyEmails}>
+                <FaEnvelope /> {copied ? "Emails Copied!" : "Copy Active Emails"}
+              </button>
+              <button className={styles.secondaryBtn} onClick={handleExportCSV}>
                 <FaDownload /> Export CSV
               </button>
             </div>
@@ -195,23 +270,61 @@ export default function UnsubmittedAttendees() {
             <table className={styles.table}>
               <thead>
                 <tr>
+                  <th style={{ width: "40px" }}>
+                    <input
+                      type="checkbox"
+                      onChange={handleSelectAll}
+                      checked={
+                        filteredList.length > 0 &&
+                        filteredList.every((item, idx) => sentSet.has(item.id || idx) || selectedIds.has(item.id || idx))
+                      }
+                    />
+                  </th>
                   <th>Full Name</th>
                   <th>Category</th>
                   <th>Center</th>
                   <th>Parent Email Address</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredList.map((item, idx) => (
-                  <tr key={idx}>
-                    <td className={styles.boldText}>{item.full_name}</td>
-                    <td>
-                      <span className={styles.badge}>{item.category || "Balak/Balika"}</span>
-                    </td>
-                    <td>{item.center}</td>
-                    <td className={styles.emailText}>{item.parent_email || "No parent email provided"}</td>
-                  </tr>
-                ))}
+                {filteredList.map((item, idx) => {
+                  const uniqueId = item.id || idx;
+                  const isSent = sentSet.has(uniqueId);
+                  const isSelected = selectedIds.has(uniqueId);
+
+                  return (
+                    <tr 
+                      key={uniqueId} 
+                      className={isSent ? styles.fadedRow : ""}
+                    >
+                      <td>
+                        {!isSent && item.parent_email && (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleSelect(uniqueId)}
+                          />
+                        )}
+                      </td>
+                      <td className={styles.boldText}>{item.full_name}</td>
+                      <td>
+                        <span className={styles.badge}>{item.category || "Balak/Balika"}</span>
+                      </td>
+                      <td>{item.center}</td>
+                      <td className={styles.emailText}>{item.parent_email || "No parent email provided"}</td>
+                      <td>
+                        {isSent ? (
+                          <span className={styles.sentBadge}>
+                            <FaCheck size={10} /> Sent
+                          </span>
+                        ) : (
+                          <span className={styles.pendingBadge}>Pending</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
