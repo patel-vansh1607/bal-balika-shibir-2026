@@ -114,16 +114,29 @@ const filteredAttendees = useMemo(() => {
 
       if (!matchesBaseFilters) return false;
 
-      // Payment status filter (Kenya & South Africa)
+      // Payment status filter (Kenya, South Africa & Botswana)
       if ((regionScope === "Kenya" || regionScope === "South Africa" || regionScope === "Botswana") && paymentFilter !== "All") {
-        const currentPaymentStatus = attendee.is_paid === 1 ? 1 : 0;
-        if (String(currentPaymentStatus) !== paymentFilter) {
+        const rawPaid = attendee.is_paid ?? attendee.paid ?? attendee.payment_status;
+        
+        // Normalize various data types (booleans, numbers, strings) to "1" or "0"
+        let currentPaymentStatus = "0";
+        if (
+          rawPaid === true || 
+          rawPaid === 1 || 
+          String(rawPaid).toLowerCase() === "true" || 
+          String(rawPaid) === "1" || 
+          String(rawPaid).toLowerCase() === "paid"
+        ) {
+          currentPaymentStatus = "1";
+        }
+
+        if (currentPaymentStatus !== paymentFilter) {
           return false;
         }
       }
 
-      // Indemnity form status filter (South Africa only)
-      if ((regionScope === "South Africa" || regionScope === "Botswana" ) && indemnityFilter !== "All") {
+      // Indemnity form status filter (South Africa & Botswana)
+      if ((regionScope === "South Africa" || regionScope === "Botswana") && indemnityFilter !== "All") {
         const currentIndemnityStatus = Number(attendee.indemnity_form ?? 0);
         if (String(currentIndemnityStatus) !== indemnityFilter) {
           return false;
