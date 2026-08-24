@@ -12,6 +12,7 @@ import NotFound from './pages/NotFound/NotFound';
 import HomeRoute from './pages/HomeRoute/HomeRoute';
 import ShibirFeedbackForm from './pages/ShibirFeedbackForm/ShibirFeedbackForm';
 import UnsubmittedAttendees from './pages/UnsubmittedAttendees/UnsubmittedAttendees';
+import SystemFeedback from './pages/SystemFeedback/SystemFeedback';
 // Helper component placed directly inside App.js to handle browser tab titles
 function DocumentTitleManager() {
   const location = useLocation();
@@ -25,6 +26,7 @@ function DocumentTitleManager() {
       '/feedback': 'Feedback Form | Portal',
       '/select-region': 'Select Region | Portal',
       '/_v1_node_106_health_10548': 'Redirecting...',
+      '/systemfeedback': 'System Feedback | Portal',
     };
 
     let currentTitle = 'Portal';
@@ -91,7 +93,7 @@ export default function App() {
         <Route path="/register" element={<PublicRegister />} />
         <Route path="/feedback" element={<ShibirFeedbackForm />} />        
         <Route path="/feedback1" element={<UnsubmittedAttendees />} />
-
+        <Route path="/systemfeedback" element={<SystemFeedback />} />
         <Route path="/select-region" element={<SelectRegion />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
