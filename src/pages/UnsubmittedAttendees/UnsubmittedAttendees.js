@@ -36,10 +36,24 @@ export default function UnsubmittedAttendees() {
 
       setLoading(true);
       try {
-        const { data } = await feedbackApi.attendees(selectedCountry, selectedCenter);
-        const pending = (data || []).filter(
-          (item) => !item.is_submitted && !item.has_voted
+        const [attendeesRes, feedbackRes] = await Promise.all([
+          feedbackApi.attendees(selectedCountry, selectedCenter),
+          feedbackApi.list(),
+        ]);
+
+        const allAttendees = attendeesRes.data || [];
+
+        // Build set of names that already submitted for this country+center
+        const submitted = new Set(
+          (feedbackRes.data || [])
+            .filter(f => f.country === selectedCountry && f.center === selectedCenter)
+            .map(f => (f.full_name || "").toLowerCase())
         );
+
+        const pending = allAttendees.filter(
+          item => !submitted.has((item.full_name || "").toLowerCase())
+        );
+
         setUnsubmittedList(pending);
       } catch (err) {
         console.error("Error fetching unsubmitted attendees:", err);
