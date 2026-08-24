@@ -54,7 +54,7 @@ import AccommodationMetrics from "../AccomodationMetrics/AccomodationMetrics";
 import GateLogsPage from "../GateLogsPage/GateLogsPage";
 import ShibirFeedbackDisplay from "../ShibirFeedbackDisplay/ShibirFeedbackDisplay";
 import ShibirFeedbackDetail from "../ShibirFeedbackDetail/ShibirFeedbackDetail";
-
+import UnsubmittedAttendees from "../UnsubmittedAttendees/UnsubmittedAttendees";
 // ---------------------------------------------------------------------------
 // PRODUCTION TIMERS
 // ---------------------------------------------------------------------------
@@ -649,6 +649,14 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
                     <FaBook className={styles.iconMargin} /> Gate Logs
                   </button>
                 )}
+                {(userRole === "master_admin") && (
+                  <button
+                    onClick={() => handleNavigation("/dashboard/nofeedback")}
+                    className={`${styles.navLink} ${location.pathname === "/dashboard/nofeedback" ? styles.navLinkActive : ""}`}
+                  >
+                    <FaBook className={styles.iconMargin} /> No Feedback
+                  </button>
+                )}
           </nav>
         </div>
 
@@ -775,6 +783,16 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
   element={
     (userRole === "master_admin" || userRole === "super_admin") ? (
       <ShibirFeedbackDetail regionScope={regionScope} />
+    ) : (
+      <NotFound />
+    )
+  }
+/>
+<Route
+  path="nofeedback"
+  element={
+    (userRole === "master_admin") ? (
+      <UnsubmittedAttendees regionScope={regionScope} />
     ) : (
       <NotFound />
     )

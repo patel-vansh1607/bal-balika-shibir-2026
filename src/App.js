@@ -11,7 +11,6 @@ import SelectRegion from './pages/SelectRegion/SelectRegion';
 import NotFound from './pages/NotFound/NotFound';
 import HomeRoute from './pages/HomeRoute/HomeRoute';
 import ShibirFeedbackForm from './pages/ShibirFeedbackForm/ShibirFeedbackForm';
-import UnsubmittedAttendees from './pages/UnsubmittedAttendees/UnsubmittedAttendees';
 import SystemFeedback from './pages/SystemFeedback/SystemFeedback';
 // Helper component placed directly inside App.js to handle browser tab titles
 function DocumentTitleManager() {
@@ -92,7 +91,6 @@ export default function App() {
         />
         <Route path="/register" element={<PublicRegister />} />
         <Route path="/feedback" element={<ShibirFeedbackForm />} />        
-        <Route path="/feedback1" element={<UnsubmittedAttendees />} />
         <Route path="/system/feedback" element={<SystemFeedback />} />
         <Route path="/select-region" element={<SelectRegion />} />
         <Route path="*" element={<NotFound />} />
