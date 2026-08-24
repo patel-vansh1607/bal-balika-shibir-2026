@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { FaMagnifyingGlass, FaEnvelope, FaDownload, FaUserXmark, FaCheck } from "react-icons/fa6";
+import { FaMagnifyingGlass, FaEnvelope, FaDownload, FaUserXmark, FaCheck, FaRotateLeft, FaCircleCheck, FaTriangleExclamation } from "react-icons/fa6";
 import { feedback as feedbackApi } from "../../apiClient";
-import { supabase } from "../../supabaseClient"; // Make sure your supabase client is imported here
+import { supabase } from "../../supabaseClient";
 import styles from "./UnsubmittedAttendees.module.css";
 
 const regionDataset = {
@@ -37,20 +37,35 @@ export default function UnsubmittedAttendees() {
   const [sentSet, setSentSet] = useState(new Set());
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    async function fetchUnsubmitted() {
-      if (!selectedCountry || !selectedCenter) {
-        setUnsubmittedList([]);
-        setSelectedIds(new Set());
-        setSentSet(new Set());
-        return;
-      }
+  // Nice notification banner state: { type: 'success' | 'error', message: '' } | null
+  const [notification, setNotification] = useState(null);
 
+  const showNotification = (message, type = "success") => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, 4000);
+  };
+
+  useEffect(() => {
+    if (!selectedCountry || !selectedCenter) {
+      setUnsubmittedList([]);
+      setSelectedIds(new Set());
+      setSentSet(new Set());
+      return;
+    }
+
+    async function fetchData() {
       setLoading(true);
       try {
-        const [attendeesRes, feedbackRes] = await Promise.all([
+        const [attendeesRes, feedbackRes, remindersRes] = await Promise.all([
           feedbackApi.attendees(selectedCountry, selectedCenter),
           feedbackApi.list(),
+          supabase
+            .from("feedback_reminders")
+            .select("attendee_name, parent_email")
+            .eq("center", selectedCenter)
+            .eq("country", selectedCountry)
         ]);
 
         const allAttendees = attendeesRes.data || [];
@@ -65,18 +80,26 @@ export default function UnsubmittedAttendees() {
           item => !submitted.has((item.full_name || "").toLowerCase())
         );
 
+        const alreadySent = new Set();
+        if (remindersRes.data) {
+          remindersRes.data.forEach(r => {
+            const key = `${(r.attendee_name || "").toLowerCase()}|${(r.parent_email || "").toLowerCase()}`;
+            alreadySent.add(key);
+          });
+        }
+
         setUnsubmittedList(pending);
+        setSentSet(alreadySent);
         setSelectedIds(new Set());
-        setSentSet(new Set());
       } catch (err) {
-        console.error("Error fetching unsubmitted attendees:", err);
+        console.error("Error fetching data:", err);
         setUnsubmittedList([]);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchUnsubmitted();
+    fetchData();
   }, [selectedCountry, selectedCenter]);
 
   const availableCenters = selectedCountry ? regionDataset[selectedCountry] || [] : [];
@@ -89,7 +112,10 @@ export default function UnsubmittedAttendees() {
   const handleSelectAll = (e) => {
     if (e.target.checked) {
       const allUnsentIds = filteredList
-        .filter((item, idx) => !sentSet.has(item.id || idx) && item.parent_email)
+        .filter((item) => {
+          const key = `${(item.full_name || "").toLowerCase()}|${(item.parent_email || "").toLowerCase()}`;
+          return !sentSet.has(key) && item.parent_email;
+        })
         .map((item, idx) => item.id || idx);
       setSelectedIds(new Set(allUnsentIds));
     } else {
@@ -106,20 +132,25 @@ export default function UnsubmittedAttendees() {
     }
     setSelectedIds(next);
   };
-const handleSendReminders = async () => {
-    if (selectedIds.size === 0) return alert("Please select at least one recipient with an email.");
+
+  const handleSendReminders = async () => {
+    if (selectedIds.size === 0) {
+      showNotification("Please select at least one recipient with an email.", "error");
+      return;
+    }
 
     setSending(true);
     try {
       const targets = filteredList.filter((item, idx) => selectedIds.has(item.id || idx));
       
-      // Using Supabase client's built-in function invoker handles tokens automatically
-      const { data, error } = await supabase.functions.invoke("send-feedback-email", {
+      const { error } = await supabase.functions.invoke("send-feedback-email", {
         body: {
+          country: selectedCountry,
+          center: selectedCenter,
           recipients: targets.map(t => ({
             name: t.full_name,
             email: t.parent_email,
-            center: t.center
+            center: t.center || selectedCenter
           }))
         }
       });
@@ -127,47 +158,83 @@ const handleSendReminders = async () => {
       if (error) throw new Error(error.message || "Failed to send");
 
       const newSent = new Set(sentSet);
-      selectedIds.forEach(id => newSent.add(id));
+      targets.forEach(t => {
+        const key = `${(t.full_name || "").toLowerCase()}|${(t.parent_email || "").toLowerCase()}`;
+        newSent.add(key);
+      });
       setSentSet(newSent);
       setSelectedIds(new Set());
-      alert(`Successfully sent reminders to ${targets.length} parent(s)!`);
+
+      showNotification(`Successfully sent reminder emails to ${targets.length} parent(s)! 🚀`);
     } catch (err) {
       console.error("Error dispatching reminders:", err);
-      alert("Failed to send reminders: " + err.message);
+      showNotification("Failed to send reminders: " + err.message, "error");
     } finally {
       setSending(false);
     }
   };
 
+  const handleResetSent = async () => {
+    if (!window.confirm("Are you sure you want to clear the database sent history for this center?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from("feedback_reminders")
+        .delete()
+        .eq("center", selectedCenter)
+        .eq("country", selectedCountry);
+
+      if (error) throw error;
+
+      setSentSet(new Set());
+      setSelectedIds(new Set());
+      showNotification("Sent records cleared successfully for this center.");
+    } catch (err) {
+      console.error("Error clearing sent history:", err);
+      showNotification("Failed to clear history: " + err.message, "error");
+    }
+  };
+
   const handleCopyEmails = () => {
     const emails = filteredList
-      .filter((item, idx) => !sentSet.has(item.id || idx))
+      .filter((item) => {
+        const key = `${(item.full_name || "").toLowerCase()}|${(item.parent_email || "").toLowerCase()}`;
+        return !sentSet.has(key);
+      })
       .map((item) => item.parent_email)
       .filter(Boolean)
       .join(", ");
 
     if (!emails) {
-      alert("No parent email addresses found for this filtered list.");
+      showNotification("No unsent parent email addresses found for this filtered list.", "error");
       return;
     }
 
     navigator.clipboard.writeText(emails);
     setCopied(true);
+    showNotification("Active unsent emails copied to clipboard! 📋");
     setTimeout(() => setCopied(false), 3000);
   };
 
   const handleExportCSV = () => {
-    if (filteredList.length === 0) return alert("No data to export.");
+    if (filteredList.length === 0) {
+      showNotification("No data to export.", "error");
+      return;
+    }
 
     const headers = ["Full Name", "Category", "Country", "Center", "Parent Email", "Status"];
-    const rows = filteredList.map((i, idx) => [
-      `"${i.full_name || ""}"`,
-      `"${i.category || ""}"`,
-      `"${i.country || selectedCountry}"`,
-      `"${i.center || selectedCenter}"`,
-      `"${i.parent_email || ""}"`,
-      `"${sentSet.has(i.id || idx) ? "Sent" : "Pending"}"`,
-    ]);
+    const rows = filteredList.map((i) => {
+      const key = `${(i.full_name || "").toLowerCase()}|${(i.parent_email || "").toLowerCase()}`;
+      const isSent = sentSet.has(key);
+      return [
+        `"${i.full_name || ""}"`,
+        `"${i.category || ""}"`,
+        `"${i.country || selectedCountry}"`,
+        `"${i.center || selectedCenter}"`,
+        `"${i.parent_email || ""}"`,
+        `"${isSent ? "Sent" : "Pending"}"`,
+      ];
+    });
 
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
@@ -177,10 +244,41 @@ const handleSendReminders = async () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    showNotification("CSV export downloaded successfully! 📥");
   };
 
   return (
     <div className={styles.wrapper}>
+      {/* Sleek Notification Banner */}
+      {notification && (
+        <div style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          padding: "16px 22px",
+          backgroundColor: notification.type === "error" ? "#FDEDED" : "#EDF7ED",
+          color: notification.type === "error" ? "#5F2120" : "#1E4620",
+          border: `1px solid ${notification.type === "error" ? "#F5C6CB" : "#C3E6CB"}`,
+          borderRadius: "12px",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+          fontFamily: "'Nunito', sans-serif",
+          fontWeight: 700,
+          fontSize: "14px",
+          animation: "slideIn 0.3s ease-out"
+        }}>
+          {notification.type === "error" ? (
+            <FaTriangleExclamation size={18} style={{ color: "#D32F2F" }} />
+          ) : (
+            <FaCircleCheck size={18} style={{ color: "#2E7D32" }} />
+          )}
+          <span>{notification.message}</span>
+        </div>
+      )}
+
       <div className={styles.card}>
         <div className={styles.header}>
           <h2>Pending Feedback Tracker</h2>
@@ -242,6 +340,17 @@ const handleSendReminders = async () => {
               >
                 <FaEnvelope /> {sending ? "Sending..." : `Send Reminders (${selectedIds.size})`}
               </button>
+
+              {sentSet.size > 0 && (
+                <button 
+                  className={styles.secondaryBtn} 
+                  onClick={handleResetSent}
+                  title="Clear database sent history for this center"
+                >
+                  <FaRotateLeft /> Reset Sent ({sentSet.size})
+                </button>
+              )}
+
               <button className={styles.secondaryBtn} onClick={handleCopyEmails}>
                 <FaEnvelope /> {copied ? "Emails Copied!" : "Copy Active Emails"}
               </button>
@@ -276,7 +385,10 @@ const handleSendReminders = async () => {
                       onChange={handleSelectAll}
                       checked={
                         filteredList.length > 0 &&
-                        filteredList.every((item, idx) => sentSet.has(item.id || idx) || selectedIds.has(item.id || idx))
+                        filteredList.every((item) => {
+                          const key = `${(item.full_name || "").toLowerCase()}|${(item.parent_email || "").toLowerCase()}`;
+                          return sentSet.has(key) || selectedIds.has(item.id || filteredList.indexOf(item));
+                        })
                       }
                     />
                   </th>
@@ -290,7 +402,8 @@ const handleSendReminders = async () => {
               <tbody>
                 {filteredList.map((item, idx) => {
                   const uniqueId = item.id || idx;
-                  const isSent = sentSet.has(uniqueId);
+                  const key = `${(item.full_name || "").toLowerCase()}|${(item.parent_email || "").toLowerCase()}`;
+                  const isSent = sentSet.has(key);
                   const isSelected = selectedIds.has(uniqueId);
 
                   return (
