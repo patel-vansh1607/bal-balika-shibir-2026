@@ -222,7 +222,7 @@ export default function SystemFeedback() {
           {/* USER SELECTION DROPDOWN */}
           <div className={styles.questionSection} ref={fieldRefs.userSelect}>
             <label className={styles.questionTitle} htmlFor="userSelect">
-              Select Your Name (Authorized Access Only):
+              Select Your Name:
             </label>
             <select
               id="userSelect"
