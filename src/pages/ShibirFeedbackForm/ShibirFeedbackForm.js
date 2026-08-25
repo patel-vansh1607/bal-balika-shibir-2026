@@ -90,11 +90,6 @@ export default function ShibirFeedbackForm({ onSubmitSuccess }) {
   const [pendingRecordId, setPendingRecordId] = useState(null);
   const pendingVideoFile = useRef(null);
   const pendingPhotoFiles = useRef([]);
-  // Add these new states to track pre-uploaded URLs
-const [uploadedPhotoUrls, setUploadedPhotoUrls] = useState([]);
-const [uploadedVideoUrl, setUploadedVideoUrl] = useState("");
-const [isPreUploadingPhotos, setIsPreUploadingPhotos] = useState(false);
-const [isPreUploadingVideo, setIsPreUploadingVideo] = useState(false);
 
   const [countrySearch, setCountrySearch] = useState("");
   const [showCountryList, setShowCountryList] = useState(false);
@@ -250,70 +245,27 @@ const [isPreUploadingVideo, setIsPreUploadingVideo] = useState(false);
     setShowNameList(false);
   };
 
-const handlePhotosChange = async (e) => {
-  const newFiles = Array.from(e.target.files);
-  e.target.value = "";
-  const valid = newFiles.filter((f) => {
-    if (!f.type.startsWith("image/")) { alert(`${f.name} is not an image.`); return false; }
-    if (f.size > 20 * 1024 * 1024) { alert(`${f.name} exceeds 20MB limit.`); return false; }
-    return true;
-  });
-  
-  if (valid.length === 0) return;
-
-  // Show local previews immediately
-  setPhotoFiles((prev) => [...prev, ...valid]);
-
-  // 🔥 START UPLOADING IMMEDIATELY IN BACKGROUND
-  setIsPreUploadingPhotos(true);
-  try {
-    // You can create a temporary pre-upload endpoint or pass a temp ID, 
-    // or upload them directly to your storage bucket/Cloudinary client-side
-    const response = await feedbackApi.preUploadPhotos(valid, (pct) => {
-      setPhotoUploadProgress(pct);
+  const handlePhotosChange = (e) => {
+    const newFiles = Array.from(e.target.files);
+    e.target.value = "";
+    const valid = newFiles.filter((f) => {
+      if (!f.type.startsWith("image/")) { alert(`${f.name} is not an image.`); return false; }
+      if (f.size > 20 * 1024 * 1024) { alert(`${f.name} exceeds 20MB limit.`); return false; }
+      return true;
     });
-    
-    // Save the returned file URLs
-    setUploadedPhotoUrls((prev) => [...prev, ...(response?.data?.urls || [])]);
-    setPhotoUploadStatus("done");
-  } catch (err) {
-    console.error("Pre-upload photos failed:", err);
-    setPhotoUploadError(err.message);
-    setPhotoUploadStatus("failed");
-  } finally {
-    setIsPreUploadingPhotos(false);
-  }
-};
-
-const handleVideoChange = async (e) => {
-  const file = e.target.files[0];
-  e.target.value = "";
-  if (!file) return;
-  if (file.size > 100 * 1024 * 1024) { alert("Video must be under 100MB."); return; }
-  
-  setVideoFile(file);
-
-  // 🔥 START UPLOADING VIDEO IMMEDIATELY IN BACKGROUND
-  setIsPreUploadingVideo(true);
-  setVideoUploadStatus("uploading");
-  try {
-    const response = await feedbackApi.preUploadVideo(file, (pct) => {
-      setVideoUploadProgress(pct);
-    });
-    
-    setUploadedVideoUrl(response?.data?.url || "");
-    setVideoUploadStatus("done");
-  } catch (err) {
-    console.error("Pre-upload video failed:", err);
-    setVideoUploadError(err.message);
-    setVideoUploadStatus("failed");
-  } finally {
-    setIsPreUploadingVideo(false);
-  }
-};
+    setPhotoFiles((prev) => [...prev, ...valid]);
+  };
 
   const handleRemovePhoto = (idx) => {
     setPhotoFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleVideoChange = (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 100 * 1024 * 1024) { alert("Video must be under 100MB."); return; }
+    setVideoFile(file);
   };
 
   const startVideoUpload = (recordId, file) => {
@@ -408,50 +360,55 @@ const handleVideoChange = async (e) => {
     if (!pendingRecordId || !pendingPhotoFiles.current.length) return;
     startPhotoUpload(pendingRecordId, pendingPhotoFiles.current);
   };
-const handleSubmit = async (e) => {
-  e.preventDefault();
 
-  if (!form.country) return alert("Please select a country.");
-  if (!form.center) return alert("Please select a center.");
-  if (!form.fullName.trim()) return alert("Please select or enter full name.");
-  if (!form.response.trim()) return alert("Please write your response/feedback.");
-  if (form.rating === 0) return alert("Please select a star rating.");
-  
-  // Check if background uploads are still finishing up
-  if (isPreUploadingPhotos || isPreUploadingVideo) {
-    return alert("Please wait a moment for your files to finish uploading before submitting.");
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (!videoFile && photoFiles.length === 0) return alert("Please attach at least one photo or video.");
+    if (!form.country) return alert("Please select a country.");
+    if (!form.center) return alert("Please select a center.");
+    if (!form.fullName.trim()) return alert("Please select or enter full name.");
+    if (!form.response.trim()) return alert("Please write your response/feedback.");
+    if (form.rating === 0) return alert("Please select a star rating.");
+    if (!videoFile && photoFiles.length === 0) return alert("Please attach at least one photo or video.");
 
-  setSubmitting(true);
+    setSubmitting(true);
 
-  try {
-    const fields = {
-      full_name: form.fullName,
-      country:   form.country,
-      center:    form.center,
-      category:  form.category,
-      response:  form.response,
-      rating:    form.rating,
-      region:    form.country,
-      // Pass the URLs that were already uploaded in the background!
-      photo_urls: uploadedPhotoUrls,
-      video_url:  uploadedVideoUrl,
-    };
+    try {
+      const fields = {
+        full_name: form.fullName,
+        country:   form.country,
+        center:    form.center,
+        category:  form.category,
+        response:  form.response,
+        rating:    form.rating,
+        region:    form.country,
+      };
 
-    await feedbackApi.create(fields);
+      const result = await feedbackApi.create(fields);
+      const recordId = result?.data?.id;
 
-    setSubmitting(false);
-    setSubmitted(true);
-    if (onSubmitSuccess) onSubmitSuccess({ ...form });
+      setSubmitting(false);
+      setSubmitted(true);
+      if (onSubmitSuccess) onSubmitSuccess({ ...form });
 
-  } catch (err) {
-    console.error("Submission error:", err);
-    alert("Failed to submit feedback: " + err.message);
-    setSubmitting(false);
-  }
-};
+      if (recordId) {
+        setPendingRecordId(recordId);
+        if (videoFile) {
+          pendingVideoFile.current = videoFile;
+          startVideoUpload(recordId, videoFile);
+        }
+        if (photoFiles.length > 0) {
+          pendingPhotoFiles.current = photoFiles;
+          startPhotoUpload(recordId, photoFiles);
+        }
+      }
+    } catch (err) {
+      console.error("Submission error:", err);
+      alert("Failed to submit feedback: " + err.message);
+      setSubmitting(false);
+      setUploadStatus("");
+    }
+  };
 
   const handleReset = () => {
     setForm({
@@ -1045,7 +1002,7 @@ const handleSubmit = async (e) => {
                 </div>
               ) : (
                 <>
-                  <FaPaperPlane className={styles.btnIcon} /> Next Step
+                  <FaPaperPlane className={styles.btnIcon} /> Submit Feedback
                 </>
               )}
             </button>
