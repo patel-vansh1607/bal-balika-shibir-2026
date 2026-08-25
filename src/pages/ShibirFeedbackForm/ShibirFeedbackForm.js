@@ -1045,7 +1045,7 @@ const handleSubmit = async (e) => {
                 </div>
               ) : (
                 <>
-                  <FaPaperPlane className={styles.btnIcon} /> Submit Feedback
+                  <FaPaperPlane className={styles.btnIcon} /> Next Step
                 </>
               )}
             </button>
