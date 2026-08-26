@@ -1489,7 +1489,7 @@
   gap: 6px;
 }
 
-.tableActionBtn {
+/* .tableActionBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1505,8 +1505,8 @@
 }
 
 .tableActionBtn {
-  background-color: var(--primary, #e78524);
-  color: #fff;
+  border-color: var(--primary, #e78524);
+  background-color: #fff;
 }
 .tableActionBtn:hover {
   background-color: var(--primary, #fff);
@@ -1523,10 +1523,83 @@
 }
 
 .telegramBtn{
-  background-color: #0088cc; /* Telegram brand blue on hover */
+  background-color: #0088cc;
   color: #fff;
 }
 .telegramBtn:hover{
-  background-color: #fff; /* Telegram brand blue on hover */
+  background-color: #fff; 
   color: #0088cc;
+} */
+
+/* Base Button Styles */
+.tableActionBtn,
+.whatsappBtn,
+.telegramBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #fff;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Ensure icons inherit the text color */
+.tableActionBtn svg,
+.whatsappBtn svg,
+.telegramBtn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: currentColor;
+}
+
+/* 1. Table Action Button (Primary Orange Theme) */
+.tableActionBtn {
+  color: var(--primary, #e78524);
+  border-color: var(--primary, #e78524);
+}
+.tableActionBtn:hover {
+  background-color: var(--primary, #e78524);
+  border-color: var(--primary, #e78524);
+  color: #fff;
+}
+.tableActionBtn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(231, 133, 36, 0.25);
+}
+
+/* 2. WhatsApp Button (Green Theme) */
+.whatsappBtn {
+  color: #25d366;
+  border-color: #25d366;
+}
+.whatsappBtn:hover {
+  background-color: #25d366;
+  border-color: #25d366;
+  color: #fff;
+}
+.whatsappBtn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.25);
+}
+
+/* 3. Telegram Button (Blue Theme) */
+.telegramBtn {
+  color: #0088cc;
+  border-color: #0088cc;
+}
+.telegramBtn:hover {
+  background-color: #0088cc;
+  border-color: #0088cc;
+  color: #fff;
+}
+.telegramBtn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 136, 204, 0.25);
 }
