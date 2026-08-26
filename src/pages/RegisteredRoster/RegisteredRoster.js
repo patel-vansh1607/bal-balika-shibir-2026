@@ -27,7 +27,8 @@ import {
   FaMoneyBillWave,
   FaBed,
   FaFileSignature,
-  FaWhatsapp
+  FaWhatsapp,
+  FaTelegramPlane
 } from "react-icons/fa";
 import styles from "./RegisteredRoster.module.css";
 import ArchiveConfirmModal from "../ArchiveConfirmModal/ArchiveConfirmModal";
@@ -1514,6 +1515,7 @@ const handleSaveProfile = async (e) => {
 <td className={`${styles.monospaceText} ${styles.centeredCell}`}>
   {parentContactDisplay ? (
     <div className={styles.tableActionIcons}>
+      {/* Direct Call */}
       <a
         href={`tel:${parentContactDisplay}`}
         className={styles.tableActionBtn}
@@ -1521,6 +1523,8 @@ const handleSaveProfile = async (e) => {
       >
         <FaPhoneAlt />
       </a>
+      
+      {/* WhatsApp */}
       <a
         href={`https://wa.me/${parentContactDisplay.replace(/\D/g, "")}`}
         target="_blank"
@@ -1529,6 +1533,17 @@ const handleSaveProfile = async (e) => {
         title={`WhatsApp ${parentContactDisplay}`}
       >
         <FaWhatsapp />
+      </a>
+
+      {/* Telegram Chat */}
+      <a
+        href={`https://t.me/+${parentContactDisplay.replace(/\D/g, "")}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${styles.tableActionBtn} ${styles.telegramBtn}`}
+        title={`Telegram Chat with ${parentContactDisplay}`}
+      >
+        <FaTelegramPlane />
       </a>
     </div>
   ) : (

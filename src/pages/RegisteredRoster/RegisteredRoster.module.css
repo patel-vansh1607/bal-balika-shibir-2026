@@ -1501,6 +1501,7 @@
   text-decoration: none;
   font-size: 12px;
   transition: background-color 0.2s, color 0.2s;
+  
 }
 
 .tableActionBtn:hover {
@@ -1508,7 +1509,20 @@
   color: #fff;
 }
 
-.whatsappBtn:hover {
+.whatsappBtn {
   background-color: #25d366;
   color: #fff;
+}
+.whatsappBtn:hover {
+  background-color: #fff;
+  color: #25d366;
+}
+
+.telegramBtn{
+  background-color: #0088cc; /* Telegram brand blue on hover */
+  color: #fff;
+}
+.telegramBtn:hover{
+  background-color: #fff; /* Telegram brand blue on hover */
+  color: #0088cc;
 }
