@@ -90,7 +90,7 @@ export default function RegisteredRoster({
   }, []); // Adjust this path relative to your current file structure
   // A. State variables go at the very top of the function hook block
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 25;
+  const [itemsPerPage, setItemsPerPage] = useState(25);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
   // const [, setError] = useState(null);
 
@@ -164,15 +164,15 @@ const filteredAttendees = useMemo(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedCenter, selectedGender, showArchived, paymentFilter]);
 
-  // D. Second Memo slices the filtered rows down into 25-row segments
+// D. Second Memo slices the filtered rows down into segments based on itemsPerPage
   const paginatedAttendees = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
     return filteredAttendees.slice(startIndex, endIndex);
-  }, [filteredAttendees, currentPage]);
+  }, [filteredAttendees, currentPage, itemsPerPage]); // Added itemsPerPage here!
 
   // E. Compute total page layout limits
-  const totalPages = Math.ceil(filteredAttendees.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredAttendees.length / itemsPerPage);
   const centersList = [
     "All",
     ...new Set(attendees.map((a) => a.center).filter(Boolean)),
@@ -940,6 +940,15 @@ const executeExport = (includeContact) => {
       setDownloadingId(null); // Clear loading state on total failure
     }
   };
+  // Add this state to your component if you haven't already
+
+
+// Ensure currentPage resets if it exceeds new total pages
+// (Place this inside a useEffect or handle it in your change handler)
+const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to page 1 on limit change
+  };
   /* --- Update Field Values Inline --- */
   const handleEditFieldChange = (field, value) => {
     setEditingAttendee((prev) => ({
@@ -1340,97 +1349,130 @@ const handleSaveProfile = async (e) => {
           </div>
         </div>
       </div>
-      {/* --- Fixed 25-Record Pagination Footer Control --- */}
-      {filteredAttendees.length > 0 && (
-        <div
+{/* --- Fixed Pagination Footer Control --- */}
+{filteredAttendees.length > 0 && (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "16px",
+      borderTop: "1px solid #e2e8f0",
+      backgroundColor: "#ffffff",
+      flexWrap: "wrap",
+      gap: "12px",
+    }}
+  >
+    {/* Left Side: Record Metrics & Rows-per-page Selector */}
+    <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+      <div style={{ color: "#475569", fontSize: "14px" }}>
+        Showing{" "}
+        <strong>
+          {Math.min(
+            (currentPage - 1) * itemsPerPage + 1,
+            filteredAttendees.length,
+          )}
+        </strong>{" "}
+        to{" "}
+        <strong>
+          {Math.min(currentPage * itemsPerPage, filteredAttendees.length)}
+        </strong>{" "}
+        of <strong>{filteredAttendees.length}</strong> records
+      </div>
+
+      {/* Rows Per Page Dropdown */}
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", color: "#475569" }}>
+        <span>Show:</span>
+        <select
+          value={itemsPerPage}
+          onChange={handleItemsPerPageChange}
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "16px",
-            borderTop: "1px solid #e2e8f0",
+            padding: "4px 8px",
+            borderRadius: "4px",
+            border: "1px solid #cbd5e1",
             backgroundColor: "#ffffff",
-            flexWrap: "wrap",
-            gap: "12px",
+            color: "#334155",
+            fontSize: "14px",
+            cursor: "pointer",
+            outline: "none",
           }}
         >
-          {/* Record Metrics Counter */}
-          <div style={{ color: "#475569", fontSize: "14px" }}>
-            Showing{" "}
-            <strong>
-              {Math.min(
-                (currentPage - 1) * ITEMS_PER_PAGE + 1,
-                filteredAttendees.length,
-              )}
-            </strong>{" "}
-            to{" "}
-            <strong>
-              {Math.min(currentPage * ITEMS_PER_PAGE, filteredAttendees.length)}
-            </strong>{" "}
-            of <strong>{filteredAttendees.length}</strong> records
-          </div>
+          <option value={25}>25</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+          <option value={200}>200</option>
+           <option value={300}>300</option>
+          <option value={400}>400</option>
+           <option value={500}>500</option>
+            <option value={750}>750</option>
+             <option value={1000}>1000</option>
+              <option value={1100}>1100</option>
 
-          {/* Navigation Button Layout Controls */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            {/* Previous Page Navigation */}
-            <button
-              type="button"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              style={{
-                padding: "6px 14px",
-                borderRadius: "6px",
-                border: "1px solid #cbd5e1",
-                backgroundColor: currentPage === 1 ? "#f1f5f9" : "#ffffff",
-                color: currentPage === 1 ? "#94a3b8" : "#334155",
-                cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                fontSize: "14px",
-                fontWeight: "500",
-                transition: "all 0.15s ease",
-              }}
-            >
-              Previous
-            </button>
+        </select>
+      </div>
+    </div>
 
-            {/* Page Sequence Context Tracker */}
-            <span style={{ fontSize: "14px", color: "#334155" }}>
-              Page <strong>{currentPage}</strong> of{" "}
-              <strong>{totalPages || 1}</strong>
-            </span>
+    {/* Right Side: Navigation Button Layout Controls */}
+    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      {/* Previous Page Navigation */}
+      <button
+        type="button"
+        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+        disabled={currentPage === 1}
+        style={{
+          padding: "6px 14px",
+          borderRadius: "6px",
+          border: "1px solid #cbd5e1",
+          backgroundColor: currentPage === 1 ? "#f1f5f9" : "#ffffff",
+          color: currentPage === 1 ? "#94a3b8" : "#334155",
+          cursor: currentPage === 1 ? "not-allowed" : "pointer",
+          fontSize: "14px",
+          fontWeight: "500",
+          transition: "all 0.15s ease",
+        }}
+      >
+        Previous
+      </button>
 
-            {/* Next Page Navigation */}
-            <button
-              type="button"
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages || totalPages === 0}
-              style={{
-                padding: "6px 14px",
-                borderRadius: "6px",
-                border: "1px solid #cbd5e1",
-                backgroundColor:
-                  currentPage === totalPages || totalPages === 0
-                    ? "#f1f5f9"
-                    : "#ffffff",
-                color:
-                  currentPage === totalPages || totalPages === 0
-                    ? "#94a3b8"
-                    : "#334155",
-                cursor:
-                  currentPage === totalPages || totalPages === 0
-                    ? "not-allowed"
-                    : "pointer",
-                fontSize: "14px",
-                fontWeight: "500",
-                transition: "all 0.15s ease",
-              }}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Page Sequence Context Tracker */}
+      <span style={{ fontSize: "14px", color: "#334155" }}>
+        Page <strong>{currentPage}</strong> of{" "}
+        <strong>{totalPages || 1}</strong>
+      </span>
+
+      {/* Next Page Navigation */}
+      <button
+        type="button"
+        onClick={() =>
+          setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+        }
+        disabled={currentPage === totalPages || totalPages === 0}
+        style={{
+          padding: "6px 14px",
+          borderRadius: "6px",
+          border: "1px solid #cbd5e1",
+          backgroundColor:
+            currentPage === totalPages || totalPages === 0
+              ? "#f1f5f9"
+              : "#ffffff",
+          color:
+            currentPage === totalPages || totalPages === 0
+              ? "#94a3b8"
+              : "#334155",
+          cursor:
+            currentPage === totalPages || totalPages === 0
+              ? "not-allowed"
+              : "pointer",
+          fontSize: "14px",
+          fontWeight: "500",
+          transition: "all 0.15s ease",
+        }}
+      >
+        Next
+      </button>
+    </div>
+  </div>
+)}
       <div className={styles.contentCard}>
         {dataFetching ? (
           <div className={styles.tableMessageBlock}>
