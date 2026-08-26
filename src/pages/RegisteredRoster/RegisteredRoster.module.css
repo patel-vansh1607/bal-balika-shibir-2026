@@ -1531,14 +1531,16 @@
   color: #0088cc;
 } */
 
-/* Base Button Styles */
+/* Base Button Styles (Made Square) */
 .tableActionBtn,
 .whatsappBtn,
 .telegramBtn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
   font-size: 14px;
   font-weight: 500;
   background-color: #fff;
@@ -1549,12 +1551,12 @@
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Ensure icons inherit the text color */
+/* Ensure icons scale correctly and inherit text color */
 .tableActionBtn svg,
 .whatsappBtn svg,
 .telegramBtn svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   stroke: currentColor;
   fill: currentColor;
 }

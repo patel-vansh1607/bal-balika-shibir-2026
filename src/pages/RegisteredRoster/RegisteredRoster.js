@@ -1457,12 +1457,12 @@ const handleSaveProfile = async (e) => {
 <table className={styles.dataTable}>
               <thead>
                 <tr>
-                  <th>Member ID</th>
-                  <th>Full Name</th>
-                  <th>Mandal</th>
-                  <th>Age</th>
-                  <th>Center</th>
-                  <th>Parent Contact</th>
+                  <th style={{ textAlign: "center" }}>Member ID</th>
+                  <th style={{ textAlign: "center" }}>Full Name</th>
+                  <th style={{ textAlign: "center" }}>Mandal</th>
+                  <th style={{ textAlign: "center" }}>Age</th>
+                  <th style={{ textAlign: "center" }}>Center</th>
+                  <th style={{ textAlign: "center" }}>Parent Contact</th>
                   {[
                     "Botswana",
                     "South Africa",
@@ -1487,7 +1487,7 @@ const handleSaveProfile = async (e) => {
                     attendee.member_id || `MTRC-${attendee.id}`;
                   const parentContactDisplay = attendee.parent_contact;
                   return (
-                    <tr key={attendee.id}>
+                    <tr key={attendee.id} style={{ textAlign: "center" }}>
                       <td
                         className={styles.monospaceText}
                         style={{
