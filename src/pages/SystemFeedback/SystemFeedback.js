@@ -159,10 +159,22 @@ export default function SystemFeedback() {
 
     setSubmitting(true);
 
+    // FIX APPLIED HERE: Mapped feedbackText to feedback_text to match database schema
     const payload = {
       user_name: currentUser.name,
       user_email: currentUser.email,
-      ...formData
+      q1: formData.q1,
+      q2: formData.q2,
+      q3: formData.q3,
+      q4: formData.q4,
+      q5: formData.q5,
+      q6: formData.q6,
+      q7: formData.q7,
+      q8: formData.q8,
+      q9: formData.q9,
+      q10: formData.q10,
+      q11: formData.q11,
+      feedback_text: formData.feedbackText
     };
 
     try {
