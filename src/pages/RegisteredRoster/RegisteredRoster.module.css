@@ -1504,9 +1504,13 @@
   
 }
 
-.tableActionBtn:hover {
-  background-color: var(--primary, #007bff);
+.tableActionBtn {
+  background-color: var(--primary, #e78524);
   color: #fff;
+}
+.tableActionBtn:hover {
+  background-color: var(--primary, #fff);
+  color: #e78524;
 }
 
 .whatsappBtn {
