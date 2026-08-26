@@ -227,12 +227,12 @@
 /* ==========================================================================
    DATA TABLE STRUCTURAL LAYER
    ========================================================================== */
+/* Table Container & Layout */
 .tableContainer {
   width: 100%;
-  /* CRITICAL: Remove 'overflow: hidden' or 'auto' if possible, 
-     or ensure dropdowns have a higher z-index than the table */
-  overflow-x: visible; 
-  overflow-y: visible;
+  max-height: 75vh;
+  overflow-x: auto;
+  overflow-y: auto;
   position: relative;
 }
 
@@ -249,9 +249,12 @@
   letter-spacing: 0.08em;
   color: var(--text-muted);
   padding: 14px 18px;
-  background-color: rgba(244, 236, 230, 0.4);
+  background-color: rgba(244, 236, 230, 0.95); /* Opaque enough to block content while scrolling */
   border-bottom: 2px solid var(--border-light);
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .dataTable td {
@@ -273,7 +276,7 @@
 
 .monospaceText {
   font-family: monospace;
-  font-size: 1.5px;
+  font-size: 12px; /* Adjusted from 1.5px to be readable */
   color: var(--text-muted);
 }
 
@@ -288,6 +291,100 @@
   font-size: 12px;
 }
 
+/* ==========================================
+   Square Action Buttons (Table, View, WhatsApp, Telegram)
+   ========================================== */
+
+.tableActionBtn,
+.whatsappBtn,
+.telegramBtn,
+.viewPassBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #fff;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Ensure icons scale correctly and inherit text color */
+.tableActionBtn svg,
+.whatsappBtn svg,
+.telegramBtn svg,
+.viewPassBtn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: currentColor;
+}
+
+/* 1. Table Action Button (Primary Orange Theme) */
+.tableActionBtn {
+  color: var(--primary, #e78524);
+  border-color: var(--primary, #e78524);
+}
+.tableActionBtn:hover {
+  background-color: var(--primary, #e78524);
+  border-color: var(--primary, #e78524);
+  color: #fff;
+}
+.tableActionBtn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(231, 133, 36, 0.25);
+}
+
+/* 2. WhatsApp Button (Green Theme) */
+.whatsappBtn {
+  color: #25d366;
+  border-color: #25d366;
+}
+.whatsappBtn:hover {
+  background-color: #25d366;
+  border-color: #25d366;
+  color: #fff;
+}
+.whatsappBtn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.25);
+}
+
+/* 3. Telegram Button (Blue Theme) */
+.telegramBtn {
+  color: #0088cc;
+  border-color: #0088cc;
+}
+.telegramBtn:hover {
+  background-color: #0088cc;
+  border-color: #0088cc;
+  color: #fff;
+}
+.telegramBtn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 136, 204, 0.25);
+}
+
+/* 4. View Pass Button (Accent Theme) */
+.viewPassBtn {
+  border-color: var(--accent-primary, #e78524);
+  color: var(--accent-primary, #e78524);
+}
+.viewPassBtn:hover {
+  background-color: var(--accent-primary, #e78524);
+  border-color: var(--accent-primary, #e78524);
+  color: #ffffff;
+}
+.viewPassBtn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(231, 133, 36, 0.25);
+}
 /* ==========================================================================
    AVATARS & IDENTITY BLOCKS
    ========================================================================== */
