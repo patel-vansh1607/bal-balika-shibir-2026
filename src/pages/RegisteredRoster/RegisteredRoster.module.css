@@ -1478,3 +1478,37 @@
   border-radius: 50%;
   background-color: #94a3b8;
 }
+.centeredCell {
+  text-align: center;
+}
+
+.tableActionIcons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tableActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.05);
+  color: inherit;
+  text-decoration: none;
+  font-size: 12px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.tableActionBtn:hover {
+  background-color: var(--primary, #007bff);
+  color: #fff;
+}
+
+.whatsappBtn:hover {
+  background-color: #25d366;
+  color: #fff;
+}

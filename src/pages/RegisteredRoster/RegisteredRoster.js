@@ -26,7 +26,8 @@ import {
   FaCreditCard,
   FaMoneyBillWave,
   FaBed,
-  FaFileSignature
+  FaFileSignature,
+  FaWhatsapp
 } from "react-icons/fa";
 import styles from "./RegisteredRoster.module.css";
 import ArchiveConfirmModal from "../ArchiveConfirmModal/ArchiveConfirmModal";
@@ -1510,23 +1511,37 @@ const handleSaveProfile = async (e) => {
                           {attendee.center}
                         </span>
                       </td>
-                      <td className={styles.monospaceText}>
-                        {parentContactDisplay ? (
-                          <span className={styles.inlineIconFlex}>
-                            <FaPhoneAlt className={styles.mutedIcon} />{" "}
-                            {parentContactDisplay}
-                          </span>
-                        ) : (
-                          <span
-                            style={{
-                              color: "var(--text-muted)",
-                              fontSize: "12px",
-                            }}
-                          >
-                            N/A
-                          </span>
-                        )}
-                      </td>
+<td className={`${styles.monospaceText} ${styles.centeredCell}`}>
+  {parentContactDisplay ? (
+    <div className={styles.tableActionIcons}>
+      <a
+        href={`tel:${parentContactDisplay}`}
+        className={styles.tableActionBtn}
+        title={`Call ${parentContactDisplay}`}
+      >
+        <FaPhoneAlt />
+      </a>
+      <a
+        href={`https://wa.me/${parentContactDisplay.replace(/\D/g, "")}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${styles.tableActionBtn} ${styles.whatsappBtn}`}
+        title={`WhatsApp ${parentContactDisplay}`}
+      >
+        <FaWhatsapp />
+      </a>
+    </div>
+  ) : (
+    <span
+      style={{
+        color: "var(--text-muted)",
+        fontSize: "12px",
+      }}
+    >
+      N/A
+    </span>
+  )}
+</td>
                       {[
                         "Botswana",
                         "South Africa",
