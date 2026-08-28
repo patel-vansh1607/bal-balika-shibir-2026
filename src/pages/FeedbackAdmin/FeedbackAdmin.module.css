@@ -1,0 +1,159 @@
+.wrapper {
+  min-height: 100vh;
+  background-color: #f8fafc;
+  padding: 40px 20px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #1e293b;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.badge {
+  background-color: #e2e8f0;
+  color: #334155;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.card {
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.statusText {
+  color: #64748b;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.errorText {
+  color: #dc2626;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.feedbackCard {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feedbackCard:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.userName {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+
+.userEmail {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.timestamp {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.ratingsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ratingBadge {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  text-align: center;
+  min-width: 45px;
+}
+
+.qLabel {
+  display: block;
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.qVal {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.feedbackSection {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 14px;
+  border-left: 4px solid #3b82f6;
+}
+
+.feedbackHeading {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  margin: 0 0 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.feedbackText {
+  font-size: 0.95rem;
+  color: #334155;
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}

@@ -55,6 +55,7 @@ import GateLogsPage from "../GateLogsPage/GateLogsPage";
 import ShibirFeedbackDisplay from "../ShibirFeedbackDisplay/ShibirFeedbackDisplay";
 import ShibirFeedbackDetail from "../ShibirFeedbackDetail/ShibirFeedbackDetail";
 import UnsubmittedAttendees from "../UnsubmittedAttendees/UnsubmittedAttendees";
+import FeedbackAdmin from "../FeedbackAdmin/FeedbackAdmin";
 // ---------------------------------------------------------------------------
 // PRODUCTION TIMERS
 // ---------------------------------------------------------------------------
@@ -657,6 +658,14 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
                     <FaBook className={styles.iconMargin} /> No Feedback
                   </button>
                 )}
+                   {(userRole === "master_admin") && (
+                  <button
+                    onClick={() => handleNavigation("/dashboard/karyakar/feedback")}
+                    className={`${styles.navLink} ${location.pathname === "/dashboard/karyakar/feedback" ? styles.navLinkActive : ""}`}
+                  >
+                    <FaBook className={styles.iconMargin} /> Karyakar Feedback
+                  </button>
+                )}
           </nav>
         </div>
 
@@ -796,6 +805,12 @@ if (path.startsWith("/dashboard/scanner/")) return "Scanner Attendance";
     ) : (
       <NotFound />
     )
+  }
+/>
+<Route
+  path="karyakar/feedback"
+  element={
+      <FeedbackAdmin/>
   }
 />
             <Route
