@@ -34,11 +34,11 @@ const regionDataset = {
   //   "Mukono", "Hoima", "Kasese", "Busia", "Iganga", "Wakiso", "Mityana",
   //   "Mubende", "Luwero", "Kyenjojo", "Masindi", "Kitgum"
   // ],
-  // Zambia: [
-  //   "Lusaka", "Kitwe", "Ndola", "Livingstone", "Kabwe", "Chingola", "Mufulira",
-  //   "Luanshya", "Kasama", "Chipata", "Chinsali", "Mansa", "Solwezi", "Mongu",
-  //   "Mazabuka", "Monze", "Choma", "Kapiri Mposhi"
-  // ],
+  Zambia: [
+    "Lusaka", "Kitwe", "Ndola", "Livingstone", "Kabwe", "Chingola", "Mufulira",
+    "Luanshya", "Kasama", "Chipata", "Chinsali", "Mansa", "Solwezi", "Mongu",
+    "Mazabuka", "Monze", "Choma", "Kapiri Mposhi"
+  ],
   Malawi: [
     "Lilongwe", "Blantyre", "Mzuzu", "Zomba", "Kasungu", "Mangochi", "Karonga",
     "Salima", "Nkhotakota", "Liwonde", "Balaka", "Luchenza", "Dedza", "Mchinji",
