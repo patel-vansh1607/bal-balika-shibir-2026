@@ -28,12 +28,12 @@ const regionDataset = {
     "Dodoma", "Moshi", "Tanga", "Morogoro", "Mbeya", "Iringa", "Kigoma",
     "Songea", "Tabora", "Musoma", "Shinyanga", "Sumbawanga", "Lindi", "Singida", "Bukoba"
   ],
-  // Uganda: [
-  //   "Kampala", "Entebbe", "Jinja", "Rwanda", "Mbarara", "Gulu", "Mbale",
-  //   "Masaka", "Arua", "Lira", "Fort Portal", "Kabale", "Tororo", "Soroti",
-  //   "Mukono", "Hoima", "Kasese", "Busia", "Iganga", "Wakiso", "Mityana",
-  //   "Mubende", "Luwero", "Kyenjojo", "Masindi", "Kitgum"
-  // ],
+  Uganda: [
+    "Kampala", "Entebbe", "Jinja", "Rwanda", "Mbarara", "Gulu", "Mbale",
+    "Masaka", "Arua", "Lira", "Fort Portal", "Kabale", "Tororo", "Soroti",
+    "Mukono", "Hoima", "Kasese", "Busia", "Iganga", "Wakiso", "Mityana",
+    "Mubende", "Luwero", "Kyenjojo", "Masindi", "Kitgum"
+  ],
   Zambia: [
     "Lusaka", "Kitwe", "Ndola", "Livingstone", "Kabwe", "Chingola", "Mufulira",
     "Luanshya", "Kasama", "Chipata", "Chinsali", "Mansa", "Solwezi", "Mongu",

@@ -12,6 +12,10 @@ import NotFound from './pages/NotFound/NotFound';
 import HomeRoute from './pages/HomeRoute/HomeRoute';
 import ShibirFeedbackForm from './pages/ShibirFeedbackForm/ShibirFeedbackForm';
 import SystemFeedback from './pages/SystemFeedback/SystemFeedback';
+import Qr from './pages/qr'
+
+
+
 // Helper component placed directly inside App.js to handle browser tab titles
 function DocumentTitleManager() {
   const location = useLocation();
@@ -73,6 +77,7 @@ export default function App() {
       />
       <Routes>
         <Route path='/' element={<HomeRoute />}/>
+        <Route path='/q' element={<Qr />}/>
         
         <Route 
           path="/_v1_node_106_health_10548" 
