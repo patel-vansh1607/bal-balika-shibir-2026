@@ -46,7 +46,7 @@ export default function QRDownloader() {
               value={url}
               size={256}
               bgColor="transparent"
-              fgColor="#00024c"
+              fgColor="##c86161"
               level="H"
               includeMargin={false}
             />
